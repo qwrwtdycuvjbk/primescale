@@ -1,0 +1,12 @@
+Topic,Details
+Product,Companies post remote tech roles on PrimeScale. People Prime delivers vetted candidates in 24 hours.
+Website,Live on Vercel. Next step: connect custom domain.
+Database,Supabase stores all form submissions.
+Target customer,"US startup founders, engineering managers, HR leads hiring remote tech talent."
+Core message,Post a role. Get interview-ready candidates in 24 hours. No job board chaos.
+Priority 1,LinkedIn posts + direct outreach to companies hiring now
+Priority 2,"Outbound via Crunchbase, Wellfound, Apollo.io, Hunter.io"
+Priority 3,Add real testimonials and logos to website
+Priority 4,"Indie Hackers, Reddit, Slack communities"
+Priority 5,Product Hunt launch when ops ready for 24h delivery
+Best metric,Roles posted and fulfilled in 24 hours

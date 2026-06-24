@@ -8,6 +8,7 @@ export interface RoleSubmission {
   companyName: string;
   contactName: string;
   email: string;
+  phone: string;
   jobTitle: string;
   roleType: RoleType;
   experienceLevel: ExperienceLevel;
@@ -22,6 +23,7 @@ export interface RoleSubmissionInput {
   companyName: string;
   contactName: string;
   email: string;
+  phone: string;
   jobTitle: string;
   roleType: RoleType;
   experienceLevel: ExperienceLevel;

@@ -11,6 +11,7 @@ const initialForm: RoleSubmissionInput = {
   companyName: "",
   contactName: "",
   email: "",
+  phone: "",
   jobTitle: "",
   roleType: "contract",
   experienceLevel: "mid",
@@ -145,18 +146,29 @@ export function PostRoleForm() {
             className={inputClass}
           />
         </Field>
-      </div>
 
-      <Field label="Work email" required>
-        <input
-          type="email"
-          required
-          value={form.email}
-          onChange={(e) => updateField("email", e.target.value)}
-          placeholder="jane@acme.com"
-          className={inputClass}
-        />
-      </Field>
+        <Field label="Work email" required>
+          <input
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => updateField("email", e.target.value)}
+            placeholder="jane@acme.com"
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Phone number" required>
+          <input
+            type="tel"
+            required
+            value={form.phone}
+            onChange={(e) => updateField("phone", e.target.value)}
+            placeholder="+1 (555) 123-4567"
+            className={inputClass}
+          />
+        </Field>
+      </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start gap-3">

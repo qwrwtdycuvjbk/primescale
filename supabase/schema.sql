@@ -6,6 +6,7 @@ create table if not exists public.role_submissions (
   company_name text not null,
   contact_name text not null,
   email text not null,
+  phone text not null,
   job_title text not null,
   role_type text not null,
   experience_level text not null,

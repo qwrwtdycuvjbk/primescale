@@ -32,6 +32,7 @@ function validateInput(body: Partial<RoleSubmissionInput>): string | null {
     "companyName",
     "contactName",
     "email",
+    "phone",
     "jobTitle",
     "roleType",
     "experienceLevel",
@@ -59,6 +60,7 @@ function buildSubmission(body: RoleSubmissionInput): RoleSubmission {
     companyName: body.companyName.trim(),
     contactName: body.contactName.trim(),
     email: body.email.trim().toLowerCase(),
+    phone: body.phone.trim(),
     jobTitle: body.jobTitle.trim(),
     roleType: body.roleType,
     experienceLevel: body.experienceLevel,
@@ -82,38 +84,47 @@ export async function POST(request: Request) {
     const submission = buildSubmission(body as RoleSubmissionInput);
     const supabase = getSupabase();
 
-    if (supabase) {
-      const row: Record<string, string | null> = {
-          company_name: submission.companyName,
-          contact_name: submission.contactName,
-          email: submission.email,
-          job_title: submission.jobTitle,
-          role_type: submission.roleType,
-          experience_level: submission.experienceLevel,
-          tech_stack: submission.techStack,
-          salary_range: submission.salaryRange ?? null,
-          description: submission.description,
-          notes: submission.notes ?? null,
-          submission_type: submission.submissionType,
-        };
-
-      const { error: dbError } = await supabase
-        .from("role_submissions")
-        .insert(row);
-
-      if (dbError) {
-        console.error("Supabase insert error:", dbError);
+    if (!supabase) {
+      if (process.env.VERCEL) {
+        console.error("Supabase env vars missing on Vercel");
         return NextResponse.json(
-          { error: "Failed to save role submission" },
-          { status: 500 },
+          { error: "Server configuration error. Please try again later." },
+          { status: 503 },
         );
       }
 
-      return NextResponse.json({ success: true });
+      await saveToFile(submission);
+      return NextResponse.json({ success: true, id: submission.id });
     }
 
-    await saveToFile(submission);
-    return NextResponse.json({ success: true, id: submission.id });
+    const row: Record<string, string | null> = {
+      company_name: submission.companyName,
+      contact_name: submission.contactName,
+      email: submission.email,
+      phone: submission.phone,
+      job_title: submission.jobTitle,
+      role_type: submission.roleType,
+      experience_level: submission.experienceLevel,
+      tech_stack: submission.techStack,
+      salary_range: submission.salaryRange ?? null,
+      description: submission.description,
+      notes: submission.notes ?? null,
+      submission_type: submission.submissionType,
+    };
+
+    const { error: dbError } = await supabase
+      .from("role_submissions")
+      .insert(row);
+
+    if (dbError) {
+      console.error("Supabase insert error:", dbError);
+      return NextResponse.json(
+        { error: "Failed to save role submission" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Role submission error:", error);
     return NextResponse.json(
