@@ -19,19 +19,30 @@ export function Header() {
           <a href="#how-it-works" className="transition hover:text-white">
             How it works
           </a>
-          <a href="#why-us" className="transition hover:text-white">
-            Why us
+          <a href="#for-employers" className="transition hover:text-white">
+            Employers
+          </a>
+          <a href="#for-candidates" className="transition hover:text-white">
+            Candidates
           </a>
           <a href="#contact" className="transition hover:text-white">
             Contact
           </a>
         </nav>
-        <a
-          href="#post-role"
-          className="rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-400"
-        >
-          Post a role
-        </a>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/auth/login"
+            className="hidden text-sm text-slate-300 transition hover:text-white sm:inline"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/auth/signup?role=employer"
+            className="rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-400"
+          >
+            Post a role
+          </Link>
+        </div>
       </div>
     </header>
   );

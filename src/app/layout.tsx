@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PrimeScale | Remote tech staffing by People Prime Worldwide",
+  title: "PrimeScale | AI hiring platform for US remote tech roles",
   description:
-    "People Prime Worldwide helps US companies access pre-vetted, interview-ready engineers across AI, Cloud, Data, DevOps, and Cybersecurity. Post a role on PrimeScale and get candidates in 24 hours.",
+    "PrimeScale matches US employers and remote tech professionals. Employers post roles. Candidates build a profile and get matched. Backed by People Prime Worldwide.",
 };
 
 export default function RootLayout({

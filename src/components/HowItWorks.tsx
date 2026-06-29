@@ -1,21 +1,42 @@
-const steps = [
+const employerSteps = [
   {
     number: "01",
     title: "Post your role",
     description:
-      "Share the title, skills, seniority, and engagement model you need. Contract and C2H options available.",
+      "Paste your JD or fill in details. AI helps structure the role for better matching.",
   },
   {
     number: "02",
-    title: "We source and screen",
+    title: "Get matched candidates",
     description:
-      "People Prime taps a global network of engineers across AI, Cloud, Data, DevOps, Cybersecurity, and more. Every candidate is pre-vetted and interview-ready.",
+      "PrimeScale scores candidates against your stack, seniority, and US work requirements.",
   },
   {
     number: "03",
-    title: "Review candidates fast",
+    title: "Shortlist and hire",
     description:
-      "Receive a focused shortlist within 24 hours. We handle onboarding, payroll, and compliance end to end so you can hire with confidence.",
+      "Review matches, shortlist the best fits, and move forward with People Prime support.",
+  },
+];
+
+const candidateSteps = [
+  {
+    number: "01",
+    title: "Build your profile",
+    description:
+      "Add your skills, experience, and US work authorization. No applying to dozens of listings.",
+  },
+  {
+    number: "02",
+    title: "Get matched to roles",
+    description:
+      "Our engine surfaces US remote tech roles that fit your profile and preferences.",
+  },
+  {
+    number: "03",
+    title: "Express interest",
+    description:
+      "Review matches, mark roles you want, and connect when there is mutual fit.",
   },
 ];
 
@@ -27,28 +48,51 @@ export function HowItWorks() {
           How it works
         </p>
         <h2 className="mt-3 max-w-xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          End-to-end staffing, built for speed
+          One platform. Two paths.
         </h2>
         <p className="mt-4 max-w-2xl text-lg text-slate-600">
-          On PrimeScale, you post once and People Prime delivers talent to you.
-          No public job board. No flood of unqualified applicants. Just
-          interview-ready professionals matched to your role.
+          PrimeScale connects US employers and remote tech professionals through
+          AI-assisted matching, not endless job board scrolling.
         </p>
 
-        <div className="mt-16 grid gap-8 md:grid-cols-3">
-          {steps.map((step) => (
-            <div key={step.number} className="relative">
-              <span className="text-5xl font-bold text-slate-400">
-                {step.number}
-              </span>
-              <h3 className="mt-4 text-xl font-semibold text-slate-900">
-                {step.title}
-              </h3>
-              <p className="mt-3 leading-relaxed text-slate-600">
-                {step.description}
-              </p>
+        <div className="mt-16 grid gap-16 lg:grid-cols-2">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">For employers</h3>
+            <div className="mt-8 space-y-8">
+              {employerSteps.map((step) => (
+                <div key={step.number}>
+                  <span className="text-4xl font-bold text-slate-300">
+                    {step.number}
+                  </span>
+                  <h4 className="mt-2 text-lg font-semibold text-slate-900">
+                    {step.title}
+                  </h4>
+                  <p className="mt-2 leading-relaxed text-slate-600">
+                    {step.description}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">For candidates</h3>
+            <div className="mt-8 space-y-8">
+              {candidateSteps.map((step) => (
+                <div key={step.number}>
+                  <span className="text-4xl font-bold text-slate-300">
+                    {step.number}
+                  </span>
+                  <h4 className="mt-2 text-lg font-semibold text-slate-900">
+                    {step.title}
+                  </h4>
+                  <p className="mt-2 leading-relaxed text-slate-600">
+                    {step.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-slate-950 px-6 pb-24 pt-20">
@@ -14,41 +16,41 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-sm text-teal-300">
           <span className="h-2 w-2 rounded-full bg-teal-400" />
-          Vetted remote tech talent in 24 hours
+          AI-powered US remote tech hiring
         </div>
 
         <h1 className="mt-8 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-          Post a remote tech role.{" "}
-          <span className="text-teal-400">Get candidates in 24 hours.</span>
+          Match US tech talent to the right roles.{" "}
+          <span className="text-teal-400">Fast.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl">
-          Skip the job board chaos. Companies post roles on PrimeScale, and People
-          Prime hand picks pre-vetted engineers across AI, Cloud, Data, DevOps,
-          and Cybersecurity, delivering qualified candidates in just one business
-          day.
+          PrimeScale is an AI hiring platform for US remote tech roles. Employers
+          post roles. Candidates build a profile. Our matching engine connects
+          both sides, backed by People Prime Worldwide&apos;s 14+ years in tech
+          staffing.
         </p>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <a
-            href="#post-role"
+          <Link
+            href="/auth/signup?role=employer"
             className="inline-flex items-center justify-center rounded-full bg-teal-500 px-8 py-4 text-base font-semibold text-slate-950 transition hover:bg-teal-400"
           >
-            Post a role for free
-          </a>
-          <a
-            href="#how-it-works"
+            I&apos;m hiring
+          </Link>
+          <Link
+            href="/auth/signup?role=candidate"
             className="inline-flex items-center justify-center rounded-full border border-white/20 px-8 py-4 text-base font-medium text-white transition hover:border-white/40 hover:bg-white/5"
           >
-            See how it works
-          </a>
+            I&apos;m a candidate
+          </Link>
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-3">
           {[
             { stat: "14+", label: "Years of staffing experience" },
             { stat: "50,000+", label: "Successful deployments" },
-            { stat: "24h", label: "To interview-ready candidates" },
+            { stat: "24h", label: "To matched, interview-ready talent" },
           ].map((item) => (
             <div
               key={item.label}

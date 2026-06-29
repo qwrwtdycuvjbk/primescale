@@ -1,8 +1,10 @@
 import { Footer } from "@/components/Footer";
+import { ForCandidates } from "@/components/ForCandidates";
+import { ForEmployers } from "@/components/ForEmployers";
+import { GetStarted } from "@/components/GetStarted";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
-import { PostRoleSection } from "@/components/PostRoleSection";
 import { WhyUs } from "@/components/WhyUs";
 
 export default function Home() {
@@ -13,7 +15,9 @@ export default function Home() {
         <Hero />
         <HowItWorks />
         <WhyUs />
-        <PostRoleSection />
+        <ForEmployers />
+        <ForCandidates />
+        <GetStarted />
       </main>
       <Footer />
     </>
