@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
 
 const platformLinks = [
   { label: "Post a role", href: "#post-role" },
@@ -49,13 +49,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Image
-              src="/primescale-logo.png"
-              alt="PrimeScale"
-              width={377}
-              height={218}
-              className="h-12 w-auto"
-            />
+            <PrimeScaleLogo className="h-14 w-auto sm:h-16" />
             <p className="mt-4 text-sm text-slate-400">
               Vetted remote tech talent in 24 hours
             </p>

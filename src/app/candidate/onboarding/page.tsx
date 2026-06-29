@@ -1,7 +1,13 @@
-import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { CandidateProfileForm } from "@/components/candidate/CandidateProfileForm";
+import { CandidateProfileWizard } from "@/components/candidate/CandidateProfileWizard";
+import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
 import { requireRole } from "@/lib/auth";
+import {
+  isCandidateProfileComplete,
+  mapCandidateRowToInput,
+} from "@/lib/candidate-profile";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function CandidateOnboardingPage() {
   const { profile } = await requireRole("candidate");
@@ -13,33 +19,39 @@ export default async function CandidateOnboardingPage() {
     .eq("user_id", profile.id)
     .maybeSingle();
 
+  if (isCandidateProfileComplete(existing)) {
+    redirect("/candidate");
+  }
+
   const initialData = existing
-    ? {
-        headline: existing.headline ?? "",
-        skills: existing.skills?.join(", ") ?? "",
-        roleCategories: existing.role_categories ?? [],
-        experienceLevel: existing.experience_level ?? "mid",
-        salaryMin: existing.salary_min ?? undefined,
-        salaryMax: existing.salary_max ?? undefined,
-        workAuthorization: existing.work_authorization ?? "us_citizen",
-        usState: existing.us_state ?? "Remote (US)",
-        bio: existing.bio ?? "",
-      }
-    : undefined;
+    ? mapCandidateRowToInput(existing, profile.phone)
+    : { phone: profile.phone ?? "" };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <DashboardNav role="candidate" name={profile.full_name} />
-      <main className="mx-auto max-w-2xl px-6 py-12">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Build your profile
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-background">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <Link href="/">
+            <PrimeScaleLogo variant="dark" />
+          </Link>
+          <p className="text-sm text-muted-foreground">Step 1 of 1 — Onboarding</p>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-3xl px-6 py-12">
+        <h1 className="display-headline text-4xl sm:text-5xl">
+          Build your <span className="italic text-primary">profile.</span>
         </h1>
-        <p className="mt-3 text-slate-600">
-          US remote tech roles only. Complete your profile and PrimeScale will
-          match you to relevant openings.
+        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
+          Five steps to get matched to US remote tech roles. A resume upload is
+          required on the final step.
         </p>
-        <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-8">
-          <CandidateProfileForm initialData={initialData} />
+
+        <div className="mt-10 rounded-3xl border border-border bg-card p-8">
+          <CandidateProfileWizard
+            initialData={initialData}
+            redirectTo="/candidate"
+          />
         </div>
       </main>
     </div>

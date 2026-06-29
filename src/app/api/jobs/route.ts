@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  defaultJobExpiry,
+  isValidSalaryRange,
+} from "@/lib/employer";
 import { parseSkills } from "@/lib/matching";
 import { runMatchingForJob } from "@/lib/match-runner";
-import type { JobInput } from "@/lib/types";
+import type { JobInput, JobStatus } from "@/lib/types";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -14,11 +18,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as JobInput;
-  const description = body.description?.trim();
+  const body = (await request.json()) as JobInput & {
+    publish?: boolean;
+    jdQualityScore?: number;
+    jdQualityFeedback?: string;
+  };
 
+  const description = body.description?.trim();
   if (!description) {
     return NextResponse.json({ error: "Description is required" }, { status: 400 });
+  }
+
+  const techStack = parseSkills(body.techStack);
+  if (techStack.length < 3) {
+    return NextResponse.json({ error: "At least 3 skills are required" }, { status: 400 });
+  }
+
+  if (!body.salaryRange?.trim()) {
+    return NextResponse.json({ error: "Salary range is required" }, { status: 400 });
+  }
+
+  if (!isValidSalaryRange(body.salaryRange)) {
+    return NextResponse.json(
+      { error: 'Provide a real salary range. "Competitive" is not allowed.' },
+      { status: 400 },
+    );
+  }
+
+  if (!body.visaRequirements?.trim()) {
+    return NextResponse.json(
+      { error: "US work eligibility requirements are required" },
+      { status: 400 },
+    );
   }
 
   const { data: company } = await supabase
@@ -28,29 +59,29 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!company) {
-    return NextResponse.json(
-      { error: "Complete company onboarding first" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Complete company profile first" }, { status: 400 });
   }
 
-  const techStack = parseSkills(body.techStack);
-  const title = body.title?.trim() || "Remote tech role";
+  const status: JobStatus = body.publish ? "active" : "draft";
+  const expiresAt = body.publish ? defaultJobExpiry() : null;
 
   const { data: job, error } = await supabase
     .from("jobs")
     .insert({
       company_id: company.id,
       posted_by: user.id,
-      title,
+      title: body.title.trim(),
       description,
       role_type: body.roleType,
       experience_level: body.experienceLevel,
       tech_stack: techStack,
-      salary_range: body.salaryRange || null,
-      work_type: "remote",
-      visa_requirements: body.visaRequirements || null,
-      status: "active",
+      salary_range: body.salaryRange.trim(),
+      work_type: body.workType || "remote",
+      visa_requirements: body.visaRequirements.trim(),
+      status,
+      expires_at: expiresAt,
+      jd_quality_score: body.jdQualityScore ?? null,
+      jd_quality_feedback: body.jdQualityFeedback ?? null,
     })
     .select("id")
     .single();
@@ -59,11 +90,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const matchResult = await runMatchingForJob(job.id);
+  const matchResult =
+    status === "active" ? await runMatchingForJob(job.id) : { matched: 0 };
 
   return NextResponse.json({
     ok: true,
     jobId: job.id,
+    status,
     matchesCreated: matchResult.matched,
   });
 }

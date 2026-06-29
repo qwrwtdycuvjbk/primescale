@@ -1,6 +1,7 @@
-import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { CompanyOnboardingForm } from "@/components/employer/CompanyOnboardingForm";
+import { EmployerCompanyForm } from "@/components/employer/EmployerCompanyForm";
+import { EmployerShell } from "@/components/employer/EmployerShell";
 import { requireRole } from "@/lib/auth";
+import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -10,29 +11,43 @@ export default async function EmployerOnboardingPage() {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id")
+    .select("*")
     .eq("owner_id", profile.id)
     .maybeSingle();
 
-  if (company) {
-    redirect("/employer/jobs/new");
+  if (company && isCompanyProfileComplete(company)) {
+    redirect("/employer");
   }
 
+  const initialData = company
+    ? {
+        name: company.name,
+        website: company.website ?? "",
+        size: company.size ?? "",
+        description: company.description ?? "",
+        hqCity: company.hq_city ?? "",
+        industry: company.industry ?? "",
+        remoteCultureStatement: company.remote_culture_statement ?? "",
+        logoUrl: company.logo_url ?? "",
+      }
+    : undefined;
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <DashboardNav role="employer" name={profile.full_name} />
-      <main className="mx-auto max-w-2xl px-6 py-12">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Set up your company
-        </h1>
-        <p className="mt-3 text-slate-600">
-          US companies hiring remote tech talent. Tell us about your company,
-          then post your first role.
+    <EmployerShell name={profile.full_name} activePath="/employer/onboarding">
+      <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+        <h1 className="display-headline text-4xl">Set up your company</h1>
+        <p className="mt-3 text-muted-foreground">
+          US companies hiring remote tech talent. Complete your profile, then
+          post your first role.
         </p>
-        <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-8">
-          <CompanyOnboardingForm />
+        <div className="mt-10 rounded-3xl border border-border bg-card p-8">
+          <EmployerCompanyForm
+            initialData={initialData}
+            workEmail={profile.email}
+            redirectTo="/employer/jobs/new"
+          />
         </div>
       </main>
-    </div>
+    </EmployerShell>
   );
 }

@@ -1,25 +1,20 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-12">
-      <div className="mx-auto mb-10 max-w-md">
-        <Link href="/">
-          <Image
-            src="/primescale-logo.png"
-            alt="PrimeScale"
-            width={200}
-            height={116}
-            className="h-10 w-auto"
-          />
-        </Link>
-      </div>
-      <Suspense fallback={<div className="text-center text-slate-500">Loading...</div>}>
+    <AuthShell
+      title="Join PrimeScale."
+      description="Create your account as an employer or candidate. US remote tech roles only, backed by People Prime Worldwide."
+    >
+      <Suspense
+        fallback={
+          <div className="text-center text-muted-foreground">Loading...</div>
+        }
+      >
         <AuthForm mode="signup" />
       </Suspense>
-    </div>
+    </AuthShell>
   );
 }

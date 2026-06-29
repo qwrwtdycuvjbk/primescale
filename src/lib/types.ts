@@ -2,7 +2,8 @@ export type UserRole = "employer" | "candidate" | "admin";
 export type RoleType = "contract" | "c2h" | "full-time";
 export type ExperienceLevel = "junior" | "mid" | "senior" | "lead";
 export type SubmissionType = "pasted_jd" | "manual_form";
-export type JobStatus = "draft" | "active" | "closed";
+export type JobStatus = "draft" | "active" | "paused" | "closed" | "archived";
+export type CompanyMemberRole = "admin" | "recruiter" | "hiring_manager";
 export type MatchStatus =
   | "suggested"
   | "candidate_interested"
@@ -26,14 +27,31 @@ export interface Company {
   website?: string;
   size?: string;
   country: string;
+  logo_url?: string;
+  description?: string;
+  hq_city?: string;
+  industry?: string;
+  remote_culture_statement?: string;
+  domain_verified?: boolean;
+  badge_remote_first?: boolean;
+  badge_visa_sponsor?: boolean;
+  badge_gcc?: boolean;
+  profile_complete?: boolean;
   created_at: string;
   updated_at: string;
 }
+
+export type AvailabilityStatus = "actively_looking" | "open" | "not_looking";
+export type PreferredWorkType = "remote" | "hybrid" | "onsite";
+export type PrivacyVisibility = "public" | "employers_only" | "invite_only";
 
 export interface CandidateProfile {
   id: string;
   user_id: string;
   headline?: string;
+  phone?: string;
+  current_title?: string;
+  years_experience?: number;
   skills: string[];
   role_categories: string[];
   experience_level?: ExperienceLevel;
@@ -42,8 +60,15 @@ export interface CandidateProfile {
   work_authorization?: string;
   us_state?: string;
   remote_preference: string;
+  preferred_work_type?: PreferredWorkType;
   resume_url?: string;
+  github_url?: string;
+  portfolio_url?: string;
+  linkedin_url?: string;
   bio?: string;
+  availability_status?: AvailabilityStatus;
+  privacy_visibility?: PrivacyVisibility;
+  profile_completeness?: number;
   open_to_matching: boolean;
   profile_complete: boolean;
   created_at: string;
@@ -63,6 +88,10 @@ export interface Job {
   work_type: string;
   visa_requirements?: string;
   status: JobStatus;
+  expires_at?: string;
+  jd_quality_score?: number;
+  jd_quality_feedback?: string;
+  featured?: boolean;
   created_at: string;
   updated_at: string;
   companies?: Pick<Company, "name" | "website">;
@@ -117,6 +146,9 @@ export interface RoleSubmissionInput {
 
 export interface CandidateProfileInput {
   headline: string;
+  phone?: string;
+  currentTitle?: string;
+  yearsExperience?: number;
   skills: string;
   roleCategories: string[];
   experienceLevel: ExperienceLevel;
@@ -124,13 +156,25 @@ export interface CandidateProfileInput {
   salaryMax?: number;
   workAuthorization: string;
   usState: string;
+  preferredWorkType: PreferredWorkType;
+  availabilityStatus: AvailabilityStatus;
+  privacyVisibility: PrivacyVisibility;
   bio?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+  linkedinUrl?: string;
+  resumeUrl?: string;
 }
 
 export interface CompanyInput {
   name: string;
   website?: string;
   size?: string;
+  description?: string;
+  hqCity?: string;
+  industry?: string;
+  remoteCultureStatement?: string;
+  logoUrl?: string;
 }
 
 export interface JobInput {
@@ -139,7 +183,10 @@ export interface JobInput {
   roleType: RoleType;
   experienceLevel: ExperienceLevel;
   techStack: string;
-  salaryRange?: string;
-  visaRequirements?: string;
+  salaryRange: string;
+  workType: string;
+  visaRequirements: string;
   pastedJd?: string;
+  status?: JobStatus;
+  publish?: boolean;
 }

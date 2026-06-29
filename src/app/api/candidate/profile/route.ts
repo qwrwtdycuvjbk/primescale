@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseSkills } from "@/lib/matching";
 import { runMatchingForCandidate } from "@/lib/match-runner";
+import { calculateProfileCompleteness } from "@/lib/profile-completeness";
 import type { CandidateProfileInput } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -21,9 +22,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Add at least one skill" }, { status: 400 });
   }
 
+  if (!body.resumeUrl?.trim()) {
+    return NextResponse.json(
+      { error: "Resume upload is required" },
+      { status: 400 },
+    );
+  }
+
+  const completeness = calculateProfileCompleteness(body);
+  const hasRequiredFields =
+    Boolean(body.headline?.trim()) &&
+    Boolean(body.phone?.trim()) &&
+    Boolean(body.currentTitle?.trim()) &&
+    skills.length > 0 &&
+    body.roleCategories.length > 0;
+
+  const isComplete = hasRequiredFields && Boolean(body.resumeUrl?.trim());
+
+  if (body.phone) {
+    await supabase
+      .from("profiles")
+      .update({ phone: body.phone, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+  }
+
   const profileRow = {
     user_id: user.id,
     headline: body.headline,
+    phone: body.phone ?? null,
+    current_title: body.currentTitle ?? null,
+    years_experience: body.yearsExperience ?? null,
     skills,
     role_categories: body.roleCategories,
     experience_level: body.experienceLevel,
@@ -31,10 +59,18 @@ export async function POST(request: Request) {
     salary_max: body.salaryMax ?? null,
     work_authorization: body.workAuthorization,
     us_state: body.usState,
-    remote_preference: "remote",
+    remote_preference: body.preferredWorkType === "remote" ? "remote" : body.preferredWorkType,
+    preferred_work_type: body.preferredWorkType,
+    availability_status: body.availabilityStatus,
+    privacy_visibility: body.privacyVisibility,
+    github_url: body.githubUrl || null,
+    portfolio_url: body.portfolioUrl || null,
+    linkedin_url: body.linkedinUrl || null,
+    resume_url: body.resumeUrl || null,
     bio: body.bio ?? null,
-    open_to_matching: true,
-    profile_complete: true,
+    profile_completeness: completeness,
+    open_to_matching: body.availabilityStatus !== "not_looking",
+    profile_complete: isComplete,
     updated_at: new Date().toISOString(),
   };
 
@@ -71,11 +107,14 @@ export async function POST(request: Request) {
     candidateProfileId = data.id;
   }
 
-  const matchResult = await runMatchingForCandidate(candidateProfileId);
+  const matchResult = isComplete
+    ? await runMatchingForCandidate(candidateProfileId)
+    : { matched: 0 };
 
   return NextResponse.json({
     ok: true,
     candidateProfileId,
+    profileCompleteness: completeness,
     matchesCreated: matchResult.matched,
   });
 }

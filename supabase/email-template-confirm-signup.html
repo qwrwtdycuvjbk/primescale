@@ -1,0 +1,14 @@
+-- Paste this into Supabase: Authentication → Email Templates → Confirm signup
+-- Replaces the default button with a plain clickable link + OTP fallback
+
+/*
+<h2>Confirm your PrimeScale account</h2>
+
+<p>Click the link below to verify your email:</p>
+
+<p><a href="{{ .ConfirmationURL }}">{{ .ConfirmationURL }}</a></p>
+
+<p>Or enter this code on the login page: <strong>{{ .Token }}</strong></p>
+
+<p>If the link does not work, copy the full URL above and paste it into your browser.</p>
+*/

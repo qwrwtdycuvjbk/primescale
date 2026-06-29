@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Eye, Sparkles } from "lucide-react";
 import { EXPERIENCE_LEVELS, ROLE_TYPES } from "@/lib/constants";
+import { isValidSalaryRange } from "@/lib/employer";
+import { parseSkills } from "@/lib/matching";
 import type { ExperienceLevel, JobInput, RoleType } from "@/lib/types";
-import { buttonPrimaryClass, inputClass, labelClass } from "@/lib/ui";
+import {
+  ErrorBanner,
+  FieldLabel,
+  PrimaryButton,
+  SecondaryButton,
+  fieldInputClass,
+} from "@/components/site/form";
 
 const initial: JobInput = {
   title: "",
@@ -13,25 +22,23 @@ const initial: JobInput = {
   experienceLevel: "mid",
   techStack: "",
   salaryRange: "",
+  workType: "remote",
   visaRequirements: "",
-  pastedJd: "",
 };
 
-export function JobPostForm() {
+export function JobPostForm({ companyName }: { companyName: string }) {
   const router = useRouter();
   const [form, setForm] = useState<JobInput>(initial);
   const [pastedJd, setPastedJd] = useState("");
-  const [useDetailed, setUseDetailed] = useState(false);
-  const [status, setStatus] = useState<"idle" | "loading" | "parsing" | "error">(
-    "idle",
-  );
+  const [step, setStep] = useState<"edit" | "preview">("edit");
+  const [status, setStatus] = useState<"idle" | "loading" | "parsing" | "scoring">("idle");
   const [error, setError] = useState("");
+  const [quality, setQuality] = useState<{ score: number; feedback: string } | null>(null);
 
   async function parseJd() {
     if (!pastedJd.trim()) return;
     setStatus("parsing");
     setError("");
-
     try {
       const response = await fetch("/api/jobs/parse", {
         method: "POST",
@@ -39,74 +46,179 @@ export function JobPostForm() {
         body: JSON.stringify({ pastedJd }),
       });
       const data = await response.json();
-
       if (data.parsed) {
         setForm((prev) => ({
           ...prev,
           title: data.parsed.title ?? prev.title,
           description: data.parsed.description ?? pastedJd,
           techStack: (data.parsed.tech_stack ?? []).join(", "),
-          experienceLevel:
-            data.parsed.experience_level ?? prev.experienceLevel,
+          experienceLevel: data.parsed.experience_level ?? prev.experienceLevel,
           roleType: data.parsed.role_type ?? prev.roleType,
           salaryRange: data.parsed.salary_range ?? prev.salaryRange,
         }));
-        setUseDetailed(true);
       } else {
         setForm((prev) => ({ ...prev, description: pastedJd }));
-        setUseDetailed(true);
       }
     } catch {
       setForm((prev) => ({ ...prev, description: pastedJd }));
-      setUseDetailed(true);
     } finally {
       setStatus("idle");
     }
   }
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setStatus("loading");
-    setError("");
+  function validate(): string | null {
+    if (!form.title.trim()) return "Job title is required.";
+    if (!form.description.trim() && !pastedJd.trim()) return "Job description is required.";
+    const skills = parseSkills(form.techStack);
+    if (skills.length < 3) return "Add at least 3 required skills.";
+    if (!form.salaryRange.trim()) return "Salary range is required (no hidden pay).";
+    if (!isValidSalaryRange(form.salaryRange)) {
+      return 'Use a real salary range (e.g. "$120k–$160k"). "Competitive" is not allowed.';
+    }
+    if (!form.visaRequirements.trim()) return "US work eligibility requirements are required.";
+    return null;
+  }
 
-    const description = form.description.trim() || pastedJd.trim();
-    if (!description) {
-      setStatus("error");
-      setError("Add a job description or paste your JD.");
+  async function loadQualityScore() {
+    setStatus("scoring");
+    const skills = parseSkills(form.techStack);
+    const response = await fetch("/api/jobs/quality", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: form.title,
+        description: form.description || pastedJd,
+        tech_stack: skills,
+        salary_range: form.salaryRange,
+        visa_requirements: form.visaRequirements,
+      }),
+    });
+    const data = await response.json();
+    setQuality(data.quality ?? { score: 70, feedback: "Review salary, skills, and eligibility before publishing." });
+    setStatus("idle");
+  }
+
+  async function goToPreview() {
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
+    setError("");
+    setStep("preview");
+    await loadQualityScore();
+  }
 
+  async function submit(publish: boolean) {
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setStatus("loading");
+    setError("");
     try {
       const response = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, description, pastedJd }),
+        body: JSON.stringify({
+          ...form,
+          description: form.description.trim() || pastedJd.trim(),
+          publish,
+          jdQualityScore: quality?.score,
+          jdQualityFeedback: quality?.feedback,
+        }),
       });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Failed to post job");
-      }
-
-      router.push("/employer");
+      if (!response.ok) throw new Error(data.error ?? "Failed to save job");
+      router.push("/employer/jobs");
       router.refresh();
     } catch (err) {
-      setStatus("error");
+      setStatus("idle");
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
 
+  if (step === "preview") {
+    const skills = parseSkills(form.techStack);
+    return (
+      <div className="space-y-6">
+        <button
+          type="button"
+          onClick={() => setStep("edit")}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to edit
+        </button>
+
+        <div className="rounded-3xl border border-border bg-card p-8">
+          <p className="text-sm text-muted-foreground">Candidate preview</p>
+          <h2 className="display-headline mt-2 text-3xl">{form.title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{companyName}</p>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {skills.map((s) => (
+              <span key={s} className="rounded-full border border-border px-3 py-1 text-xs">
+                {s}
+              </span>
+            ))}
+          </div>
+
+          <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">Salary</dt>
+              <dd className="font-medium">{form.salaryRange}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Work type</dt>
+              <dd className="font-medium capitalize">{form.workType}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">US eligibility</dt>
+              <dd className="font-medium">{form.visaRequirements}</dd>
+            </div>
+          </dl>
+
+          <div className="mt-6 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+            {form.description || pastedJd}
+          </div>
+        </div>
+
+        {quality && (
+          <div className="rounded-2xl border border-border bg-muted/40 p-5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium">AI quality score: {quality.score}/100</p>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">{quality.feedback}</p>
+          </div>
+        )}
+
+        {error && <ErrorBanner message={error} />}
+
+        <div className="flex flex-wrap gap-3">
+          <SecondaryButton type="button" onClick={() => submit(false)} disabled={status === "loading"}>
+            Save as draft
+          </SecondaryButton>
+          <PrimaryButton type="button" onClick={() => submit(true)} disabled={status === "loading"}>
+            {status === "loading" ? "Publishing..." : "Publish job"}
+            <ArrowRight className="h-4 w-4" />
+          </PrimaryButton>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
       <div>
-        <label htmlFor="pastedJd" className={labelClass}>
-          Paste job description (AI-assisted)
-        </label>
+        <FieldLabel htmlFor="pastedJd">Paste job description (AI-assisted)</FieldLabel>
         <textarea
           id="pastedJd"
-          rows={6}
-          className={inputClass}
-          placeholder="Paste your full JD here..."
+          rows={5}
+          className={fieldInputClass}
+          placeholder="Paste your full JD..."
           value={pastedJd}
           onChange={(e) => setPastedJd(e.target.value)}
         />
@@ -114,156 +226,122 @@ export function JobPostForm() {
           type="button"
           onClick={parseJd}
           disabled={status === "parsing" || !pastedJd.trim()}
-          className="mt-3 text-sm font-medium text-teal-600 hover:text-teal-500"
+          className="mt-2 text-sm font-medium text-primary hover:opacity-80"
         >
           {status === "parsing" ? "Parsing..." : "Parse with AI"}
         </button>
       </div>
 
-      {!useDetailed && (
-        <button
-          type="button"
-          onClick={() => setUseDetailed(true)}
-          className="text-sm font-medium text-slate-600 hover:text-slate-900"
-        >
-          Or fill in details manually
-        </button>
-      )}
+      <div>
+        <FieldLabel htmlFor="title">Job title</FieldLabel>
+        <input
+          id="title"
+          required
+          className={fieldInputClass}
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
+      </div>
 
-      {useDetailed && (
-        <>
-          <div>
-            <label htmlFor="title" className={labelClass}>
-              Job title
-            </label>
-            <input
-              id="title"
-              required
-              className={inputClass}
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-          </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <FieldLabel htmlFor="roleType">Engagement type</FieldLabel>
+          <select
+            id="roleType"
+            className={fieldInputClass}
+            value={form.roleType}
+            onChange={(e) => setForm({ ...form, roleType: e.target.value as RoleType })}
+          >
+            {ROLE_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <FieldLabel htmlFor="experienceLevel">Experience level</FieldLabel>
+          <select
+            id="experienceLevel"
+            className={fieldInputClass}
+            value={form.experienceLevel}
+            onChange={(e) =>
+              setForm({ ...form, experienceLevel: e.target.value as ExperienceLevel })
+            }
+          >
+            {EXPERIENCE_LEVELS.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="roleType" className={labelClass}>
-                Engagement type
-              </label>
-              <select
-                id="roleType"
-                className={inputClass}
-                value={form.roleType}
-                onChange={(e) =>
-                  setForm({ ...form, roleType: e.target.value as RoleType })
-                }
-              >
-                {ROLE_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div>
+        <FieldLabel htmlFor="techStack">Skills required (min. 3, comma-separated)</FieldLabel>
+        <input
+          id="techStack"
+          required
+          className={fieldInputClass}
+          placeholder="Python, AWS, Kubernetes"
+          value={form.techStack}
+          onChange={(e) => setForm({ ...form, techStack: e.target.value })}
+        />
+      </div>
 
-            <div>
-              <label htmlFor="experienceLevel" className={labelClass}>
-                Experience level
-              </label>
-              <select
-                id="experienceLevel"
-                className={inputClass}
-                value={form.experienceLevel}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    experienceLevel: e.target.value as ExperienceLevel,
-                  })
-                }
-              >
-                {EXPERIENCE_LEVELS.map((level) => (
-                  <option key={level.value} value={level.value}>
-                    {level.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <FieldLabel htmlFor="salaryRange">Salary range (required)</FieldLabel>
+          <input
+            id="salaryRange"
+            required
+            className={fieldInputClass}
+            placeholder="$120,000–$160,000"
+            value={form.salaryRange}
+            onChange={(e) => setForm({ ...form, salaryRange: e.target.value })}
+          />
+        </div>
+        <div>
+          <FieldLabel htmlFor="workType">Work type</FieldLabel>
+          <select
+            id="workType"
+            className={fieldInputClass}
+            value={form.workType}
+            onChange={(e) => setForm({ ...form, workType: e.target.value })}
+          >
+            <option value="remote">Remote (US)</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="onsite">On-site</option>
+          </select>
+        </div>
+      </div>
 
-          <div>
-            <label htmlFor="techStack" className={labelClass}>
-              Tech stack (comma-separated)
-            </label>
-            <input
-              id="techStack"
-              required
-              className={inputClass}
-              value={form.techStack}
-              onChange={(e) => setForm({ ...form, techStack: e.target.value })}
-            />
-          </div>
+      <div>
+        <FieldLabel htmlFor="description">Role description</FieldLabel>
+        <textarea
+          id="description"
+          rows={6}
+          className={fieldInputClass}
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+        />
+      </div>
 
-          <div>
-            <label htmlFor="salaryRange" className={labelClass}>
-              Salary range (optional)
-            </label>
-            <input
-              id="salaryRange"
-              className={inputClass}
-              placeholder="$120k–$160k"
-              value={form.salaryRange ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, salaryRange: e.target.value })
-              }
-            />
-          </div>
+      <div>
+        <FieldLabel htmlFor="visaRequirements">US work eligibility requirements</FieldLabel>
+        <input
+          id="visaRequirements"
+          required
+          className={fieldInputClass}
+          placeholder="US citizens and green card holders"
+          value={form.visaRequirements}
+          onChange={(e) => setForm({ ...form, visaRequirements: e.target.value })}
+        />
+      </div>
 
-          <div>
-            <label htmlFor="description" className={labelClass}>
-              Role description
-            </label>
-            <textarea
-              id="description"
-              required
-              rows={5}
-              className={inputClass}
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </div>
+      {error && <ErrorBanner message={error} />}
 
-          <div>
-            <label htmlFor="visaRequirements" className={labelClass}>
-              Visa / work authorization requirements
-            </label>
-            <input
-              id="visaRequirements"
-              className={inputClass}
-              placeholder="US citizens and green card holders only"
-              value={form.visaRequirements ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, visaRequirements: e.target.value })
-              }
-            />
-          </div>
-        </>
-      )}
-
-      {error && (
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={status === "loading" || status === "parsing"}
-        className={buttonPrimaryClass}
-      >
-        {status === "loading" ? "Posting..." : "Post role and find matches"}
-      </button>
-    </form>
+      <PrimaryButton type="button" onClick={goToPreview} disabled={status === "parsing"}>
+        <Eye className="h-4 w-4" />
+        Preview before publishing
+      </PrimaryButton>
+    </div>
   );
 }
