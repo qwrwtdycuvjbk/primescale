@@ -11,8 +11,8 @@ export default async function EmployerLoginPage() {
   return (
     <AuthShell
       audience="employer"
-      title="Hire faster."
-      description="Post US remote tech roles, get AI-matched candidates, and shortlist from your dashboard — with People Prime as your staffing backstop."
+      title="Post your first role."
+      description="Create your employer account to post US remote tech roles and get matched candidates in your dashboard."
     >
       <Suspense
         fallback={
