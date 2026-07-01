@@ -34,7 +34,7 @@ export function ForEmployers() {
         </ul>
 
         <Link
-          href="/auth/signup?role=employer"
+          href="/auth/employer/signup"
           className="mt-10 inline-flex rounded-full bg-teal-500 px-8 py-4 text-base font-semibold text-slate-950 transition hover:bg-teal-400"
         >
           Post a role for free

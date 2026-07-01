@@ -66,14 +66,14 @@ export function SiteFooter() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/auth/signup?role=employer"
+              href="/auth/employer/signup"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
             >
               Post a role
               <ArrowUpRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/auth/signup?role=candidate"
+              href="/auth/candidate/signup"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-3.5 text-sm font-semibold transition-colors hover:bg-white/5"
             >
               Get matched

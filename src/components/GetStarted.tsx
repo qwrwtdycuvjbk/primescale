@@ -24,7 +24,7 @@ export function GetStarted() {
               dashboard.
             </p>
             <Link
-              href="/auth/signup?role=employer"
+              href="/auth/employer/signup"
               className="mt-6 inline-flex rounded-full bg-teal-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-teal-400"
             >
               Post a role
@@ -40,7 +40,7 @@ export function GetStarted() {
               roles.
             </p>
             <Link
-              href="/auth/signup?role=candidate"
+              href="/auth/candidate/signup"
               className="mt-6 inline-flex rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Get matched

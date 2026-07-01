@@ -1,11 +1,23 @@
+import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/site/site-header";
 import { Hero } from "@/components/site/hero";
 import { Marquee } from "@/components/site/marquee";
-import { HowItWorks } from "@/components/site/how-it-works";
-import { WhyUs } from "@/components/site/why-us";
-import { AudienceBlock } from "@/components/site/audience-block";
-import { GetStarted } from "@/components/site/get-started";
-import { SiteFooter } from "@/components/site/site-footer";
+
+const HowItWorks = dynamic(() =>
+  import("@/components/site/how-it-works").then((mod) => mod.HowItWorks),
+);
+const WhyUs = dynamic(() =>
+  import("@/components/site/why-us").then((mod) => mod.WhyUs),
+);
+const AudienceBlock = dynamic(() =>
+  import("@/components/site/audience-block").then((mod) => mod.AudienceBlock),
+);
+const GetStarted = dynamic(() =>
+  import("@/components/site/get-started").then((mod) => mod.GetStarted),
+);
+const SiteFooter = dynamic(() =>
+  import("@/components/site/site-footer").then((mod) => mod.SiteFooter),
+);
 
 const marqueeItems = [
   "AI / ML",
@@ -45,7 +57,7 @@ export default function Home() {
           "Shortlist candidates from your dashboard",
         ]}
         ctaLabel="Post a role for free"
-        ctaHref="/auth/signup?role=employer"
+        ctaHref="/auth/employer/signup"
       />
 
       <AudienceBlock
@@ -62,7 +74,7 @@ export default function Home() {
           "Mark roles you are interested in",
         ]}
         ctaLabel="Create your profile"
-        ctaHref="/auth/signup?role=candidate"
+        ctaHref="/auth/candidate/signup"
         reverse
       />
 

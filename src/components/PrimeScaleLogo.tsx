@@ -2,7 +2,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type PrimeScaleLogoProps = {
-  /** `light` = white logo for dark backgrounds; `dark` = black logo for light backgrounds */
+  /** `light` = white logo for dark backgrounds; `dark` = navy logo for light backgrounds */
   variant?: "light" | "dark";
   className?: string;
   priority?: boolean;
@@ -15,16 +15,12 @@ export function PrimeScaleLogo({
 }: PrimeScaleLogoProps) {
   return (
     <Image
-      src="/primescale-logo.png"
+      src={variant === "light" ? "/primescale-logo.png" : "/primescale-logo-dark.png"}
       alt="PrimeScale"
-      width={180}
-      height={52}
+      width={377}
+      height={218}
       priority={priority}
-      className={cn(
-        "h-10 w-auto sm:h-11",
-        variant === "dark" && "brightness-0",
-        className,
-      )}
+      className={cn("h-11 w-auto sm:h-12", className)}
     />
   );
 }

@@ -30,7 +30,7 @@ export function Header() {
             Log in
           </Link>
           <Link
-            href="/auth/signup?role=employer"
+            href="/auth/employer/signup"
             className="rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-400"
           >
             Post a role

@@ -34,7 +34,7 @@ export function ForCandidates() {
         </ul>
 
         <Link
-          href="/auth/signup?role=candidate"
+          href="/auth/candidate/signup"
           className="mt-10 inline-flex rounded-full bg-slate-900 px-8 py-4 text-base font-semibold text-white transition hover:bg-slate-800"
         >
           Create your profile

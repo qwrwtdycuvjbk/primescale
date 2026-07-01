@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
 
@@ -25,12 +24,7 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <motion.header
-      initial={{ y: -80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="fixed inset-x-0 top-0 z-50"
-    >
+    <header className="animate-header-in fixed inset-x-0 top-0 z-50">
       <div
         className={`mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 transition-all duration-300 sm:px-6 ${
           scrolled
@@ -62,7 +56,7 @@ export function SiteHeader() {
             Log in
           </Link>
           <Link
-            href="/auth/signup?role=employer"
+            href="/auth/employer/signup"
             className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
           >
             Post a role
@@ -80,11 +74,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-2 mt-1 rounded-2xl border border-white/10 bg-ink/95 p-4 backdrop-blur-md md:hidden"
-        >
+        <div className="animate-menu-in mx-2 mt-1 rounded-2xl border border-white/10 bg-ink/95 p-4 backdrop-blur-md md:hidden">
           <nav className="flex flex-col gap-1">
             {navLinks.map((link) => (
               <a
@@ -104,15 +94,15 @@ export function SiteHeader() {
                 Log in
               </Link>
               <Link
-                href="/auth/signup?role=employer"
+                href="/auth/employer/signup"
                 className="rounded-full bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground"
               >
                 Post a role
               </Link>
             </div>
           </nav>
-        </motion.div>
+        </div>
       )}
-    </motion.header>
+    </header>
   );
 }

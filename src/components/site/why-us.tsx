@@ -1,17 +1,17 @@
 import { Reveal, Stagger, StaggerItem } from "./reveal";
-import { Gauge, ShieldCheck, Sparkles, Users } from "lucide-react";
+import {
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Wallet,
+} from "lucide-react";
 
 const features = [
   {
-    icon: Gauge,
-    title: "Fast by design",
-    body: "Smart matching means less time sorting résumés and more time talking to the right people. Matched talent in as little as 24 hours.",
-    big: true,
-  },
-  {
     icon: ShieldCheck,
     title: "Pre-vetted talent",
-    body: "Every candidate is screened before they reach you. Interview-ready engineers across AI, Cloud, Data, DevOps, and Cybersecurity.",
+    body: "Every candidate is screened before they reach you — interview-ready engineers across AI, Cloud, Data, DevOps, and Cybersecurity.",
   },
   {
     icon: Sparkles,
@@ -20,8 +20,18 @@ const features = [
   },
   {
     icon: Users,
-    title: "People Prime backstop",
-    body: "14+ years of staffing experience, 50,000+ deployments, and full lifecycle support from sourcing to onboarding.",
+    title: "People Prime",
+    body: "14+ years of experience and 50,000+ successful deployments. Your staffing backstop with flexible Contract and C2H models.",
+  },
+  {
+    icon: Wallet,
+    title: "Payroll & compliance included",
+    body: "We handle payroll and compliance end to end — so you focus on hiring great engineers, not back-office overhead.",
+  },
+  {
+    icon: Rocket,
+    title: "Onboarding",
+    body: "Full onboarding support from offer through start. Sourcing, screening, and ramp-up handled by People Prime.",
   },
 ];
 
@@ -48,39 +58,18 @@ export function WhyUs() {
 
         <Stagger className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, i) => (
-            <StaggerItem
-              key={feature.title}
-              className={feature.big ? "lg:col-span-1 lg:row-span-2" : ""}
-            >
-              <div
-                className={`group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 transition-colors hover:border-primary/50 ${
-                  feature.big ? "lg:bg-ink lg:text-ink-foreground" : ""
-                }`}
-              >
-                <span className="font-mono text-xs text-primary">0{i + 1}</span>
-                <span
-                  className={`mt-6 flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-                    feature.big
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground group-hover:bg-primary group-hover:text-primary-foreground"
-                  }`}
-                >
+            <StaggerItem key={feature.title}>
+              <div className="group flex h-full flex-col rounded-3xl border border-border bg-card p-7 transition-colors hover:border-primary/50">
+                <span className="font-mono text-xs text-primary">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                   <feature.icon className="h-6 w-6" />
                 </span>
-                <h3
-                  className={`display-headline mt-auto pt-10 ${
-                    feature.big ? "text-3xl sm:text-4xl" : "text-2xl"
-                  }`}
-                >
+                <h3 className="display-headline mt-auto pt-10 text-2xl">
                   {feature.title}
                 </h3>
-                <p
-                  className={`mt-3 text-pretty leading-relaxed ${
-                    feature.big
-                      ? "text-ink-muted lg:text-base"
-                      : "text-sm text-muted-foreground"
-                  }`}
-                >
+                <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
                   {feature.body}
                 </p>
               </div>

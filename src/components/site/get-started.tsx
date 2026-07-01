@@ -14,7 +14,7 @@ const cards = [
       "Shortlist from one dashboard",
     ],
     cta: "Post a role",
-    href: "/auth/signup?role=employer",
+    href: "/auth/employer/signup",
     accent: true,
   },
   {
@@ -28,7 +28,7 @@ const cards = [
       "Mark roles you're interested in",
     ],
     cta: "Get matched",
-    href: "/auth/signup?role=candidate",
+    href: "/auth/candidate/signup",
     accent: false,
   },
 ];
