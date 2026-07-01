@@ -1,87 +1,16 @@
 import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { Check } from "lucide-react";
 
-const green = "#9CB86A";
-
-function CandidateShortlistIcon() {
-  return (
-    <svg width="88" height="52" viewBox="0 0 88 52" fill="none" aria-hidden>
-      <circle cx="22" cy="30" r="14" fill={green} fillOpacity="0.35" stroke={green} strokeWidth="1.5" />
-      <path
-        d="M22 17.5c-4.2 0-7.5 3.2-7.5 7.2 0 2.4.9 4.6 2.4 6.2.8.9 1.2 2.2 1.2 3.5v2.1c0 .8.7 1.5 1.5 1.5h5.2c.8 0 1.5-.7 1.5-1.5v-2.1c0-1.3.4-2.6 1.2-3.5 1.5-1.6 2.4-3.8 2.4-6.2 0-4-3.3-7.2-7.5-7.2Z"
-        fill="#FFF"
-      />
-      <ellipse cx="22" cy="36.5" rx="7" ry="3.5" fill={green} />
-      <circle cx="44" cy="26" r="18" fill={green} stroke={green} strokeWidth="2" />
-      <circle cx="44" cy="21" r="7" fill="#FFF" />
-      <path d="M36.5 29.5c2.2 3.8 13.8 3.8 16 0v4.5h-16v-4.5Z" fill="#FFF" />
-      <ellipse cx="44" cy="36" rx="10" ry="5" fill={green} />
-      <circle cx="66" cy="30" r="14" fill={green} fillOpacity="0.35" stroke={green} strokeWidth="1.5" />
-      <circle cx="66" cy="25" r="5" fill="#FFF" />
-      <path d="M61.5 28.5c0-2.2 9-2.2 9 0v3.5h-9v-3.5Z" fill="#FFF" />
-      <ellipse cx="66" cy="36" rx="7" ry="4" fill={green} />
-    </svg>
-  );
-}
-
-const stepsData = [
-  {
-    number: "1",
-    title: "First, build your company profile.",
-    description:
-      "Highlight your company's values and culture to attract the right fit.",
-    icon: (
-      <div className="w-[7.5rem] rounded-lg border border-white/10 bg-white/[0.04] p-2 shadow-lg">
-        <div className="mb-2 flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-        </div>
-        <p className="text-[8px] font-medium text-ink-foreground">Company Profile</p>
-        <div className="mt-2 flex gap-2">
-          <div className="h-7 w-7 shrink-0 rounded-sm bg-primary/80" />
-          <div className="flex-1 space-y-1">
-            <div className="h-1 w-full rounded bg-white/15" />
-            <div className="h-1 w-4/5 rounded bg-white/10" />
-            <div className="h-1 w-3/5 rounded bg-white/10" />
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    number: "2",
-    title: "Then, post your open tech role.",
-    description: "Input role details and requirements in under 10 minutes.",
-    icon: (
-      <div className="relative w-[7.5rem]">
-        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2.5 shadow-lg">
-          <p className="text-[8px] font-medium text-ink-foreground">Job description</p>
-          <div className="mt-2 space-y-1">
-            <div className="h-1 w-full rounded bg-white/15" />
-            <div className="h-1 w-11/12 rounded bg-white/10" />
-            <div className="h-1 w-4/5 rounded bg-white/10" />
-            <div className="h-1 w-full rounded bg-white/10" />
-          </div>
-        </div>
-        <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-          +
-        </span>
-      </div>
-    ),
-  },
-  {
-    number: "3",
-    title: "Third, get a shortlist of hand-picked candidates in under 24 hours.",
-    description:
-      "Receive pre-vetted, AI-matched applicants directly in your dashboard.",
-    icon: <CandidateShortlistIcon />,
-  },
+const benefits = [
+  "Post US remote tech roles — free",
+  "AI-matched candidates in 24 hours",
+  "Backed by 14+ years of staffing expertise",
 ];
 
 const stats = [
   { stat: "50k+", label: "Deployments" },
   { stat: "24h", label: "To matches" },
-  { stat: "14+", label: "Years experience" },
+  { stat: "14+", label: "Years" },
 ];
 
 export function EmployerAuthPanel({
@@ -92,51 +21,42 @@ export function EmployerAuthPanel({
   description: string;
 }) {
   return (
-    <div className="relative flex h-full w-full flex-col justify-between gap-8 py-2">
+    <div className="relative flex h-full w-full flex-col justify-between py-8">
       <div className="pointer-events-none absolute -left-20 top-0 h-80 w-80 rounded-full bg-primary/20 blur-[120px]" />
 
       <div className="relative">
-        <PrimeScaleLogo className="relative" />
+        <PrimeScaleLogo className="relative h-10" />
 
-        <h1 className="display-headline mt-8 text-5xl">{title}</h1>
-        <p className="hero-subtitle-selector mt-6 max-w-md text-lg leading-relaxed text-ink-muted">
+        <h1 className="display-headline mt-10 text-4xl sm:text-5xl">{title}</h1>
+        <p className="mt-4 max-w-sm text-base leading-relaxed text-ink-muted">
           {description}
         </p>
 
-        <ol className="steps-container mt-10 flex flex-col gap-6 px-2.5">
-          {stepsData.map((step) => (
-            <li
-              key={step.number}
-              className="flex items-center justify-between gap-4"
-            >
-              <div className="flex max-w-[75%] items-start gap-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#A3E635] text-base font-bold text-black">
-                  {step.number}
-                </span>
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-lg font-semibold leading-snug text-ink-foreground">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm leading-normal text-ink-muted">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-              <div className="hidden shrink-0 sm:block">{step.icon}</div>
+        <ul className="mt-8 space-y-3">
+          {benefits.map((benefit) => (
+            <li key={benefit} className="flex items-center gap-3">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                <Check className="h-3 w-3 text-primary" />
+              </span>
+              <span className="text-sm text-ink-foreground">{benefit}</span>
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
 
-      <div className="border-t border-white/10 pt-8">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="relative border-t border-white/10 pt-6">
+        <div className="flex gap-6">
           {stats.map((item) => (
             <div key={item.label}>
-              <p className="display-headline text-3xl text-primary">{item.stat}</p>
-              <p className="mt-1 text-xs text-ink-muted">{item.label}</p>
+              <p className="text-xl font-bold text-primary">{item.stat}</p>
+              <p className="text-xs text-ink-muted">{item.label}</p>
             </div>
           ))}
         </div>
+
+        <p className="mt-4 text-xs text-ink-muted">
+          By People Prime Worldwide
+        </p>
       </div>
     </div>
   );
