@@ -143,6 +143,3 @@ export function EmployerAuthPanel({
     </div>
   );
 }
-
-
-export { EmployerAuthPanel }

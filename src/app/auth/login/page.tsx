@@ -3,10 +3,22 @@ import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { getSessionProfile } from "@/lib/auth";
+import { formatAuthErrorMessage } from "@/lib/auth-errors";
+import { ErrorBanner } from "@/components/site/form";
 
-export default async function LoginChooserPage() {
+export default async function LoginChooserPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; details?: string }>;
+}) {
   const { user } = await getSessionProfile();
   if (user) redirect("/auth/redirect");
+
+  const params = await searchParams;
+  const authErrorMessage = formatAuthErrorMessage(
+    params.error,
+    params.details,
+  );
 
   return (
     <AuthShell
@@ -14,6 +26,8 @@ export default async function LoginChooserPage() {
       description="Choose how you use PrimeScale — employers post roles, candidates get matched to US remote tech opportunities."
     >
       <div className="w-full space-y-4">
+        {authErrorMessage && <ErrorBanner message={authErrorMessage} />}
+
         <Link
           href="/auth/employer/login"
           className="flex items-center justify-between rounded-2xl border border-border bg-card px-6 py-5 transition hover:border-foreground/20"

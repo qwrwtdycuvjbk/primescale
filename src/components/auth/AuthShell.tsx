@@ -14,7 +14,7 @@ export function AuthShell({
   return (
     <div className="min-h-screen bg-background lg:grid lg:min-h-screen lg:grid-cols-2">
       <div
-        className={`noise relative hidden h-dvh max-h-dvh overflow-hidden bg-ink px-10 py-8 text-ink-foreground lg:flex ${
+        className={`noise relative hidden h-dvh max-h-dvh overflow-y-auto bg-ink px-10 py-8 text-ink-foreground lg:flex ${
           audience === "employer" ? "lg:w-full" : "lg:items-center"
         }`}
       >

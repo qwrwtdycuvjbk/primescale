@@ -4,19 +4,16 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ensureProfileForUser } from "@/lib/ensure-profile";
+import { authLoginPathWithError } from "@/lib/auth-errors";
+import { safeAuthNextPath } from "@/lib/supabase/auth-route";
 import type { UserRole } from "@/lib/types";
 
-function safeNextPath(next: string | null) {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/auth/redirect";
-  }
-  return next;
-}
-
-function redirectToLogin(error: string, details?: string) {
-  const params = new URLSearchParams({ error });
-  if (details) params.set("details", details);
-  window.location.assign(`/auth/login?${params.toString()}`);
+function redirectToLogin(
+  error: string,
+  details?: string,
+  role?: Extract<UserRole, "employer" | "candidate"> | null,
+) {
+  window.location.assign(authLoginPathWithError(error, details, role));
 }
 
 export function AuthCallbackClient() {
@@ -29,18 +26,16 @@ export function AuthCallbackClient() {
     async function finish() {
       const supabase = createClient();
       const code = searchParams.get("code");
-      const next = safeNextPath(searchParams.get("next"));
+      const next = safeAuthNextPath(searchParams.get("next"));
       const roleParam = searchParams.get("role");
-      const preferredRole =
-        roleParam === "employer" || roleParam === "candidate"
-          ? (roleParam as UserRole)
-          : null;
+      const preferredRole: Extract<UserRole, "employer" | "candidate"> | null =
+        roleParam === "employer" || roleParam === "candidate" ? roleParam : null;
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           if (!cancelled) {
-            redirectToLogin("confirmation_failed", error.message);
+            redirectToLogin("confirmation_failed", error.message, preferredRole);
           }
           return;
         }
@@ -48,7 +43,7 @@ export function AuthCallbackClient() {
         const { data, error } = await supabase.auth.getSession();
         if (error || !data.session) {
           if (!cancelled) {
-            redirectToLogin("session_missing", error?.message);
+            redirectToLogin("session_missing", error?.message, preferredRole);
           }
           return;
         }
@@ -61,7 +56,7 @@ export function AuthCallbackClient() {
 
       if (userError || !user) {
         if (!cancelled) {
-          redirectToLogin("session_missing", userError?.message);
+          redirectToLogin("session_missing", userError?.message, preferredRole);
         }
         return;
       }
@@ -74,7 +69,7 @@ export function AuthCallbackClient() {
             profileError instanceof Error
               ? profileError.message
               : "Could not create profile";
-          redirectToLogin("profile_missing", details);
+          redirectToLogin("profile_missing", details, preferredRole);
         }
         return;
       }

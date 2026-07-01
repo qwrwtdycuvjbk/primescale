@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/lib/types";
+import { formatAuthErrorMessage } from "@/lib/auth-errors";
 import {
   ErrorBanner,
   FieldLabel,
@@ -71,10 +72,7 @@ export function AuthForm({
     const destination = encodeURIComponent(
       mode === "signup" ? getSignupNext() : getLoginNext(),
     );
-    let url = `${window.location.origin}/auth/callback?next=${destination}`;
-    if (mode === "signup") {
-      url += `&role=${role}`;
-    }
+    let url = `${window.location.origin}/auth/callback?next=${destination}&role=${role}`;
     return url;
   }
 
@@ -166,13 +164,7 @@ export function AuthForm({
 
   const authError = searchParams.get("error");
   const authDetails = searchParams.get("details");
-
-  const errorMessages: Record<string, string> = {
-    confirmation_failed: "Google sign-in could not be completed.",
-    session_missing: "Your session expired. Please log in again.",
-    profile_missing: "We could not set up your account profile.",
-    missing_code: "Google did not return a sign-in code. Check Supabase redirect URLs.",
-  };
+  const authErrorMessage = formatAuthErrorMessage(authError, authDetails);
 
   if (awaitingEmail) {
     return (
@@ -275,15 +267,7 @@ export function AuthForm({
           </div>
         )}
 
-        {authError && errorMessages[authError] && (
-          <ErrorBanner
-            message={
-              authDetails
-                ? `${errorMessages[authError]} (${authDetails})`
-                : errorMessages[authError]
-            }
-          />
-        )}
+        {authErrorMessage && <ErrorBanner message={authErrorMessage} />}
 
         {message && <ErrorBanner message={message} />}
 
