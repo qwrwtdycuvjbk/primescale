@@ -17,7 +17,10 @@ export function EmployerMatchCard({ match }: { match: Match }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ matchId: match.id, status: newStatus }),
       });
-      if (response.ok) setStatus(newStatus);
+      if (response.ok) {
+        const data = (await response.json()) as { status?: MatchStatus };
+        setStatus(data.status ?? newStatus);
+      }
     } finally {
       setLoading(false);
     }
@@ -25,17 +28,39 @@ export function EmployerMatchCard({ match }: { match: Match }) {
 
   const candidate = match.candidate_profiles;
   const name = candidate?.profiles?.full_name ?? "Candidate";
+  const jobTitle = match.jobs?.title;
+
+  const meta = [
+    candidate?.current_title,
+    candidate?.experience_level
+      ? `${candidate.experience_level} level`
+      : null,
+    candidate?.years_experience != null
+      ? `${candidate.years_experience} yrs exp`
+      : null,
+    candidate?.work_authorization,
+    candidate?.us_state,
+    candidate?.remote_preference,
+  ].filter(Boolean);
 
   return (
     <article className="rounded-3xl border border-border bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
+          {jobTitle && (
+            <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              For {jobTitle}
+            </p>
+          )}
           <p className="font-mono text-xs uppercase tracking-widest text-primary">
             {match.match_score}% match
           </p>
           <h3 className="display-headline mt-2 text-2xl">{name}</h3>
           {candidate?.headline && (
             <p className="mt-1 text-sm text-muted-foreground">{candidate.headline}</p>
+          )}
+          {meta.length > 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">{meta.join(" · ")}</p>
           )}
         </div>
         <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium capitalize">
@@ -54,7 +79,39 @@ export function EmployerMatchCard({ match }: { match: Match }) {
           ))}
         </div>
       )}
-      {status !== "rejected" && status !== "employer_shortlisted" && (
+      {(candidate?.linkedin_url || candidate?.github_url) && (
+        <div className="mt-4 flex flex-wrap gap-4 text-sm">
+          {candidate.linkedin_url && (
+            <a
+              href={candidate.linkedin_url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              LinkedIn
+            </a>
+          )}
+          {candidate.github_url && (
+            <a
+              href={candidate.github_url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              GitHub
+            </a>
+          )}
+        </div>
+      )}
+      {status === "mutual_fit" && (
+        <p className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-foreground">
+          Mutual fit confirmed. People Prime is coordinating an intro with this
+          candidate.
+        </p>
+      )}
+      {status !== "rejected" &&
+        status !== "employer_shortlisted" &&
+        status !== "mutual_fit" && (
         <div className="mt-6 flex gap-3">
           <PrimaryButton type="button" disabled={loading} onClick={() => updateStatus("employer_shortlisted")}>
             Shortlist

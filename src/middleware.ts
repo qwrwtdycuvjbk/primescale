@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedPrefixes = ["/employer", "/candidate"];
+const protectedPrefixes = ["/employer", "/candidate", "/admin"];
 const authExchangePaths = ["/auth/callback", "/auth/confirm"];
 
 export async function middleware(request: NextRequest) {
@@ -11,22 +11,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isProtected = protectedPrefixes.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-
-  if (!isProtected) {
-    return NextResponse.next();
-  }
-
-  let supabaseResponse = NextResponse.next({ request });
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return supabaseResponse;
+    return NextResponse.next();
   }
+
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
@@ -49,11 +41,19 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  const isProtected = protectedPrefixes.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+
+  if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = pathname.startsWith("/employer")
-      ? "/auth/employer/login"
-      : "/auth/candidate/login";
+    if (pathname.startsWith("/admin")) {
+      loginUrl.pathname = "/auth/employer/login";
+    } else {
+      loginUrl.pathname = pathname.startsWith("/employer")
+        ? "/auth/employer/login"
+        : "/auth/candidate/login";
+    }
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -62,5 +62,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/employer/:path*", "/candidate/:path*"],
+  matcher: ["/auth/:path*", "/admin/:path*", "/candidate/:path*", "/employer/:path*"],
 };

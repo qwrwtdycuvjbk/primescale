@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyRecruitersJobPosted } from "@/lib/job-notifications";
 import { defaultJobExpiry } from "@/lib/employer";
 import { runMatchingForJob } from "@/lib/match-runner";
 import type { JobStatus } from "@/lib/types";
@@ -40,6 +41,7 @@ export async function PATCH(
   }
 
   if (status === "active") {
+    await notifyRecruitersJobPosted(id);
     await runMatchingForJob(id);
   }
 

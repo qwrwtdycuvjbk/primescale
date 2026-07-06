@@ -8,7 +8,10 @@ export type MatchStatus =
   | "suggested"
   | "candidate_interested"
   | "employer_shortlisted"
+  | "mutual_fit"
   | "rejected";
+
+export type HandoffStatus = "pending" | "contacted" | "intro_made" | "closed";
 
 export interface Profile {
   id: string;
@@ -104,11 +107,32 @@ export interface Match {
   match_score: number;
   match_reason?: string;
   status: MatchStatus;
+  visible_to_employer?: boolean;
+  recruiter_notified_at?: string;
   created_at: string;
   updated_at: string;
   jobs?: Job;
   candidate_profiles?: CandidateProfile & {
-    profiles?: Pick<Profile, "full_name" | "email">;
+    profiles?: Pick<Profile, "full_name" | "email" | "phone">;
+  };
+}
+
+export interface HandoffRequest {
+  id: string;
+  match_id: string;
+  status: HandoffStatus;
+  notes?: string;
+  notified_at?: string;
+  created_at: string;
+  updated_at: string;
+  matches?: Match & {
+    jobs?: Job & {
+      companies?: Pick<Company, "name" | "website">;
+      profiles?: Pick<Profile, "full_name" | "email" | "phone">;
+    };
+    candidate_profiles?: CandidateProfile & {
+      profiles?: Pick<Profile, "full_name" | "email" | "phone">;
+    };
   };
 }
 

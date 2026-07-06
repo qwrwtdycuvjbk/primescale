@@ -34,7 +34,7 @@ export default async function CandidateOnboardingPage() {
           <Link href="/">
             <PrimeScaleLogo variant="dark" />
           </Link>
-          <p className="text-sm text-muted-foreground">Step 1 of 1 — Onboarding</p>
+          <p className="text-sm text-muted-foreground">5-step onboarding</p>
         </div>
       </header>
 

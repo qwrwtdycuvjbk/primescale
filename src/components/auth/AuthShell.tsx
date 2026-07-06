@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { EmployerAuthPanel } from "@/components/auth/EmployerAuthPanel";
+import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
 
 export function AuthShell({
   children,
@@ -18,10 +20,17 @@ export function AuthShell({
           audience === "employer" ? "lg:w-full" : "lg:items-center"
         }`}
       >
+        <Link
+          href="/"
+          className="absolute left-10 top-8 z-10 inline-flex items-center"
+          aria-label="Go to PrimeScale home"
+        >
+          <PrimeScaleLogo variant="light" className="text-white" />
+        </Link>
         {audience === "employer" ? (
           <EmployerAuthPanel title={title} description={description} />
         ) : (
-          <div className="relative flex h-full flex-col justify-between">
+          <div className="relative mx-auto flex h-full w-full max-w-xl flex-col justify-center gap-16 pt-20">
             <div className="pointer-events-none absolute -left-20 top-0 h-80 w-80 rounded-full bg-primary/20 blur-[120px]" />
             <div className="relative">
               <h1 className="display-headline text-5xl">{title}</h1>
@@ -47,7 +56,16 @@ export function AuthShell({
       </div>
 
       <div className="flex h-dvh max-h-dvh min-h-0 w-full flex-col overflow-hidden px-5 sm:px-8">
-        <div className="flex min-h-0 w-full flex-1 flex-col justify-center pt-14 pb-14 sm:pt-16 sm:pb-16">
+        <div className="pt-5 sm:pt-6">
+          <Link
+            href="/"
+            className="inline-flex items-center lg:hidden"
+            aria-label="Go to PrimeScale home"
+          >
+            <PrimeScaleLogo variant="dark" />
+          </Link>
+        </div>
+        <div className="flex min-h-0 w-full flex-1 flex-col justify-center pt-10 pb-14 sm:pt-12 sm:pb-16 lg:pt-16">
           {children}
         </div>
       </div>

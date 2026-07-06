@@ -53,18 +53,26 @@ export default async function EmployerDashboardPage() {
     `,
     )
     .eq("jobs.posted_by", profile.id)
+    .eq("visible_to_employer", true)
     .order("match_score", { ascending: false })
     .limit(3);
 
   const { count: matchCount } = await supabase
     .from("matches")
     .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-    .eq("jobs.posted_by", profile.id);
+    .eq("jobs.posted_by", profile.id)
+    .eq("visible_to_employer", true);
+
+  const { count: shortlistedCount } = await supabase
+    .from("matches")
+    .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
+    .eq("jobs.posted_by", profile.id)
+    .eq("visible_to_employer", true)
+    .eq("status", "employer_shortlisted");
 
   const activeJobs =
     jobs?.filter((j) => j.status === "active").length ?? 0;
-  const shortlisted =
-    matches?.filter((m) => m.status === "employer_shortlisted").length ?? 0;
+  const shortlisted = shortlistedCount ?? 0;
 
   return (
     <EmployerShell name={profile.full_name} activePath="/employer">
@@ -116,6 +124,14 @@ export default async function EmployerDashboardPage() {
           <div>
             <div className="flex items-center justify-between gap-4">
               <h2 className="display-headline text-2xl">Matched candidates</h2>
+              {matchCount ? (
+                <Link
+                  href="/employer/matches"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  View all
+                </Link>
+              ) : null}
             </div>
             <div className="mt-6 space-y-4">
               {matches?.length ? (
@@ -126,7 +142,8 @@ export default async function EmployerDashboardPage() {
                 <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
                   <p className="text-lg font-medium">No matched candidates yet</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Post an active US remote tech role to start receiving matches.
+                    People Prime is reviewing candidates for your roles. Approved
+                    matches will appear here within 24 hours.
                   </p>
                 </div>
               )}

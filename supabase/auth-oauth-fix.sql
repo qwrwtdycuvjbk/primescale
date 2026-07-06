@@ -46,6 +46,7 @@ declare
   u record;
   chosen_role text;
   chosen_name text;
+  chosen_phone text;
   row public.profiles;
 begin
   if uid is null then
@@ -81,7 +82,7 @@ begin
   on conflict (id) do update
   set
     role = case
-      when p_role in ('employer', 'candidate') then p_role
+      when p_role in ('employer', 'candidate', 'admin') then p_role
       else profiles.role
     end,
     full_name = coalesce(nullif(profiles.full_name, ''), excluded.full_name),

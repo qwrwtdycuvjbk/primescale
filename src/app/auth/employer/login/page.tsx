@@ -1,12 +1,24 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { getSessionProfile } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function EmployerLoginPage() {
-  const { user } = await getSessionProfile();
-  if (user) redirect("/auth/redirect");
+export default async function EmployerLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    next?: string;
+    error?: string;
+    details?: string;
+    email?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user && !params.error) redirect("/auth/redirect");
 
   return (
     <AuthShell
@@ -14,13 +26,14 @@ export default async function EmployerLoginPage() {
       title="Post your first role."
       description="Create your employer account to post US remote tech roles and get matched candidates in your dashboard."
     >
-      <Suspense
-        fallback={
-          <div className="text-center text-muted-foreground">Loading...</div>
-        }
-      >
-        <AuthForm mode="login" role="employer" />
-      </Suspense>
+      <AuthForm
+        mode="login"
+        role="employer"
+        next={params.next}
+        error={params.error}
+        details={params.details}
+        email={params.email}
+      />
     </AuthShell>
   );
 }

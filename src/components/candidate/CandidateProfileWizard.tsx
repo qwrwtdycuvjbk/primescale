@@ -37,6 +37,32 @@ const STEPS = [
   { id: "verification", label: "Verification", code: "05" },
 ] as const;
 
+const HEADLINE_SUGGESTIONS = [
+  "Senior DevOps Engineer | AWS, Kubernetes, Terraform",
+  "Full-Stack Engineer | React, Node.js, TypeScript",
+  "Data Engineer | Python, Airflow, Snowflake",
+] as const;
+
+const TITLE_SUGGESTIONS = [
+  "Senior Software Engineer",
+  "DevOps Engineer",
+  "Data Engineer",
+] as const;
+
+const SKILL_SUGGESTIONS = [
+  "TypeScript",
+  "React",
+  "Node.js",
+  "Python",
+  "AWS",
+  "Kubernetes",
+] as const;
+
+const BIO_SUGGESTIONS = [
+  "I build scalable remote-first products and enjoy partnering with product and platform teams.",
+  "I specialize in cloud infrastructure, automation, and improving developer experience.",
+] as const;
+
 const initial: CandidateProfileInput = {
   headline: "",
   phone: "",
@@ -56,6 +82,34 @@ const initial: CandidateProfileInput = {
   linkedinUrl: "",
   resumeUrl: "",
 };
+
+function SuggestionChips({
+  label = "Suggestions",
+  options,
+  onSelect,
+}: {
+  label?: string;
+  options: readonly string[];
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onSelect(option)}
+            className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function CandidateProfileWizard({
   initialData,
@@ -82,6 +136,35 @@ export function CandidateProfileWizard({
     () => calculateProfileCompleteness(form),
     [form],
   );
+
+  const wizardProgress = useMemo(() => {
+    const checks = [
+      Boolean(form.headline.trim()),
+      Boolean(form.phone?.trim()),
+      step > 0 || form.usState !== initial.usState,
+      Boolean(form.currentTitle?.trim()),
+      form.yearsExperience !== undefined && form.yearsExperience >= 0,
+      Boolean(form.bio?.trim()),
+      (form.roleCategories?.length ?? 0) > 0,
+      Boolean(form.skills.trim()),
+      step > 1 || form.experienceLevel !== initial.experienceLevel,
+      step > 3 || form.workAuthorization !== initial.workAuthorization,
+      step > 3 || form.preferredWorkType !== initial.preferredWorkType,
+      step > 3 || form.availabilityStatus !== initial.availabilityStatus,
+      step > 3 || form.privacyVisibility !== initial.privacyVisibility,
+      form.salaryMin !== undefined || form.salaryMax !== undefined,
+      Boolean(form.resumeUrl),
+      Boolean(
+        form.githubUrl?.trim() ||
+          form.portfolioUrl?.trim() ||
+          form.linkedinUrl?.trim(),
+      ),
+    ];
+
+    return Math.round(
+      (checks.filter(Boolean).length / checks.length) * 100,
+    );
+  }, [form, step]);
 
   function toggleCategory(category: string) {
     setForm((prev) => ({
@@ -183,13 +266,13 @@ export function CandidateProfileWizard({
             Profile builder · Step {STEPS[step].code}
           </p>
           <p className="font-mono text-xs text-primary">
-            {completeness}% complete
+            {wizardProgress}% complete
           </p>
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
           <motion.div
             className="h-full bg-primary"
-            animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            animate={{ width: `${wizardProgress}%` }}
             transition={{ duration: 0.4 }}
           />
         </div>
@@ -234,6 +317,12 @@ export function CandidateProfileWizard({
                     setForm({ ...form, headline: e.target.value })
                   }
                 />
+                {!form.headline.trim() && (
+                  <SuggestionChips
+                    options={HEADLINE_SUGGESTIONS}
+                    onSelect={(value) => setForm({ ...form, headline: value })}
+                  />
+                )}
               </div>
               <div>
                 <FieldLabel htmlFor="phone">Phone</FieldLabel>
@@ -271,11 +360,20 @@ export function CandidateProfileWizard({
                 <input
                   id="currentTitle"
                   className={fieldInputClass}
+                  placeholder="Senior Software Engineer"
                   value={form.currentTitle ?? ""}
                   onChange={(e) =>
                     setForm({ ...form, currentTitle: e.target.value })
                   }
                 />
+                {!form.currentTitle?.trim() && (
+                  <SuggestionChips
+                    options={TITLE_SUGGESTIONS}
+                    onSelect={(value) =>
+                      setForm({ ...form, currentTitle: value })
+                    }
+                  />
+                )}
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
@@ -323,9 +421,17 @@ export function CandidateProfileWizard({
                   id="bio"
                   rows={4}
                   className={fieldInputClass}
+                  placeholder="Share the kind of work you do best, the teams you enjoy, and what makes you a strong fit."
                   value={form.bio ?? ""}
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
                 />
+                {!form.bio?.trim() && (
+                  <SuggestionChips
+                    label="Starter ideas"
+                    options={BIO_SUGGESTIONS}
+                    onSelect={(value) => setForm({ ...form, bio: value })}
+                  />
+                )}
               </div>
             </>
           )}
@@ -362,6 +468,14 @@ export function CandidateProfileWizard({
                   value={form.skills}
                   onChange={(e) => setForm({ ...form, skills: e.target.value })}
                 />
+                {!form.skills.trim() && (
+                  <SuggestionChips
+                    options={SKILL_SUGGESTIONS}
+                    onSelect={(value) =>
+                      setForm({ ...form, skills: `${value}, ` })
+                    }
+                  />
+                )}
               </div>
             </>
           )}
@@ -573,7 +687,7 @@ export function CandidateProfileWizard({
 
       {error && <div className="mt-6"><ErrorBanner message={error} /></div>}
 
-      <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
         {step > 0 && (
           <SecondaryButton
             type="button"
@@ -581,6 +695,7 @@ export function CandidateProfileWizard({
               setError("");
               setStep((s) => s - 1);
             }}
+            className="w-full sm:w-auto"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -590,7 +705,7 @@ export function CandidateProfileWizard({
           type="button"
           onClick={nextStep}
           disabled={status === "loading" || status === "uploading"}
-          className="ml-auto"
+          className="w-full sm:ml-auto sm:w-auto"
         >
           {status === "loading"
             ? "Saving..."

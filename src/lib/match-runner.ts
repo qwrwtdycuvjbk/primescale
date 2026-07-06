@@ -1,23 +1,21 @@
-import { createClient } from "@supabase/supabase-js";
+import { getServiceClient } from "@/lib/supabase/service";
 import {
   combinedMatchScore,
   computeSkillOverlapScore,
   experienceScore,
   llmMatchReason,
 } from "@/lib/matching";
+import { MIN_MATCH_SCORE, notifyRecruitersForHighMatch } from "@/lib/recruiter-alert";
 import type { CandidateProfile, Job } from "@/lib/types";
 
-function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
+function getServiceClientForMatching() {
+  return getServiceClient();
 }
 
-const MIN_MATCH_SCORE = 45;
+const MIN_MATCH_SCORE_LOCAL = MIN_MATCH_SCORE;
 
 export async function runMatchingForCandidate(candidateProfileId: string) {
-  const supabase = getServiceClient();
+  const supabase = getServiceClientForMatching();
   if (!supabase) return { matched: 0 };
 
   const { data: candidate } = await supabase
@@ -50,32 +48,36 @@ export async function runMatchingForCandidate(candidateProfileId: string) {
     );
     const score = combinedMatchScore(skillScore, expScore);
 
-    if (score < MIN_MATCH_SCORE) continue;
+    if (score < MIN_MATCH_SCORE_LOCAL) continue;
 
     const reason =
       (await llmMatchReason(candidate as CandidateProfile, job, score)) ??
       `Skills overlap at ${skillScore}% with required stack.`;
 
-    const { error } = await supabase.from("matches").upsert(
+    const { data: upserted, error } = await supabase.from("matches").upsert(
       {
         candidate_profile_id: candidateProfileId,
         job_id: job.id,
         match_score: score,
         match_reason: reason,
         status: "suggested",
+        visible_to_employer: false,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "candidate_profile_id,job_id" },
-    );
+    ).select("id").single();
 
-    if (!error) matched += 1;
+    if (!error && upserted?.id) {
+      matched += 1;
+      await notifyRecruitersForHighMatch(upserted.id);
+    }
   }
 
   return { matched };
 }
 
 export async function runMatchingForJob(jobId: string) {
-  const supabase = getServiceClient();
+  const supabase = getServiceClientForMatching();
   if (!supabase) return { matched: 0 };
 
   const { data: job } = await supabase
@@ -108,25 +110,29 @@ export async function runMatchingForJob(jobId: string) {
     );
     const score = combinedMatchScore(skillScore, expScore);
 
-    if (score < MIN_MATCH_SCORE) continue;
+    if (score < MIN_MATCH_SCORE_LOCAL) continue;
 
     const reason =
       (await llmMatchReason(candidate, job as Job, score)) ??
       `Skills overlap at ${skillScore}% with required stack.`;
 
-    const { error } = await supabase.from("matches").upsert(
+    const { data: upserted, error } = await supabase.from("matches").upsert(
       {
         candidate_profile_id: candidate.id,
         job_id: jobId,
         match_score: score,
         match_reason: reason,
         status: "suggested",
+        visible_to_employer: false,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "candidate_profile_id,job_id" },
-    );
+    ).select("id").single();
 
-    if (!error) matched += 1;
+    if (!error && upserted?.id) {
+      matched += 1;
+      await notifyRecruitersForHighMatch(upserted.id);
+    }
   }
 
   return { matched };

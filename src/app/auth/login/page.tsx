@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { getSessionProfile } from "@/lib/auth";
 import { formatAuthErrorMessage } from "@/lib/auth-errors";
+import { createClient } from "@/lib/supabase/server";
 import { ErrorBanner } from "@/components/site/form";
 
 export default async function LoginChooserPage({
@@ -11,10 +11,13 @@ export default async function LoginChooserPage({
 }: {
   searchParams: Promise<{ error?: string; details?: string }>;
 }) {
-  const { user } = await getSessionProfile();
-  if (user) redirect("/auth/redirect");
-
   const params = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user && !params.error) redirect("/auth/redirect");
+
   const authErrorMessage = formatAuthErrorMessage(
     params.error,
     params.details,

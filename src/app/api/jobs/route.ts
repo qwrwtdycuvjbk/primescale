@@ -5,6 +5,7 @@ import {
   isValidSalaryRange,
 } from "@/lib/employer";
 import { parseSkills } from "@/lib/matching";
+import { notifyRecruitersJobPosted } from "@/lib/job-notifications";
 import { runMatchingForJob } from "@/lib/match-runner";
 import type { JobInput, JobStatus } from "@/lib/types";
 
@@ -90,8 +91,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const matchResult =
-    status === "active" ? await runMatchingForJob(job.id) : { matched: 0 };
+  let matchResult = { matched: 0 };
+  if (status === "active") {
+    await notifyRecruitersJobPosted(job.id);
+    matchResult = await runMatchingForJob(job.id);
+  }
 
   return NextResponse.json({
     ok: true,

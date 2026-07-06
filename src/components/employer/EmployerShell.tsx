@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 const employerLinks = [
   { href: "/employer", label: "Dashboard" },
+  { href: "/employer/matches", label: "Matches" },
   { href: "/employer/jobs", label: "Jobs" },
   { href: "/employer/company", label: "Company" },
 ];
@@ -45,6 +46,22 @@ export async function EmployerShell({
                     (link.href !== "/employer" && activePath.startsWith(link.href))
                       ? "bg-foreground text-background"
                       : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <nav className="flex gap-1 md:hidden">
+              {employerLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                    activePath === link.href ||
+                    (link.href !== "/employer" && activePath.startsWith(link.href))
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {link.label}

@@ -18,7 +18,10 @@ export function CandidateMatchCard({ match }: { match: Match }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ matchId: match.id, status: newStatus }),
       });
-      if (response.ok) setStatus(newStatus);
+      if (response.ok) {
+        const data = (await response.json()) as { status?: MatchStatus };
+        setStatus(data.status ?? newStatus);
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +69,14 @@ export function CandidateMatchCard({ match }: { match: Match }) {
         </div>
       )}
 
-      {status === "suggested" && (
+      {status === "mutual_fit" && (
+        <p className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-foreground">
+          Mutual fit confirmed. People Prime will reach out to coordinate next
+          steps with the employer.
+        </p>
+      )}
+
+      {(status === "suggested" || status === "employer_shortlisted") && (
         <div className="mt-6 flex flex-wrap gap-3">
           <PrimaryButton
             type="button"

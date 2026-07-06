@@ -1,30 +1,36 @@
 import { redirect } from "next/navigation";
+import { getSessionProfile } from "@/lib/auth";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
+import { isAdminEmail, preferredRoleFromUser } from "@/lib/ensure-profile";
 import { isCompanyProfileComplete } from "@/lib/employer";
-import { ensureProfileForUser } from "@/lib/ensure-profile";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AuthRedirectPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, profile } = await getSessionProfile();
 
   if (!user) {
     redirect("/auth/login?error=session_missing");
   }
 
-  let profile: { role: string; full_name: string } | null = null;
-
-  try {
-    profile = await ensureProfileForUser(supabase, user);
-  } catch (profileError) {
-    const details =
-      profileError instanceof Error ? profileError.message : "Profile not found";
-    redirect(
-      `/auth/login?error=profile_missing&details=${encodeURIComponent(details)}`,
-    );
+  if (!profile) {
+    const params = new URLSearchParams({
+      error: "profile_missing",
+      details: "Could not load your profile.",
+    });
+    if (user.email) params.set("email", user.email);
+    const preferredRole = preferredRoleFromUser(user);
+    const loginPath =
+      preferredRole === "employer" || isAdminEmail(user.email)
+        ? "/auth/employer/login"
+        : "/auth/candidate/login";
+    redirect(`${loginPath}?${params.toString()}`);
   }
+
+  if (profile.role === "admin") {
+    redirect("/admin/handoffs");
+  }
+
+  const supabase = await createClient();
 
   if (profile.role === "employer") {
     const { data: company } = await supabase

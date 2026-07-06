@@ -4,6 +4,9 @@ export const authErrorMessages: Record<string, string> = {
   profile_missing: "We could not set up your account profile.",
   missing_code:
     "Google did not return a sign-in code. Check Supabase redirect URLs.",
+  validation: "Check the form and try again.",
+  login_failed: "Could not sign you in.",
+  signup_failed: "Could not create your account.",
 };
 
 export function formatAuthErrorMessage(
@@ -19,14 +22,16 @@ export function formatAuthErrorMessage(
 export function authLoginPathWithError(
   error: string,
   details?: string,
-  role?: "employer" | "candidate" | null,
+  role?: "employer" | "candidate" | "admin" | null,
 ) {
   const base =
     role === "employer"
       ? "/auth/employer/login"
       : role === "candidate"
         ? "/auth/candidate/login"
-        : "/auth/login";
+        : role === "admin"
+          ? "/auth/admin/login"
+          : "/auth/login";
   const params = new URLSearchParams({ error });
   if (details) params.set("details", details);
   return `${base}?${params.toString()}`;
