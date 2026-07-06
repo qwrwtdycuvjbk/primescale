@@ -1,6 +1,22 @@
 -- Mutual-fit handoff queue for People Prime recruiters
 -- Run in Supabase SQL Editor after marketplace schema
 
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
+grant execute on function public.is_admin() to authenticated;
+
 -- Allow mutual_fit on matches
 alter table public.matches drop constraint if exists matches_status_check;
 alter table public.matches add constraint matches_status_check check (
@@ -30,61 +46,26 @@ create index if not exists handoff_requests_created_idx on public.handoff_reques
 
 alter table public.handoff_requests enable row level security;
 
--- Admins manage the handoff queue
+-- Admins manage the handoff queue (is_admin() avoids profiles RLS recursion)
 create policy "handoffs_admin_select" on public.handoff_requests
-  for select using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for select using (public.is_admin());
 
 create policy "handoffs_admin_update" on public.handoff_requests
-  for update using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for update using (public.is_admin());
 
 -- Admins can read matches for the ops queue
 create policy "matches_select_admin" on public.matches
-  for select using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for select using (public.is_admin());
 
 -- Admins can read related records for handoff context
 create policy "jobs_select_admin" on public.jobs
-  for select using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for select using (public.is_admin());
 
 create policy "companies_select_admin" on public.companies
-  for select using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for select using (public.is_admin());
 
 create policy "candidate_profiles_select_admin" on public.candidate_profiles
-  for select using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for select using (public.is_admin());
 
 create policy "profiles_select_admin" on public.profiles
-  for select using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for select using (public.is_admin());

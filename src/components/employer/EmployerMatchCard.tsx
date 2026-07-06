@@ -165,15 +165,16 @@ export function JobCard({ job }: { job: Job }) {
           )}
           {job.expires_at && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Expires {new Date(job.expires_at).toLocaleDateString()}
+              Expires{" "}
+              {new Date(job.expires_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                timeZone: "UTC",
+              })}
             </p>
           )}
         </div>
-        {job.jd_quality_score != null && (
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            JD {job.jd_quality_score}%
-          </span>
-        )}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {status === "active" && (

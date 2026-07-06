@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { handleLoggedInAuthPage } from "@/lib/auth-visitor";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CandidateLoginPage({
@@ -18,7 +18,12 @@ export default async function CandidateLoginPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user && !params.error) redirect("/auth/redirect");
+  if (user) {
+    await handleLoggedInAuthPage(user, "candidate", {
+      hasError: !!params.error,
+      page: "login",
+    });
+  }
 
   return (
     <AuthShell
@@ -32,6 +37,7 @@ export default async function CandidateLoginPage({
         error={params.error}
         details={params.details}
         email={params.email}
+        showSignOut={params.error === "profile_missing"}
       />
     </AuthShell>
   );

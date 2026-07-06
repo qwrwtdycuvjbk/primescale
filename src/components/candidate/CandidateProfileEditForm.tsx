@@ -158,7 +158,7 @@ export function CandidateProfileEditForm({
   }
 
   return (
-    <div>
+    <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
       <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/40 px-5 py-4">
         <p className="text-sm text-muted-foreground">Profile completeness</p>
         <p className="font-mono text-sm text-primary">{completeness}%</p>
@@ -169,6 +169,8 @@ export function CandidateProfileEditForm({
           <FieldLabel htmlFor="headline">Professional headline</FieldLabel>
           <input
             id="headline"
+            name="ps-professional-headline"
+            autoComplete="off"
             className={fieldInputClass}
             value={form.headline}
             onChange={(e) => setForm({ ...form, headline: e.target.value })}
@@ -503,6 +505,6 @@ export function CandidateProfileEditForm({
           <ArrowRight className="h-4 w-4" />
         </PrimaryButton>
       </div>
-    </div>
+    </form>
   );
 }

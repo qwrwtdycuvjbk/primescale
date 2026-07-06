@@ -99,7 +99,23 @@ export async function POST(request: NextRequest) {
     return redirectWithCookies(request, sessionResponse, "/admin/handoffs");
   }
 
-  await ensureProfileForUser(supabase, data.user, role);
+  try {
+    await ensureProfileForUser(supabase, data.user, role);
+  } catch (profileError) {
+    return NextResponse.redirect(
+      new URL(
+        authFormPath(role, {
+          ...params,
+          error: "profile_missing",
+          details:
+            profileError instanceof Error
+              ? profileError.message
+              : "Could not create profile",
+        }),
+        request.url,
+      ),
+    );
+  }
 
   return redirectWithCookies(
     request,

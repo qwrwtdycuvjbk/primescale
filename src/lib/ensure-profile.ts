@@ -110,11 +110,78 @@ async function recoverProfileWithService(user: User, role: UserRole) {
   return upsertProfileWithService(user, role);
 }
 
+async function ensureProfileWithService(user: User, preferredRole?: UserRole | null) {
+  const service = getServiceClient();
+  if (!service) return null;
+
+  const role = isAdminEmail(user.email) ? "admin" : resolveRole(user, preferredRole);
+  const fullName = profileNameFromUser(user);
+  const phone =
+    typeof user.user_metadata?.phone === "string"
+      ? user.user_metadata.phone
+      : null;
+
+  const existing = await loadProfileWithService(user.id);
+  if (existing) {
+    const updates: { role?: UserRole; full_name?: string; phone?: string } = {};
+
+    if (isAdminEmail(user.email)) {
+      updates.role = "admin";
+    } else {
+      const resolvedRole = preferredRole ?? preferredRoleFromUser(user);
+      if (
+        resolvedRole === "employer" ||
+        resolvedRole === "candidate" ||
+        resolvedRole === "admin"
+      ) {
+        if (!(existing.role === "admin" && resolvedRole !== "admin")) {
+          updates.role = resolvedRole;
+        }
+      }
+    }
+    if (!existing.full_name) {
+      updates.full_name = fullName;
+    }
+    if (phone) {
+      updates.phone = phone;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const { error: updateError } = await service
+        .from("profiles")
+        .update(updates)
+        .eq("id", user.id);
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      return {
+        role: updates.role ?? existing.role,
+        full_name: updates.full_name ?? existing.full_name,
+      };
+    }
+
+    return existing;
+  }
+
+  return upsertProfileWithService(user, role);
+}
+
 export async function ensureProfileForUser(
   supabase: SupabaseClient,
   user: User,
   preferredRole?: UserRole | null,
 ) {
+  try {
+    const serviceProfile = await ensureProfileWithService(user, preferredRole);
+    if (serviceProfile) return serviceProfile;
+  } catch (serviceError) {
+    const message =
+      serviceError instanceof Error ? serviceError.message : "Profile setup failed";
+    throw new Error(message);
+  }
+
   const existing = await loadProfile(supabase, user.id);
   if (existing) {
     const phone =

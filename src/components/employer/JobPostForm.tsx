@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Eye, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye } from "lucide-react";
 import { EXPERIENCE_LEVELS, ROLE_TYPES } from "@/lib/constants";
 import { isValidSalaryRange } from "@/lib/employer";
 import { parseSkills } from "@/lib/matching";
@@ -31,9 +31,8 @@ export function JobPostForm({ companyName }: { companyName: string }) {
   const [form, setForm] = useState<JobInput>(initial);
   const [pastedJd, setPastedJd] = useState("");
   const [step, setStep] = useState<"edit" | "preview">("edit");
-  const [status, setStatus] = useState<"idle" | "loading" | "parsing" | "scoring">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "parsing">("idle");
   const [error, setError] = useState("");
-  const [quality, setQuality] = useState<{ score: number; feedback: string } | null>(null);
 
   async function parseJd() {
     if (!pastedJd.trim()) return;
@@ -75,30 +74,13 @@ export function JobPostForm({ companyName }: { companyName: string }) {
     if (!isValidSalaryRange(form.salaryRange)) {
       return 'Use a real salary range (e.g. "$120k–$160k"). "Competitive" is not allowed.';
     }
-    if (!form.visaRequirements.trim()) return "US work eligibility requirements are required.";
+    if (!form.visaRequirements.trim()) {
+      return "Describe who can work remotely in the US for this role.";
+    }
     return null;
   }
 
-  async function loadQualityScore() {
-    setStatus("scoring");
-    const skills = parseSkills(form.techStack);
-    const response = await fetch("/api/jobs/quality", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: form.title,
-        description: form.description || pastedJd,
-        tech_stack: skills,
-        salary_range: form.salaryRange,
-        visa_requirements: form.visaRequirements,
-      }),
-    });
-    const data = await response.json();
-    setQuality(data.quality ?? { score: 70, feedback: "Review salary, skills, and eligibility before publishing." });
-    setStatus("idle");
-  }
-
-  async function goToPreview() {
+  function goToPreview() {
     const validationError = validate();
     if (validationError) {
       setError(validationError);
@@ -106,7 +88,6 @@ export function JobPostForm({ companyName }: { companyName: string }) {
     }
     setError("");
     setStep("preview");
-    await loadQualityScore();
   }
 
   async function submit(publish: boolean) {
@@ -125,8 +106,6 @@ export function JobPostForm({ companyName }: { companyName: string }) {
           ...form,
           description: form.description.trim() || pastedJd.trim(),
           publish,
-          jdQualityScore: quality?.score,
-          jdQualityFeedback: quality?.feedback,
         }),
       });
       const data = await response.json();
@@ -175,7 +154,7 @@ export function JobPostForm({ companyName }: { companyName: string }) {
               <dd className="font-medium capitalize">{form.workType}</dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">US eligibility</dt>
+              <dt className="text-muted-foreground">Remote work eligibility</dt>
               <dd className="font-medium">{form.visaRequirements}</dd>
             </div>
           </dl>
@@ -184,16 +163,6 @@ export function JobPostForm({ companyName }: { companyName: string }) {
             {form.description || pastedJd}
           </div>
         </div>
-
-        {quality && (
-          <div className="rounded-2xl border border-border bg-muted/40 p-5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <p className="text-sm font-medium">AI quality score: {quality.score}/100</p>
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">{quality.feedback}</p>
-          </div>
-        )}
 
         {error && <ErrorBanner message={error} />}
 
@@ -325,15 +294,21 @@ export function JobPostForm({ companyName }: { companyName: string }) {
       </div>
 
       <div>
-        <FieldLabel htmlFor="visaRequirements">US work eligibility requirements</FieldLabel>
+        <FieldLabel htmlFor="visaRequirements">
+          Who can work remotely in the US?
+        </FieldLabel>
         <input
           id="visaRequirements"
           required
           className={fieldInputClass}
-          placeholder="US citizens and green card holders"
+          placeholder="e.g. US citizens, green card holders, or TN visa — remote within US time zones"
           value={form.visaRequirements}
           onChange={(e) => setForm({ ...form, visaRequirements: e.target.value })}
         />
+        <p className="mt-1.5 text-[11px] text-muted-foreground sm:text-xs">
+          PrimeScale is US remote only. Tell candidates which work authorizations you
+          accept for this fully remote role.
+        </p>
       </div>
 
       {error && <ErrorBanner message={error} />}

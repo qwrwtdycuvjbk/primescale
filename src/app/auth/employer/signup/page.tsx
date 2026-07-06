@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { handleLoggedInAuthPage } from "@/lib/auth-visitor";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function EmployerSignupPage({
@@ -18,7 +18,12 @@ export default async function EmployerSignupPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user && !params.error) redirect("/auth/redirect");
+  if (user) {
+    await handleLoggedInAuthPage(user, "employer", {
+      hasError: !!params.error,
+      page: "signup",
+    });
+  }
 
   return (
     <AuthShell
@@ -33,6 +38,7 @@ export default async function EmployerSignupPage({
         details={params.details}
         awaiting={params.awaiting}
         email={params.email}
+        showSignOut={!!params.error}
       />
     </AuthShell>
   );

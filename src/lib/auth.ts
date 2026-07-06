@@ -105,6 +105,16 @@ export async function getSessionProfile() {
 
   if (ensuredProfile) return { user, profile: ensuredProfile };
 
+  const service = getServiceClient();
+  if (service) {
+    const { data: serviceProfile } = await service
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (serviceProfile) return { user, profile: serviceProfile };
+  }
+
   if (isAdminEmail(user.email)) {
     const adminProfile = await loadAdminProfile(user);
     return { user, profile: adminProfile };

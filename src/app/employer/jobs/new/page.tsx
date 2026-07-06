@@ -29,7 +29,7 @@ export default async function NewJobPage() {
         <h1 className="display-headline text-4xl">Post a tech role</h1>
         <p className="mt-3 text-muted-foreground">
           US remote tech roles only. Paste your JD or fill in details — salary
-          range is required. Preview and quality check before publishing.
+          range is required. Preview before publishing.
         </p>
         <div className="mt-10 rounded-3xl border border-border bg-card p-8">
           <JobPostForm companyName={company.name} />

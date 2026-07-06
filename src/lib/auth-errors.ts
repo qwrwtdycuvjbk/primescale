@@ -14,6 +14,24 @@ export function formatAuthErrorMessage(
   details?: string | null,
 ) {
   if (!error || !authErrorMessages[error]) return null;
+
+  const detailText = details?.toLowerCase() ?? "";
+
+  if (error === "login_failed" && detailText.includes("email not confirmed")) {
+    return "Confirm your email first. Check your inbox for the verification link, then log in.";
+  }
+
+  if (error === "signup_failed" && detailText.includes("already registered")) {
+    return "An account with this email already exists. Log in instead, or use a different email.";
+  }
+
+  if (
+    error === "profile_missing" &&
+    detailText.includes("infinite recursion")
+  ) {
+    return "Account setup is blocked by a database policy. Run supabase/profiles-rls-fix.sql in Supabase, then try again.";
+  }
+
   return details
     ? `${authErrorMessages[error]} (${details})`
     : authErrorMessages[error];

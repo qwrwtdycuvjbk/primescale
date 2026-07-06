@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { AuthGoogleSection } from "@/components/auth/AuthGoogleSection";
-import { submitAuth } from "@/lib/auth-actions";
+import { signOutAuth, submitAuth } from "@/lib/auth-actions";
 import { formatAuthErrorMessage } from "@/lib/auth-errors";
 import type { UserRole } from "@/lib/types";
 import { ErrorBanner, PrimaryButton } from "@/components/site/form";
@@ -31,6 +31,7 @@ export function AuthForm({
   details,
   awaiting,
   email,
+  showSignOut,
 }: {
   mode: "login" | "signup";
   role: Extract<UserRole, "employer" | "candidate">;
@@ -39,12 +40,29 @@ export function AuthForm({
   details?: string | null;
   awaiting?: string | null;
   email?: string | null;
+  showSignOut?: boolean;
 }) {
   const copy = role === "employer" ? employerCopy : candidateCopy;
   const basePath = `/auth/${role}`;
   const isLogin = mode === "login";
   const compactInputClass = `${fieldInputClass} py-2 text-sm`;
   const authErrorMessage = formatAuthErrorMessage(error, details);
+
+  function SignOutPrompt() {
+    if (!showSignOut) return null;
+
+    return (
+      <form action={signOutAuth} method="post" className="mt-3">
+        <input type="hidden" name="role" value={role} />
+        <button
+          type="submit"
+          className="w-full text-center text-xs font-medium text-foreground underline-offset-2 hover:underline sm:text-sm"
+        >
+          Sign out and try again
+        </button>
+      </form>
+    );
+  }
 
   if (awaiting) {
     return (
@@ -114,6 +132,7 @@ export function AuthForm({
           </div>
 
           {authErrorMessage && <ErrorBanner message={authErrorMessage} />}
+          <SignOutPrompt />
 
           <PrimaryButton
             type="submit"
@@ -123,6 +142,8 @@ export function AuthForm({
             <ArrowRight className="h-4 w-4" />
           </PrimaryButton>
         </form>
+
+        <AuthGoogleSection mode={mode} role={role} next={next} compact />
 
         <p className="mt-3 text-center text-xs text-muted-foreground sm:text-sm">
           New to PrimeScale?{" "}
@@ -250,6 +271,7 @@ export function AuthForm({
         )}
 
         {authErrorMessage && <ErrorBanner message={authErrorMessage} />}
+        <SignOutPrompt />
 
         <PrimaryButton
           type="submit"

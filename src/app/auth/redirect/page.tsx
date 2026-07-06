@@ -1,15 +1,31 @@
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth";
+import { ensureProfileForUser, isAdminEmail, preferredRoleFromUser } from "@/lib/ensure-profile";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
-import { isAdminEmail, preferredRoleFromUser } from "@/lib/ensure-profile";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AuthRedirectPage() {
-  const { user, profile } = await getSessionProfile();
+  const { user, profile: initialProfile } = await getSessionProfile();
 
   if (!user) {
     redirect("/auth/login?error=session_missing");
+  }
+
+  let profile = initialProfile;
+
+  if (!profile) {
+    const preferredRole = preferredRoleFromUser(user);
+    const supabase = await createClient();
+
+    try {
+      await ensureProfileForUser(supabase, user, preferredRole);
+    } catch {
+      // getSessionProfile already retries with the service client
+    }
+
+    const retry = await getSessionProfile();
+    profile = retry.profile;
   }
 
   if (!profile) {

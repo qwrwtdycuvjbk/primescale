@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
   if (!body.visaRequirements?.trim()) {
     return NextResponse.json(
-      { error: "US work eligibility requirements are required" },
+      { error: "Describe who can work remotely in the US for this role." },
       { status: 400 },
     );
   }

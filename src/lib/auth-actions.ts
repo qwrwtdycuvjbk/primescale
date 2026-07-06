@@ -56,6 +56,13 @@ async function ensureAdminProfile(
   );
 }
 
+export async function signOutAuth(formData: FormData) {
+  const role = formData.get("role") === "employer" ? "employer" : "candidate";
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect(`/auth/${role}/login`);
+}
+
 export async function submitAuth(formData: FormData) {
   const mode = formData.get("mode") === "signup" ? "signup" : "login";
   const role = parseRole(formData.get("role"));
@@ -127,6 +134,20 @@ export async function submitAuth(formData: FormData) {
         await ensureAdminProfile(supabase, data.user, email);
         redirect("/admin/handoffs");
       }
+      try {
+        await ensureProfileForUser(supabase, data.user, role);
+      } catch (profileError) {
+        redirect(
+          authFormPath(role, mode, {
+            ...returnParams,
+            error: "profile_missing",
+            details:
+              profileError instanceof Error
+                ? profileError.message
+                : "Could not create profile",
+          }),
+        );
+      }
       redirect("/auth/redirect");
     }
 
@@ -168,7 +189,20 @@ export async function submitAuth(formData: FormData) {
       await ensureAdminProfile(supabase, data.user, email);
       redirect("/admin/handoffs");
     }
-    await ensureProfileForUser(supabase, data.user, role);
+    try {
+      await ensureProfileForUser(supabase, data.user, role);
+    } catch (profileError) {
+      redirect(
+        authFormPath(role, mode, {
+          ...returnParams,
+          error: "profile_missing",
+          details:
+            profileError instanceof Error
+              ? profileError.message
+              : "Could not create profile",
+        }),
+      );
+    }
   }
 
   redirect("/auth/redirect");

@@ -12,9 +12,4 @@ create index if not exists matches_recruiter_review_idx
 
 -- Admins can update matches (approve for employer view)
 create policy "matches_update_admin" on public.matches
-  for update using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  for update using (public.is_admin());

@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { ErrorBanner } from "@/components/site/form";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/lib/types";
 
@@ -15,32 +17,62 @@ export function AuthGoogleSection({
   next?: string | null;
   compact?: boolean;
 }) {
-  function getSignupNext() {
-    return "/auth/redirect";
-  }
-
-  function getLoginNext() {
-    return next ?? "/auth/redirect";
-  }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   function getOAuthRedirectUrl() {
     const destination = encodeURIComponent(
-      mode === "signup" ? getSignupNext() : getLoginNext(),
+      mode === "signup" ? "/auth/redirect" : (next ?? "/auth/redirect"),
     );
     return `${window.location.origin}/auth/callback?next=${destination}&role=${role}`;
   }
 
   async function handleGoogleSignIn() {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getOAuthRedirectUrl(),
-        queryParams: {
-          prompt: "select_account",
+    setLoading(true);
+    setError("");
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      setLoading(false);
+      setError("Sign-in is not configured. Missing Supabase environment variables.");
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: getOAuthRedirectUrl(),
+          queryParams: {
+            prompt: "select_account",
+          },
         },
-      },
-    });
+      });
+
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data?.url) {
+        window.location.assign(data.url);
+        return;
+      }
+
+      setError(
+        "Could not start Google sign-in. Enable Google in Supabase → Authentication → Providers.",
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Google sign-in failed. Try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,8 +83,12 @@ export function AuthGoogleSection({
         <span className="h-px flex-1 bg-border" />
       </div>
 
+      {error && <ErrorBanner message={error} />}
+
       <GoogleSignInButton
         onClick={() => void handleGoogleSignIn()}
+        disabled={loading}
+        label={loading ? "Redirecting to Google..." : "Continue with Google"}
         compact={compact}
       />
     </>

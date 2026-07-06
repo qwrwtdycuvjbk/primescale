@@ -37,32 +37,6 @@ const STEPS = [
   { id: "verification", label: "Verification", code: "05" },
 ] as const;
 
-const HEADLINE_SUGGESTIONS = [
-  "Senior DevOps Engineer | AWS, Kubernetes, Terraform",
-  "Full-Stack Engineer | React, Node.js, TypeScript",
-  "Data Engineer | Python, Airflow, Snowflake",
-] as const;
-
-const TITLE_SUGGESTIONS = [
-  "Senior Software Engineer",
-  "DevOps Engineer",
-  "Data Engineer",
-] as const;
-
-const SKILL_SUGGESTIONS = [
-  "TypeScript",
-  "React",
-  "Node.js",
-  "Python",
-  "AWS",
-  "Kubernetes",
-] as const;
-
-const BIO_SUGGESTIONS = [
-  "I build scalable remote-first products and enjoy partnering with product and platform teams.",
-  "I specialize in cloud infrastructure, automation, and improving developer experience.",
-] as const;
-
 const initial: CandidateProfileInput = {
   headline: "",
   phone: "",
@@ -82,34 +56,6 @@ const initial: CandidateProfileInput = {
   linkedinUrl: "",
   resumeUrl: "",
 };
-
-function SuggestionChips({
-  label = "Suggestions",
-  options,
-  onSelect,
-}: {
-  label?: string;
-  options: readonly string[];
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <div className="mt-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onSelect(option)}
-            className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function CandidateProfileWizard({
   initialData,
@@ -259,7 +205,7 @@ export function CandidateProfileWizard({
   }
 
   return (
-    <div>
+    <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
       <div className="mb-8">
         <div className="flex items-center justify-between gap-4">
           <p className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
@@ -310,25 +256,23 @@ export function CandidateProfileWizard({
                 <FieldLabel htmlFor="headline">Professional headline</FieldLabel>
                 <input
                   id="headline"
+                  name="ps-professional-headline"
+                  autoComplete="off"
                   className={fieldInputClass}
-                  placeholder="Senior DevOps engineer, AWS & Kubernetes"
+                  placeholder="Your role and top skills"
                   value={form.headline}
                   onChange={(e) =>
                     setForm({ ...form, headline: e.target.value })
                   }
                 />
-                {!form.headline.trim() && (
-                  <SuggestionChips
-                    options={HEADLINE_SUGGESTIONS}
-                    onSelect={(value) => setForm({ ...form, headline: value })}
-                  />
-                )}
               </div>
               <div>
                 <FieldLabel htmlFor="phone">Phone</FieldLabel>
                 <input
                   id="phone"
+                  name="ps-phone"
                   type="tel"
+                  autoComplete="off"
                   className={fieldInputClass}
                   value={form.phone ?? ""}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -359,21 +303,15 @@ export function CandidateProfileWizard({
                 <FieldLabel htmlFor="currentTitle">Current / recent title</FieldLabel>
                 <input
                   id="currentTitle"
+                  name="ps-current-title"
+                  autoComplete="off"
                   className={fieldInputClass}
-                  placeholder="Senior Software Engineer"
+                  placeholder="Your current or recent job title"
                   value={form.currentTitle ?? ""}
                   onChange={(e) =>
                     setForm({ ...form, currentTitle: e.target.value })
                   }
                 />
-                {!form.currentTitle?.trim() && (
-                  <SuggestionChips
-                    options={TITLE_SUGGESTIONS}
-                    onSelect={(value) =>
-                      setForm({ ...form, currentTitle: value })
-                    }
-                  />
-                )}
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
@@ -419,19 +357,14 @@ export function CandidateProfileWizard({
                 <FieldLabel htmlFor="bio">Short bio</FieldLabel>
                 <textarea
                   id="bio"
+                  name="ps-bio"
+                  autoComplete="off"
                   rows={4}
                   className={fieldInputClass}
-                  placeholder="Share the kind of work you do best, the teams you enjoy, and what makes you a strong fit."
+                  placeholder="Share the kind of work you do best and what makes you a strong fit."
                   value={form.bio ?? ""}
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
                 />
-                {!form.bio?.trim() && (
-                  <SuggestionChips
-                    label="Starter ideas"
-                    options={BIO_SUGGESTIONS}
-                    onSelect={(value) => setForm({ ...form, bio: value })}
-                  />
-                )}
               </div>
             </>
           )}
@@ -462,20 +395,14 @@ export function CandidateProfileWizard({
                 <FieldLabel htmlFor="skills">Skills (comma-separated)</FieldLabel>
                 <textarea
                   id="skills"
+                  name="ps-skills"
+                  autoComplete="off"
                   rows={4}
                   className={fieldInputClass}
-                  placeholder="Python, AWS, Terraform, Kubernetes"
+                  placeholder="List your skills, separated by commas"
                   value={form.skills}
                   onChange={(e) => setForm({ ...form, skills: e.target.value })}
                 />
-                {!form.skills.trim() && (
-                  <SuggestionChips
-                    options={SKILL_SUGGESTIONS}
-                    onSelect={(value) =>
-                      setForm({ ...form, skills: `${value}, ` })
-                    }
-                  />
-                )}
               </div>
             </>
           )}
@@ -717,6 +644,6 @@ export function CandidateProfileWizard({
           <ArrowRight className="h-4 w-4" />
         </PrimaryButton>
       </div>
-    </div>
+    </form>
   );
 }
