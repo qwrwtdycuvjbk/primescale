@@ -40,7 +40,7 @@ export default async function CandidateMatchesPage() {
           Your <span className="italic text-primary">matches.</span>
         </h1>
         <p className="mt-3 text-muted-foreground">
-          AI-matched US remote tech roles based on your profile and resume.
+          Matched remote tech roles based on your profile and resume.
         </p>
 
         <div className="mt-10 space-y-4">

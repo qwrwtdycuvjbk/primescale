@@ -45,7 +45,7 @@ export default async function CandidateOnboardingPage() {
           Build your <span className="italic text-primary">profile.</span>
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Five steps to get matched to US remote tech roles. A resume upload is
+          Five steps to get matched to remote tech roles. A resume upload is
           required on the final step.
         </p>
 

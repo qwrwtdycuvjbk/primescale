@@ -55,7 +55,7 @@ export default async function CandidateDashboardPage() {
               </span>
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
-              Your AI-matched US remote tech roles, profile status, and next steps.
+              Your matched remote tech roles, profile status, and next steps.
             </p>
           </div>
           <Link

@@ -75,7 +75,7 @@ export function JobPostForm({ companyName }: { companyName: string }) {
       return 'Use a real salary range (e.g. "$120k–$160k"). "Competitive" is not allowed.';
     }
     if (!form.visaRequirements.trim()) {
-      return "Describe who can work remotely in the US for this role.";
+      return "Describe who is eligible for this remote role.";
     }
     return null;
   }
@@ -275,7 +275,7 @@ export function JobPostForm({ companyName }: { companyName: string }) {
             value={form.workType}
             onChange={(e) => setForm({ ...form, workType: e.target.value })}
           >
-            <option value="remote">Remote (US)</option>
+            <option value="remote">Remote</option>
             <option value="hybrid">Hybrid</option>
             <option value="onsite">On-site</option>
           </select>
@@ -295,19 +295,19 @@ export function JobPostForm({ companyName }: { companyName: string }) {
 
       <div>
         <FieldLabel htmlFor="visaRequirements">
-          Who can work remotely in the US?
+          Who is eligible for this role?
         </FieldLabel>
         <input
           id="visaRequirements"
           required
           className={fieldInputClass}
-          placeholder="e.g. US citizens, green card holders, or TN visa — remote within US time zones"
+          placeholder="e.g. Open to global remote, or specify work authorization and time zones"
           value={form.visaRequirements}
           onChange={(e) => setForm({ ...form, visaRequirements: e.target.value })}
         />
         <p className="mt-1.5 text-xs text-muted-foreground">
-          PrimeScale is US remote only. Tell candidates which work authorizations you
-          accept for this fully remote role.
+          Tell candidates which work authorizations and locations you accept for this
+          remote role.
         </p>
       </div>
 

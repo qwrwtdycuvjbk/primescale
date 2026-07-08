@@ -49,11 +49,11 @@ export default function Home() {
         variant="dark"
         eyebrow="For employers"
         title="Post a role. Get matches."
-        intro="US remote tech only. Recruiter-reviewed candidates in your dashboard, with People Prime as your staffing backstop."
+        intro="Recruiter-reviewed candidates in your dashboard, with People Prime as your staffing backstop."
         bullets={[
           "AI-assisted JD parsing",
           "Skill and seniority matching",
-          "US remote tech roles only",
+          "Global remote tech roles",
           "Shortlist from one dashboard",
         ]}
         ctaLabel="Post a role free"
@@ -66,10 +66,10 @@ export default function Home() {
         variant="light"
         eyebrow="For candidates"
         title="One profile. Ongoing matches."
-        intro="Add skills and work auth once. See US remote tech roles that fit — no spam."
+        intro="Add skills and eligibility once. See remote tech roles that fit — no spam."
         bullets={[
           "One profile, ongoing matches",
-          "US remote tech roles only",
+          "Global remote tech roles",
           "Skill and seniority matching",
           "Mark roles you want",
         ]}

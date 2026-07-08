@@ -28,7 +28,7 @@ export default async function CandidateLoginPage({
   return (
     <AuthShell
       title="Your next role."
-      description="Log in to manage your profile, view AI-matched US remote tech roles, and track your applications."
+      description="Log in to manage your profile, view matched remote tech roles, and track your applications."
     >
       <AuthForm
         mode="login"

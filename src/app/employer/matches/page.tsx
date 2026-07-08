@@ -100,7 +100,7 @@ export default async function EmployerMatchesPage({
               Matched <span className="italic text-primary">candidates.</span>
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
-              Review AI-matched talent for your US remote tech roles. People Prime
+              Review matched talent for your remote tech roles. People Prime
               vets high-confidence matches before they appear here.
             </p>
           </div>

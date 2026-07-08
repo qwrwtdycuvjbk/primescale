@@ -50,8 +50,8 @@ export function WhyUs() {
             <span className="italic text-primary">chore.</span>
           </h2>
           <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
-            People Prime Worldwide helps US companies access pre-vetted, interview-ready
-            engineers. PrimeScale brings that expertise into an AI platform built for
+            People Prime Worldwide helps companies access pre-vetted, interview-ready
+            engineers worldwide. PrimeScale brings that expertise into a platform built for
             both sides.
           </p>
         </Reveal>

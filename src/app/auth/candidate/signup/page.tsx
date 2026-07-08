@@ -28,7 +28,7 @@ export default async function CandidateSignupPage({
   return (
     <AuthShell
       title="Get matched."
-      description="Create your candidate profile and let PrimeScale match you to US remote tech roles across AI, Cloud, Data, DevOps, and more."
+      description="Create your candidate profile and let PrimeScale match you to remote tech roles across AI, Cloud, Data, DevOps, and more."
     >
       <AuthForm
         mode="signup"

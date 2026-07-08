@@ -121,12 +121,12 @@ export function TalentShowcase({ candidates }: { candidates: PublicTalentCard[] 
               </div>
               <h2 className="display-headline mt-6 text-balance text-4xl sm:text-6xl">
                 Browse vetted{" "}
-                <span className="italic text-primary">US remote</span> engineers.
+                <span className="italic text-primary">global remote</span> engineers.
               </h2>
               <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
                 {candidates.length > 0
                   ? "Preview interview-ready talent. Full profiles, resumes, and contact details unlock when you post a role."
-                  : "Post a role and our recruiters will match you with interview-ready US remote engineers from our network."}
+                  : "Post a role and our recruiters will match you with interview-ready remote engineers from our network."}
               </p>
             </div>
 

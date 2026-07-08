@@ -9,7 +9,7 @@ import { fieldInputClass, fieldLabelClass } from "@/components/site/form-styles"
 
 const employerCopy = {
   signupTitle: "Create your employer account",
-  signupSubtitle: "Post US remote tech roles and get AI-matched candidates.",
+  signupSubtitle: "Post remote tech roles and get matched candidates.",
   loginTitle: "Employer log in",
   loginSubtitle: "Manage roles, review matches, and shortlist candidates.",
   emailLabel: "Work email",
@@ -17,7 +17,7 @@ const employerCopy = {
 
 const candidateCopy = {
   signupTitle: "Create your candidate account",
-  signupSubtitle: "Build your profile and get matched to US remote tech roles.",
+  signupSubtitle: "Build your profile and get matched to remote tech roles.",
   loginTitle: "Candidate log in",
   loginSubtitle: "Access your profile, matches, and dashboard.",
   emailLabel: "Email",

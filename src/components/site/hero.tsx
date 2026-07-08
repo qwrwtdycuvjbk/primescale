@@ -97,7 +97,7 @@ export function Hero() {
         <div className="lg:col-span-7">
           <div className="animate-hero-in flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
             <span className="text-primary">[01]</span>
-            <span>US remote tech hiring</span>
+            <span>Global tech hiring</span>
             <span className="h-px flex-1 bg-white/15" />
           </div>
 
@@ -114,8 +114,9 @@ export function Hero() {
           </h1>
 
           <p className="animate-hero-in mt-5 max-w-lg text-pretty text-base leading-relaxed text-ink-muted [animation-delay:320ms]">
-            Post roles or build a profile. Get skill-matched shortlists with
-            People Prime recruiters in the loop.
+            Hire top remote engineers without the complexity. We source, vet,
+            hire, manage payroll, and handle compliance so your team can scale
+            faster.
           </p>
 
           <div className="animate-hero-in mt-7 flex flex-col gap-3 sm:flex-row [animation-delay:420ms]">
@@ -165,7 +166,7 @@ export function Hero() {
 
             <div className="mt-5 flex flex-wrap gap-2">
               {[
-                "Remote - US",
+                "Global remote",
                 "$140k–$175k",
                 "AWS",
                 "Kubernetes",

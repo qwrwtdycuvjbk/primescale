@@ -14,7 +14,7 @@ const cards = [
     icon: Briefcase,
     kicker: "For employers",
     title: "I'm hiring",
-    body: "Post a US remote tech role. Get recruiter-reviewed matches in your dashboard.",
+    body: "Post a remote tech role. Get recruiter-reviewed matches in your dashboard.",
     points: [
       "AI-assisted JD parsing",
       "Skill and seniority matching",
@@ -28,10 +28,10 @@ const cards = [
     icon: UserRound,
     kicker: "For candidates",
     title: "I'm a candidate",
-    body: "One profile. Ongoing matches to US remote tech roles that fit.",
+    body: "One profile. Ongoing matches to remote tech roles that fit.",
     points: [
       "One profile, ongoing matches",
-      "US remote tech only",
+      "Global remote tech roles",
       "Mark roles you want",
     ],
     cta: "Get matched",
@@ -53,7 +53,7 @@ export function GetStarted() {
           <h2 className={siteHeadlineClass}>
             Pick a path. <span className="italic text-primary">Go.</span>
           </h2>
-          <p className={siteBodyClass}>Free to start. US remote tech only.</p>
+          <p className={siteBodyClass}>Free to start on both sides.</p>
         </Reveal>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">

@@ -34,9 +34,9 @@ const SpeedInsights = dynamic(() =>
 const googleSiteVerification = getGoogleSiteVerification();
 
 export const metadata: Metadata = {
-  title: "PrimeScale | US remote tech hiring",
+  title: "PrimeScale | Global tech hiring",
   description:
-    "Post US remote tech roles or build a candidate profile. Skill-matched shortlists, recruiter-reviewed. Backed by People Prime Worldwide.",
+    "Hire top remote engineers without the complexity. We source, vet, hire, manage payroll, and handle compliance. Backed by People Prime Worldwide.",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],

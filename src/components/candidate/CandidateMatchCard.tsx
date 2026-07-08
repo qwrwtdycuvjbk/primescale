@@ -103,7 +103,7 @@ export function EmptyMatches({ editProfileHref }: { editProfileHref: string }) {
     <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center">
       <p className="display-headline text-3xl">No matches yet</p>
       <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-        We scan active US tech roles against your profile. Make sure your skills
+        We scan active tech roles against your profile. Make sure your skills
         and resume are up to date for better matching.
       </p>
       <Link href={editProfileHref} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">

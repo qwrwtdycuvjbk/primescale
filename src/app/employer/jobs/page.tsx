@@ -65,7 +65,7 @@ export default async function EmployerJobsPage() {
             <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
               <p className="text-lg font-medium">No roles posted yet</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Create your first US remote tech role to start matching.
+                Create your first remote tech role to start matching.
               </p>
               <Link
                 href="/employer/jobs/new"

@@ -39,7 +39,7 @@ export default async function EmployerOnboardingPage() {
         <div className="max-w-3xl">
         <h1 className="display-headline text-4xl">Set up your company</h1>
         <p className="mt-3 text-muted-foreground">
-          US companies hiring remote tech talent. Complete your profile, then
+          Companies hiring remote tech talent worldwide. Complete your profile, then
           post your first role.
         </p>
         <div className="mt-10 rounded-3xl border border-border bg-card p-8">

@@ -61,7 +61,7 @@ export function SiteFooter() {
               Ready when you are
             </p>
             <h2 className="display-headline mt-4 max-w-xl text-balance text-3xl sm:text-5xl">
-              Match US tech talent{" "}
+              Match global tech talent{" "}
               <span className="italic text-primary">faster.</span>
             </h2>
           </div>
@@ -87,7 +87,7 @@ export function SiteFooter() {
           <div>
             <PrimeScaleLogo />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
-              US remote tech hiring with recruiter review. Backed by People
+              Global remote tech hiring with recruiter review. Backed by People
               Prime Worldwide.
             </p>
 
@@ -192,7 +192,7 @@ export function SiteFooter() {
             © {new Date().getFullYear()} People Prime Worldwide. All rights
             reserved.
           </p>
-          <p>US remote tech roles only.</p>
+          <p>Global remote tech hiring.</p>
         </div>
       </div>
     </footer>

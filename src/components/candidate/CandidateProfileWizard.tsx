@@ -373,7 +373,7 @@ export function CandidateProfileWizard({
             <>
               <h3 className="display-headline text-3xl">Skills</h3>
               <div>
-                <FieldLabel>Role categories (US tech)</FieldLabel>
+                <FieldLabel>Role categories</FieldLabel>
                 <div className="flex flex-wrap gap-2">
                   {ROLE_CATEGORIES.map((category) => (
                     <button

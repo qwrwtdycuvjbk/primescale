@@ -14,7 +14,7 @@ const employerSteps = [
   },
   {
     title: "Get matched candidates",
-    body: "Scored on skills, seniority, and US work auth. No inbox flood.",
+    body: "Scored on skills, seniority, and work eligibility. No inbox flood.",
   },
   {
     title: "Shortlist and hire",
@@ -25,11 +25,11 @@ const employerSteps = [
 const candidateSteps = [
   {
     title: "Build your profile",
-    body: "Skills, experience, US work authorization. One profile.",
+    body: "Skills, experience, and work eligibility. One profile.",
   },
   {
     title: "Get matched to roles",
-    body: "US remote tech roles that fit your profile.",
+    body: "Remote tech roles that fit your profile.",
   },
   {
     title: "Express interest",

@@ -26,7 +26,7 @@ export default async function LoginChooserPage({
   return (
     <AuthShell
       title="Welcome back."
-      description="Choose how you use PrimeScale — employers post roles, candidates get matched to US remote tech opportunities."
+      description="Choose how you use PrimeScale — employers post roles, candidates get matched to remote tech opportunities."
     >
       <div className="w-full space-y-4">
         {authErrorMessage && <ErrorBanner message={authErrorMessage} />}

@@ -84,7 +84,7 @@ export default async function EmployerDashboardPage() {
               {company.name}
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
-              Your posted roles and AI-matched candidates for US remote tech
+              Your posted roles and matched candidates for global remote tech
               hiring.
             </p>
           </div>

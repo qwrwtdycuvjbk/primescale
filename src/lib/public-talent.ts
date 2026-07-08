@@ -74,7 +74,7 @@ function experienceLevelLabel(value?: string | null): string | undefined {
 
 function formatLocation(value?: string | null): string | undefined {
   if (!value) return undefined;
-  if (value === "Remote (US)") return "US remote";
+  if (value === "Remote (US)") return "Remote";
   return value;
 }
 
@@ -128,7 +128,7 @@ export async function getPublicTalentShowcase(
       row.current_title?.trim() ||
       row.headline?.trim() ||
       experienceLevelLabel(row.experience_level) ||
-      "US remote engineer";
+      "Remote engineer";
     const allSkills = (row.skills as string[] | null) ?? [];
     const bioSource = row.bio?.trim() || row.headline?.trim();
 

@@ -29,7 +29,7 @@ export default async function EmployerLoginPage({
     <AuthShell
       audience="employer"
       title="Post your first role."
-      description="Create your employer account to post US remote tech roles and get matched candidates in your dashboard."
+      description="Create your employer account to post remote tech roles and get matched candidates in your dashboard."
     >
       <AuthForm
         mode="login"
