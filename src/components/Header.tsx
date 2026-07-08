@@ -6,7 +6,7 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-slate-950">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Link href="/" className="flex items-center">
-          <PrimeScaleLogo priority className="h-16 w-auto sm:h-[4.5rem]" />
+          <PrimeScaleLogo className="h-16 w-auto sm:h-[4.5rem]" />
         </Link>
         <nav className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
           <a href="#how-it-works" className="transition hover:text-white">
