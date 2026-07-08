@@ -29,8 +29,8 @@ export function SiteHeader() {
       <div
         className={`flex items-center justify-between gap-6 transition-all duration-300 ${appContainerClass} ${
           scrolled
-            ? "my-2 rounded-2xl border border-white/10 bg-ink/80 py-3 shadow-lg shadow-black/20 backdrop-blur-md lg:my-3"
-            : "border border-transparent py-5"
+            ? "my-2 rounded-2xl border border-white/10 bg-ink/80 py-2.5 shadow-lg shadow-black/20 backdrop-blur-md lg:my-2"
+            : "border border-transparent py-4"
         }`}
       >
         <Link href="/" className="flex items-center gap-3">

@@ -63,7 +63,7 @@ function Counter({
 const stats = [
   { value: 14, suffix: "+", label: "Years of staffing experience" },
   { value: 50000, suffix: "+", label: "Successful deployments" },
-  { value: 24, suffix: "h", label: "To matched, interview-ready talent" },
+  { value: 24, suffix: "h", label: "To interview-ready matches" },
 ];
 
 export function Hero() {
@@ -93,7 +93,7 @@ export function Hero() {
         }}
       />
 
-      <div className={`relative z-10 grid items-center gap-12 pb-16 pt-36 lg:grid-cols-12 lg:gap-8 lg:pt-44 lg:pb-20 ${appContainerClass}`}>
+      <div className={`relative z-10 grid items-center gap-10 pb-12 pt-28 lg:grid-cols-12 lg:gap-8 lg:pt-36 lg:pb-16 ${appContainerClass}`}>
         <div className="lg:col-span-7">
           <div className="animate-hero-in flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
             <span className="text-primary">[01]</span>
@@ -101,7 +101,7 @@ export function Hero() {
             <span className="h-px flex-1 bg-white/15" />
           </div>
 
-          <h1 className="display-headline mt-6 text-balance text-[3.25rem] sm:text-7xl lg:text-[5.5rem]">
+          <h1 className="display-headline mt-5 text-balance text-3xl sm:text-5xl lg:text-[4.25rem]">
             <span className="animate-hero-in block [animation-delay:50ms]">
               Great teams.
             </span>
@@ -113,23 +113,22 @@ export function Hero() {
             </span>
           </h1>
 
-          <p className="animate-hero-in mt-7 max-w-xl text-pretty text-lg leading-relaxed text-ink-muted [animation-delay:320ms]">
-            PrimeScale is an AI hiring platform for US remote tech roles. Employers
-            post roles. Candidates build a profile. Our matching engine connects
-            both sides, backed by People Prime Worldwide.
+          <p className="animate-hero-in mt-5 max-w-lg text-pretty text-base leading-relaxed text-ink-muted [animation-delay:320ms]">
+            Post roles or build a profile. Get skill-matched shortlists with
+            People Prime recruiters in the loop.
           </p>
 
-          <div className="animate-hero-in mt-9 flex flex-col gap-3 sm:flex-row [animation-delay:420ms]">
+          <div className="animate-hero-in mt-7 flex flex-col gap-3 sm:flex-row [animation-delay:420ms]">
             <Link
               href="/auth/employer/signup"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-base font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
             >
               I&apos;m hiring
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/auth/candidate/signup"
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-7 py-4 text-base font-semibold text-ink-foreground transition-colors hover:bg-white/5"
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-3.5 text-sm font-semibold text-ink-foreground transition-colors hover:bg-white/5"
             >
               I&apos;m a candidate
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -140,7 +139,7 @@ export function Hero() {
         <div className="animate-hero-card relative lg:col-span-5 [animation-delay:300ms]">
           <div className="absolute -right-2 -top-4 hidden h-full w-full rotate-3 rounded-3xl border border-white/10 bg-white/[0.03] lg:block" />
 
-          <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-6">
+          <div className="relative rounded-2xl border border-white/10 bg-white/[0.06] p-5">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
                 New match
@@ -183,9 +182,9 @@ export function Hero() {
 
             <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
               {[
-                "Pre-vetted by People Prime",
-                "Open to contract or C2H",
-                "Matched to your tech stack",
+                "Recruiter-reviewed",
+                "Contract or C2H",
+                "Stack-aligned match",
               ].map((line, i) => (
                 <div
                   key={line}
@@ -211,16 +210,16 @@ export function Hero() {
         </div>
       </div>
 
-      <div className={`animate-hero-in relative z-10 pb-16 [animation-delay:600ms] ${appContainerClass}`}>
+      <div className={`animate-hero-in relative z-10 pb-12 [animation-delay:600ms] ${appContainerClass}`}>
         <div className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {stats.map((stat, i) => (
             <div
               key={stat.label}
-              className="flex items-baseline gap-4 py-6 sm:px-6 first:sm:pl-0"
+              className="flex items-baseline gap-3 py-5 sm:px-5 first:sm:pl-0"
             >
               <span className="font-mono text-xs text-primary">0{i + 1}</span>
               <div>
-                <div className="display-headline text-4xl text-ink-foreground sm:text-5xl">
+                <div className="display-headline text-3xl text-ink-foreground sm:text-4xl">
                   <Counter to={stat.value} suffix={stat.suffix} />
                 </div>
                 <p className="mt-1 text-sm text-ink-muted">{stat.label}</p>

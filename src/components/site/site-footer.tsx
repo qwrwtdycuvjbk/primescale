@@ -54,13 +54,13 @@ const socialLinks = [
 export function SiteFooter() {
   return (
     <footer id="contact" className="noise relative overflow-hidden bg-ink text-ink-foreground">
-      <div className={`relative pt-20 ${appContainerClass}`}>
-        <div className="flex flex-col gap-8 border-b border-white/10 pb-16 lg:flex-row lg:items-end lg:justify-between">
+      <div className={`relative pt-14 ${appContainerClass}`}>
+        <div className="flex flex-col gap-6 border-b border-white/10 pb-12 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
               Ready when you are
             </p>
-            <h2 className="display-headline mt-5 max-w-2xl text-balance text-4xl sm:text-6xl">
+            <h2 className="display-headline mt-4 max-w-xl text-balance text-3xl sm:text-5xl">
               Match US tech talent{" "}
               <span className="italic text-primary">faster.</span>
             </h2>
@@ -83,12 +83,12 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="grid gap-12 py-16 lg:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="grid gap-10 py-12 lg:grid-cols-[1.4fr_1fr_1fr]">
           <div>
             <PrimeScaleLogo />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-muted">
-              AI-powered US remote tech hiring, backed by People Prime Worldwide.
-              Better Careers, Better Lives.
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
+              US remote tech hiring with recruiter review. Backed by People
+              Prime Worldwide.
             </p>
 
             <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
@@ -181,7 +181,7 @@ export function SiteFooter() {
         </div>
 
         <div
-          className="display-headline select-none border-t border-white/10 pt-8 text-[22vw] leading-[0.8] text-white/[0.06] lg:text-[16rem]"
+          className="display-headline select-none border-t border-white/10 pt-6 text-[18vw] leading-[0.8] text-white/[0.06] lg:text-[12rem]"
           aria-hidden
         >
           PrimeScale

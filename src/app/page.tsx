@@ -36,7 +36,7 @@ export default function Home() {
       <SiteHeader />
       <Hero />
 
-      <div className="border-y border-border bg-primary py-5 text-primary-foreground">
+      <div className="border-y border-border bg-primary py-3 text-primary-foreground">
         <Marquee items={marqueeItems} duration={36} />
       </div>
 
@@ -48,15 +48,15 @@ export default function Home() {
         index="04"
         variant="dark"
         eyebrow="For employers"
-        title="Post a role. Get matched candidates."
-        intro="Skip the job board chaos. Post a US remote tech role, get AI-matched candidates, and shortlist from your dashboard with People Prime as your staffing backstop."
+        title="Post a role. Get matches."
+        intro="US remote tech only. Recruiter-reviewed candidates in your dashboard, with People Prime as your staffing backstop."
         bullets={[
-          "AI-assisted job description parsing",
-          "Skill and seniority-based matching",
+          "AI-assisted JD parsing",
+          "Skill and seniority matching",
           "US remote tech roles only",
-          "Shortlist candidates from your dashboard",
+          "Shortlist from one dashboard",
         ]}
-        ctaLabel="Post a role for free"
+        ctaLabel="Post a role free"
         ctaHref="/auth/employer/signup"
       />
 
@@ -65,13 +65,13 @@ export default function Home() {
         index="05"
         variant="light"
         eyebrow="For candidates"
-        title="Build your profile. Get matched."
-        intro="One profile, zero spam. Add your skills and US work authorization, and let PrimeScale surface remote tech roles that actually fit."
+        title="One profile. Ongoing matches."
+        intro="Add skills and work auth once. See US remote tech roles that fit — no spam."
         bullets={[
           "One profile, ongoing matches",
           "US remote tech roles only",
-          "AI scoring against real employer needs",
-          "Mark roles you are interested in",
+          "Skill and seniority matching",
+          "Mark roles you want",
         ]}
         ctaLabel="Create your profile"
         ctaHref="/auth/candidate/signup"
