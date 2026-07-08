@@ -77,11 +77,11 @@ export function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 120% 95% at -2% -8%, rgba(193, 224, 69, 0.28) 0%, rgba(193, 224, 69, 0.08) 38%, transparent 68%)",
+              "radial-gradient(ellipse 110% 85% at -2% -8%, rgba(193, 224, 69, 0.12) 0%, rgba(193, 224, 69, 0.03) 32%, transparent 58%)",
           }}
         />
-        <div className="absolute -left-40 top-0 size-[32rem] rounded-full bg-[#C1E045]/22 blur-3xl" />
-        <div className="absolute left-[8%] top-[6%] size-64 rounded-full bg-[#C1E045]/10 blur-[80px]" />
+        <div className="absolute -left-40 top-0 size-[28rem] rounded-full bg-[#C1E045]/10 blur-3xl" />
+        <div className="absolute left-[8%] top-[6%] size-56 rounded-full bg-[#C1E045]/5 blur-[72px]" />
       </div>
 
       <div
