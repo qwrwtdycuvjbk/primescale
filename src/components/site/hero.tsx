@@ -95,7 +95,7 @@ export function Hero() {
 
       <div className={`relative z-10 grid items-center gap-12 pb-16 pt-36 lg:grid-cols-12 lg:gap-8 lg:pt-44 lg:pb-20 ${appContainerClass}`}>
         <div className="lg:col-span-7">
-          <div className="animate-hero-in flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
+          <div className="animate-hero-in flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
             <span className="text-primary">[01]</span>
             <span>US remote tech hiring</span>
             <span className="h-px flex-1 bg-white/15" />
@@ -142,7 +142,7 @@ export function Hero() {
 
           <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-6">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-ink-muted">
+              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
                 New match
               </span>
               <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -218,7 +218,7 @@ export function Hero() {
               key={stat.label}
               className="flex items-baseline gap-4 py-6 sm:px-6 first:sm:pl-0"
             >
-              <span className="font-mono text-[12px] text-primary">0{i + 1}</span>
+              <span className="font-mono text-xs text-primary">0{i + 1}</span>
               <div>
                 <div className="display-headline text-4xl text-ink-foreground sm:text-5xl">
                   <Counter to={stat.value} suffix={stat.suffix} />

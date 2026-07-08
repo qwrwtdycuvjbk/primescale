@@ -21,7 +21,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-base font-medium transition ${
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
         isActive
           ? "bg-foreground text-background"
           : "text-muted-foreground hover:text-foreground"
@@ -88,13 +88,13 @@ export async function AdminShell({
             </nav>
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden text-base text-muted-foreground sm:inline">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
               {name} · People Prime ops
             </span>
             <form action={signOut}>
               <button
                 type="submit"
-                className="text-base font-medium text-muted-foreground transition hover:text-foreground"
+                className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
               >
                 Sign out
               </button>

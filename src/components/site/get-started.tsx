@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "./reveal";
 import { ArrowRight, Briefcase, UserRound } from "lucide-react";
+import { appContainerClass } from "@/components/site/layout";
 
 const cards = [
   {
@@ -36,7 +37,7 @@ const cards = [
 export function GetStarted() {
   return (
     <section id="get-started" className="bg-background py-20 sm:py-28">
-      <div className="mx-auto w-full max-w-screen-2xl px-8 sm:px-10 lg:px-12">
+      <div className={appContainerClass}>
         <Reveal className="max-w-3xl">
           <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
             <span className="text-primary">[06]</span>

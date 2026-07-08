@@ -42,7 +42,7 @@ export function SiteHeader() {
             <a
               key={link.href}
               href={link.href}
-              className="text-[12px] font-medium text-ink-muted transition-colors hover:text-ink-foreground"
+              className="text-sm font-medium text-ink-muted transition-colors hover:text-ink-foreground"
             >
               {link.label}
             </a>
@@ -52,13 +52,13 @@ export function SiteHeader() {
         <div className="hidden items-center gap-3 md:flex">
           <Link
             href="/auth/login"
-            className="text-[12px] font-medium text-ink-foreground transition-opacity hover:opacity-70"
+            className="text-sm font-medium text-ink-foreground transition-opacity hover:opacity-70"
           >
             Log in
           </Link>
           <Link
             href="/auth/employer/signup"
-            className="rounded-full bg-primary px-5 py-2.5 text-[12px] font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
           >
             Post a role
           </Link>
@@ -82,7 +82,7 @@ export function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2 text-[12px] font-medium text-ink-muted hover:bg-white/5 hover:text-ink-foreground"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-ink-muted hover:bg-white/5 hover:text-ink-foreground"
               >
                 {link.label}
               </a>
@@ -90,13 +90,13 @@ export function SiteHeader() {
             <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
               <Link
                 href="/auth/login"
-                className="rounded-lg px-3 py-2 text-[12px] font-medium text-ink-foreground hover:bg-white/5"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-ink-foreground hover:bg-white/5"
               >
                 Log in
               </Link>
               <Link
                 href="/auth/employer/signup"
-                className="rounded-full bg-primary px-5 py-2.5 text-center text-[12px] font-semibold text-primary-foreground"
+                className="rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground"
               >
                 Post a role
               </Link>

@@ -1,6 +1,7 @@
 import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
 import Link from "next/link";
 import { ArrowUpRight, Mail, Phone } from "lucide-react";
+import { appContainerClass } from "@/components/site/layout";
 
 const productLinks = [
   { label: "How it works", href: "#how-it-works" },
@@ -53,7 +54,7 @@ const socialLinks = [
 export function SiteFooter() {
   return (
     <footer id="contact" className="noise relative overflow-hidden bg-ink text-ink-foreground">
-      <div className="relative mx-auto w-full max-w-screen-2xl px-8 pt-20 sm:px-10 lg:px-12">
+      <div className={`relative pt-20 ${appContainerClass}`}>
         <div className="flex flex-col gap-8 border-b border-white/10 pb-16 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
