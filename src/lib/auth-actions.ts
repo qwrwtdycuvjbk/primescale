@@ -132,7 +132,7 @@ export async function submitAuth(formData: FormData) {
       await savePhone(data.user.id, phone);
       if (adminLogin) {
         await ensureAdminProfile(supabase, data.user, email);
-        redirect("/admin/handoffs");
+        redirect("/admin");
       }
       try {
         await ensureProfileForUser(supabase, data.user, role);
@@ -187,7 +187,7 @@ export async function submitAuth(formData: FormData) {
     await savePhone(data.user.id, phone);
     if (adminLogin) {
       await ensureAdminProfile(supabase, data.user, email);
-      redirect("/admin/handoffs");
+      redirect("/admin");
     }
     try {
       await ensureProfileForUser(supabase, data.user, role);

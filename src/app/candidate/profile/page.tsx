@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CandidateProfileEditForm } from "@/components/candidate/CandidateProfileEditForm";
+import { appMainClass } from "@/components/site/layout";
 import { CandidateShell } from "@/components/candidate/CandidateShell";
 import { requireRole } from "@/lib/auth";
 import {
@@ -28,7 +29,8 @@ export default async function CandidateProfilePage() {
 
   return (
     <CandidateShell name={profile.full_name} activePath="/candidate/profile">
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <main className={appMainClass}>
+        <div className="max-w-3xl">
         <Link
           href="/candidate"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -46,6 +48,7 @@ export default async function CandidateProfilePage() {
 
         <div className="mt-10 rounded-3xl border border-border bg-card p-8">
           <CandidateProfileEditForm initialData={initialData} />
+        </div>
         </div>
       </main>
     </CandidateShell>

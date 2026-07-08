@@ -41,7 +41,7 @@ export function WhyUs() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <Reveal>
           <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
-            <span className="text-primary">[03]</span>
+            <span className="text-primary">[04]</span>
             <span>Why PrimeScale</span>
             <span className="h-px flex-1 bg-border" />
           </div>

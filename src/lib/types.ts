@@ -47,6 +47,7 @@ export interface Company {
 export type AvailabilityStatus = "actively_looking" | "open" | "not_looking";
 export type PreferredWorkType = "remote" | "hybrid" | "onsite";
 export type PrivacyVisibility = "public" | "employers_only" | "invite_only";
+export type CandidateSource = "platform" | "people_prime";
 
 export interface CandidateProfile {
   id: string;
@@ -74,6 +75,7 @@ export interface CandidateProfile {
   profile_completeness?: number;
   open_to_matching: boolean;
   profile_complete: boolean;
+  source?: CandidateSource;
   created_at: string;
   updated_at: string;
 }

@@ -85,6 +85,21 @@ Run these SQL files **in order** in the Supabase SQL Editor:
 7. `supabase/handoff-queue.sql` — mutual-fit handoff queue
 8. `supabase/match-review.sql` — recruiter review gate for matches
 9. `supabase/profiles-rls-fix.sql` — fixes admin RLS recursion
+10. `supabase/candidates-admin-views.sql` — Table Editor views (candidate name, date)
+
+**Do not re-run the full migration list on an existing database.**
+
+If you see `relation "role_submissions" already exists`, **stop** — that table is already set up. **Do not run `schema.sql`.**
+
+Run only what you still need, one file at a time:
+
+| If you need… | Run this file only |
+|--------------|-------------------|
+| International remote work auth label fix | `supabase/work-auth-international-remote.sql` |
+| Admin candidate views in Table Editor | `supabase/candidates-admin-views.sql` |
+| Anything else | Ask which step — don't paste the whole folder |
+
+**Optional (legacy):** `supabase/schema.sql` — only for brand-new projects without `role_submissions`.
 
 Also enable **Email** and **Google** auth providers in Supabase → Authentication → Providers.
 

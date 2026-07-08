@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { appContainerClass } from "@/components/site/layout";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -30,7 +31,7 @@ export async function CandidateShell({
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-6">
+        <div className={`${appContainerClass} flex items-center justify-between gap-6 py-4`}>
           <div className="flex items-center gap-8">
             <Link href="/">
               <PrimeScaleLogo variant="dark" />
@@ -40,7 +41,7 @@ export async function CandidateShell({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                className={`rounded-full px-5 py-2.5 text-base font-medium transition ${
                   activePath === link.href
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground"
@@ -55,7 +56,7 @@ export async function CandidateShell({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                className={`rounded-full px-4 py-2 text-sm font-medium ${
                   activePath === link.href
                     ? "bg-foreground text-background"
                     : "text-muted-foreground"
@@ -67,13 +68,13 @@ export async function CandidateShell({
           </nav>
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-muted-foreground sm:inline">
+            <span className="hidden text-base text-muted-foreground sm:inline">
               {name}
             </span>
             <form action={signOut}>
               <button
                 type="submit"
-                className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                className="text-base font-medium text-muted-foreground transition hover:text-foreground"
               >
                 Sign out
               </button>

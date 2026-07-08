@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, FileText, Sparkles } from "lucide-react";
 import { CandidateMatchCard } from "@/components/candidate/CandidateMatchCard";
 import { CandidateShell } from "@/components/candidate/CandidateShell";
+import { appMainClass } from "@/components/site/layout";
 import { requireRole } from "@/lib/auth";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
 import { createClient } from "@/lib/supabase/server";
@@ -44,7 +45,7 @@ export default async function CandidateDashboardPage() {
 
   return (
     <CandidateShell name={profile.full_name} activePath="/candidate">
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <main className={appMainClass}>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="display-headline text-4xl sm:text-5xl">

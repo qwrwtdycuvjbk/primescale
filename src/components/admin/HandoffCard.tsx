@@ -101,8 +101,13 @@ export function HandoffCard({ handoff }: { handoff: HandoffWithEmployer }) {
                 GitHub
               </a>
             )}
-            {candidate?.resume_url && (
-              <a href={candidate.resume_url} target="_blank" rel="noreferrer" className="underline">
+            {candidate?.resume_url && candidate?.id && (
+              <a
+                href={`/api/admin/candidates/${candidate.id}/resume`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
                 Resume
               </a>
             )}

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { HandoffCard } from "@/components/admin/HandoffCard";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { appMainClass } from "@/components/site/layout";
 import { AdminHandoffFilters } from "@/components/admin/AdminHandoffFilters";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase/service";
@@ -41,6 +42,7 @@ export default async function AdminHandoffsPage({
           companies ( name )
         ),
         candidate_profiles (
+          id,
           headline,
           skills,
           linkedin_url,
@@ -98,7 +100,7 @@ export default async function AdminHandoffsPage({
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/handoffs">
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
           People Prime <span className="italic text-primary">handoffs.</span>
         </h1>

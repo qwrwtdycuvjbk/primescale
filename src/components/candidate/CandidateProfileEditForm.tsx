@@ -305,6 +305,10 @@ export function CandidateProfileEditForm({
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <FieldLabel htmlFor="workAuthorization">Work authorization</FieldLabel>
+            <p className="mb-2 text-sm text-muted-foreground">
+              US-based roles need US work authorization. Remote contractors outside
+              the US should choose the international option.
+            </p>
             <select
               id="workAuthorization"
               className={fieldInputClass}

@@ -1,5 +1,6 @@
 import { JobPostForm } from "@/components/employer/JobPostForm";
 import { EmployerShell } from "@/components/employer/EmployerShell";
+import { appMainClass } from "@/components/site/layout";
 import { requireRole } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +26,8 @@ export default async function NewJobPage() {
 
   return (
     <EmployerShell name={profile.full_name} activePath="/employer/jobs">
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <main className={appMainClass}>
+        <div className="max-w-3xl">
         <h1 className="display-headline text-4xl">Post a tech role</h1>
         <p className="mt-3 text-muted-foreground">
           US remote tech roles only. Paste your JD or fill in details — salary
@@ -33,6 +35,7 @@ export default async function NewJobPage() {
         </p>
         <div className="mt-10 rounded-3xl border border-border bg-card p-8">
           <JobPostForm companyName={company.name} />
+        </div>
         </div>
       </main>
     </EmployerShell>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import { appContainerClass } from "@/components/site/layout";
 
 function Counter({
   to,
@@ -69,13 +70,22 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="noise relative overflow-hidden bg-ink text-ink-foreground"
+      className="hero-surface noise relative isolate overflow-hidden bg-ink text-ink-foreground"
     >
-      <div className="pointer-events-none absolute -left-40 top-0 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-1/3 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 120% 95% at -2% -8%, rgba(193, 224, 69, 0.28) 0%, rgba(193, 224, 69, 0.08) 38%, transparent 68%)",
+          }}
+        />
+        <div className="absolute -left-40 top-0 size-[32rem] rounded-full bg-[#C1E045]/22 blur-3xl" />
+        <div className="absolute left-[8%] top-[6%] size-64 rounded-full bg-[#C1E045]/10 blur-[80px]" />
+      </div>
 
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 z-[2] opacity-[0.04]"
         style={{
           backgroundImage:
             "linear-gradient(to right, currentColor 1px, transparent 1px)",
@@ -83,9 +93,9 @@ export function Hero() {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 pb-16 pt-36 sm:px-6 lg:grid-cols-12 lg:gap-8 lg:pt-44 lg:pb-20">
+      <div className={`relative z-10 grid items-center gap-12 pb-16 pt-36 lg:grid-cols-12 lg:gap-8 lg:pt-44 lg:pb-20 ${appContainerClass}`}>
         <div className="lg:col-span-7">
-          <div className="animate-hero-in flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
+          <div className="animate-hero-in flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
             <span className="text-primary">[01]</span>
             <span>US remote tech hiring</span>
             <span className="h-px flex-1 bg-white/15" />
@@ -132,7 +142,7 @@ export function Hero() {
 
           <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-6">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
+              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-ink-muted">
                 New match
               </span>
               <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -145,7 +155,7 @@ export function Hero() {
             </div>
 
             <div className="mt-5 flex items-center gap-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-2xl font-semibold text-primary-foreground">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary font-display text-2xl font-semibold text-primary-foreground">
                 AK
               </span>
               <div>
@@ -156,7 +166,7 @@ export function Hero() {
 
             <div className="mt-5 flex flex-wrap gap-2">
               {[
-                "Remote · US",
+                "Remote - US",
                 "$140k–$175k",
                 "AWS",
                 "Kubernetes",
@@ -201,14 +211,14 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="animate-hero-in relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 [animation-delay:600ms]">
+      <div className={`animate-hero-in relative z-10 pb-16 [animation-delay:600ms] ${appContainerClass}`}>
         <div className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {stats.map((stat, i) => (
             <div
               key={stat.label}
               className="flex items-baseline gap-4 py-6 sm:px-6 first:sm:pl-0"
             >
-              <span className="font-mono text-xs text-primary">0{i + 1}</span>
+              <span className="font-mono text-[12px] text-primary">0{i + 1}</span>
               <div>
                 <div className="display-headline text-4xl text-ink-foreground sm:text-5xl">
                   <Counter to={stat.value} suffix={stat.suffix} />

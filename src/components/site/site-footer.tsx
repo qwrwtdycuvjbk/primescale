@@ -4,7 +4,7 @@ import { ArrowUpRight, Mail, Phone } from "lucide-react";
 
 const productLinks = [
   { label: "How it works", href: "#how-it-works" },
-  { label: "Why us", href: "#why-us" },
+  { label: "The difference", href: "#why-us" },
   { label: "For employers", href: "#for-employers" },
   { label: "For candidates", href: "#for-candidates" },
 ];
@@ -53,7 +53,7 @@ const socialLinks = [
 export function SiteFooter() {
   return (
     <footer id="contact" className="noise relative overflow-hidden bg-ink text-ink-foreground">
-      <div className="relative mx-auto max-w-7xl px-4 pt-20 sm:px-6">
+      <div className="relative mx-auto w-full max-w-screen-2xl px-8 pt-20 sm:px-10 lg:px-12">
         <div className="flex flex-col gap-8 border-b border-white/10 pb-16 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
@@ -84,14 +84,14 @@ export function SiteFooter() {
 
         <div className="grid gap-12 py-16 lg:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <PrimeScaleLogo className="h-12 w-auto sm:h-14" />
+            <PrimeScaleLogo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-muted">
               AI-powered US remote tech hiring, backed by People Prime Worldwide.
               Better Careers, Better Lives.
             </p>
 
             <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">
+              <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
                 Powered by
               </p>
               <p className="mt-2 text-sm font-semibold text-ink-foreground">
@@ -123,7 +123,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
+            <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
               Platform
             </h4>
             <ul className="mt-5 flex flex-col gap-3">
@@ -141,7 +141,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
+            <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
               Company
             </h4>
             <ul className="mt-5 flex flex-col gap-3">
@@ -159,7 +159,7 @@ export function SiteFooter() {
               ))}
             </ul>
 
-            <h4 className="mt-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
+            <h4 className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
               Follow us
             </h4>
             <ul className="mt-5 flex flex-col gap-3">

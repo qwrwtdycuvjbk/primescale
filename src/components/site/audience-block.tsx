@@ -47,7 +47,7 @@ export function AudienceBlock({
         {index}
       </span>
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-28">
+      <div className="relative mx-auto grid w-full max-w-screen-2xl items-center gap-12 px-8 py-20 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-12 lg:py-28">
         <Reveal className={reverse ? "lg:order-2" : ""}>
           <div
             className={`flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] ${

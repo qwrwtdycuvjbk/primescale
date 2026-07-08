@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Job, Match, MatchStatus } from "@/lib/types";
+import { workAuthLabel } from "@/lib/constants";
 import { PrimaryButton, SecondaryButton } from "@/components/site/form";
 
 export function EmployerMatchCard({ match }: { match: Match }) {
@@ -38,7 +39,9 @@ export function EmployerMatchCard({ match }: { match: Match }) {
     candidate?.years_experience != null
       ? `${candidate.years_experience} yrs exp`
       : null,
-    candidate?.work_authorization,
+    candidate?.work_authorization
+      ? workAuthLabel(candidate.work_authorization)
+      : null,
     candidate?.us_state,
     candidate?.remote_preference,
   ].filter(Boolean);

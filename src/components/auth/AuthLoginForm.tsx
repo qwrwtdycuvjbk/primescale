@@ -83,7 +83,7 @@ export function AuthLoginForm({
 
   return (
     <div className="w-full">
-      <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground sm:text-xs">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
         {role === "employer" ? "For employers" : "For candidates"}
       </p>
       <h2 className="display-headline mt-1 text-xl text-foreground sm:text-2xl">

@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { EmployerMatchCard } from "@/components/employer/EmployerMatchCard";
 import { EmployerMatchesFilters } from "@/components/employer/EmployerMatchesFilters";
 import { EmployerShell } from "@/components/employer/EmployerShell";
+import { appMainClass } from "@/components/site/layout";
 import { requireRole } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
@@ -92,7 +93,7 @@ export default async function EmployerMatchesPage({
 
   return (
     <EmployerShell name={profile.full_name} activePath="/employer/matches">
-      <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <main className={appMainClass}>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="display-headline text-4xl sm:text-5xl">

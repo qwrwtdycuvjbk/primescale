@@ -55,7 +55,7 @@ export function Footer() {
             </p>
 
             <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Powered by
               </p>
               <p className="mt-2 text-sm font-semibold text-white">

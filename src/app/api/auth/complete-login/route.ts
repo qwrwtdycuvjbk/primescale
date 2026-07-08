@@ -31,7 +31,7 @@ export async function POST() {
       );
     }
 
-    return NextResponse.json({ redirect: "/admin/handoffs" });
+    return NextResponse.json({ redirect: "/admin" });
   }
 
   return NextResponse.json({ redirect: "/auth/redirect" });

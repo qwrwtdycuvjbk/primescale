@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       await ensureProfileForUser(supabase, data.user, "admin");
     }
 
-    return redirectWithCookies(request, sessionResponse, "/admin/handoffs");
+    return redirectWithCookies(request, sessionResponse, "/admin");
   }
 
   try {

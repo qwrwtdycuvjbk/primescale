@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
+import { getGoogleSiteVerification } from "@/lib/google-site-verification";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,8 @@ const SpeedInsights = dynamic(() =>
   import("@vercel/speed-insights/next").then((mod) => mod.SpeedInsights),
 );
 
+const googleSiteVerification = getGoogleSiteVerification();
+
 export const metadata: Metadata = {
   title: "PrimeScale | AI hiring platform for US remote tech roles",
   description:
@@ -39,6 +42,13 @@ export const metadata: Metadata = {
     shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
   },
+  ...(googleSiteVerification
+    ? {
+        verification: {
+          google: googleSiteVerification,
+        },
+      }
+    : {}),
 };
 
 export const viewport: Viewport = {
@@ -56,6 +66,11 @@ export default function RootLayout({
       lang="en"
       className={`light ${geistSans.variable} ${geistMono.variable} ${fraunces.variable} bg-background`}
     >
+      <head>
+        {googleSiteVerification ? (
+          <meta name="google-site-verification" content={googleSiteVerification} />
+        ) : null}
+      </head>
       <body className="min-h-full font-sans antialiased">
         {children}
         <Analytics />

@@ -4,7 +4,6 @@ type PrimeScaleLogoProps = {
   /** `light` = white logo for dark backgrounds; `dark` = dark logo for light backgrounds */
   variant?: "light" | "dark";
   className?: string;
-  priority?: boolean;
 };
 
 function LogoSparkle({ className }: { className?: string }) {

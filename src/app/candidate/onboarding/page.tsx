@@ -1,5 +1,6 @@
 import { CandidateProfileWizard } from "@/components/candidate/CandidateProfileWizard";
 import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { appContainerClass, appMainClass } from "@/components/site/layout";
 import { requireRole } from "@/lib/auth";
 import {
   isCandidateProfileComplete,
@@ -30,15 +31,16 @@ export default async function CandidateOnboardingPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className={`${appContainerClass} flex items-center justify-between py-4`}>
           <Link href="/">
             <PrimeScaleLogo variant="dark" />
           </Link>
-          <p className="text-sm text-muted-foreground">5-step onboarding</p>
+          <p className="text-base text-muted-foreground">5-step onboarding</p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-12">
+      <main className={appMainClass}>
+        <div className="max-w-3xl">
         <h1 className="display-headline text-4xl sm:text-5xl">
           Build your <span className="italic text-primary">profile.</span>
         </h1>
@@ -52,6 +54,7 @@ export default async function CandidateOnboardingPage() {
             initialData={initialData}
             redirectTo="/candidate"
           />
+        </div>
         </div>
       </main>
     </div>

@@ -36,7 +36,7 @@ const cards = [
 export function GetStarted() {
   return (
     <section id="get-started" className="bg-background py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto w-full max-w-screen-2xl px-8 sm:px-10 lg:px-12">
         <Reveal className="max-w-3xl">
           <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
             <span className="text-primary">[06]</span>
@@ -72,7 +72,7 @@ export function GetStarted() {
                     <card.icon className="h-6 w-6" />
                   </span>
                   <span
-                    className={`font-mono text-[11px] uppercase tracking-[0.2em] ${
+                    className={`font-mono text-xs uppercase tracking-[0.2em] ${
                       card.accent ? "text-ink-muted" : "text-muted-foreground"
                     }`}
                   >

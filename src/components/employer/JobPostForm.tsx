@@ -305,7 +305,7 @@ export function JobPostForm({ companyName }: { companyName: string }) {
           value={form.visaRequirements}
           onChange={(e) => setForm({ ...form, visaRequirements: e.target.value })}
         />
-        <p className="mt-1.5 text-[11px] text-muted-foreground sm:text-xs">
+        <p className="mt-1.5 text-xs text-muted-foreground">
           PrimeScale is US remote only. Tell candidates which work authorizations you
           accept for this fully remote role.
         </p>

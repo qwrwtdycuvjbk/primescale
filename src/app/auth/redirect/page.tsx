@@ -43,7 +43,7 @@ export default async function AuthRedirectPage() {
   }
 
   if (profile.role === "admin") {
-    redirect("/admin/handoffs");
+    redirect("/admin");
   }
 
   const supabase = await createClient();

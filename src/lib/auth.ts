@@ -145,7 +145,7 @@ export async function requireAdmin() {
   const { user, profile } = await getSessionProfile();
 
   if (!user || !profile || profile.role !== "admin") {
-    redirect("/auth/employer/login?next=/admin/handoffs");
+    redirect("/auth/employer/login?next=/admin");
   }
 
   return { user, profile };

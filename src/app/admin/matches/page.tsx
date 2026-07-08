@@ -1,5 +1,6 @@
 import { RecruiterMatchReviewCard } from "@/components/admin/RecruiterMatchReviewCard";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { appMainClass } from "@/components/site/layout";
 import { requireAdmin } from "@/lib/auth";
 import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
 import { getServiceClient } from "@/lib/supabase/service";
@@ -40,7 +41,7 @@ export default async function AdminMatchesPage() {
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/matches">
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
           Match <span className="italic text-primary">review.</span>
         </h1>

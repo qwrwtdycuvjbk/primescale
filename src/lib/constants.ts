@@ -28,8 +28,24 @@ export const WORK_AUTH_OPTIONS = [
   { value: "green_card", label: "Green card" },
   { value: "h1b", label: "H-1B (needs sponsorship)" },
   { value: "ead", label: "EAD / OPT" },
-  { value: "other", label: "Other US work authorization" },
+  {
+    value: "international_remote",
+    label: "Remote outside US (no US work auth required)",
+  },
 ] as const;
+
+const LEGACY_WORK_AUTH_LABELS: Record<string, string> = {
+  other: "Remote outside US (no US work auth required)",
+};
+
+export function workAuthLabel(value?: string | null): string {
+  if (!value) return "—";
+  return (
+    WORK_AUTH_OPTIONS.find((option) => option.value === value)?.label ??
+    LEGACY_WORK_AUTH_LABELS[value] ??
+    value.replace(/_/g, " ")
+  );
+}
 
 export const AVAILABILITY_OPTIONS = [
   { value: "actively_looking", label: "Actively looking" },
@@ -47,6 +63,11 @@ export const PRIVACY_OPTIONS = [
   { value: "public", label: "Public" },
   { value: "employers_only", label: "Employers only" },
   { value: "invite_only", label: "Invite only" },
+] as const;
+
+export const CANDIDATE_SOURCE_OPTIONS = [
+  { value: "people_prime", label: "People Prime bench" },
+  { value: "platform", label: "Platform signup" },
 ] as const;
 
 export const INDUSTRIES = [
