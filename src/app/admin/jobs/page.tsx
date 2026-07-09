@@ -7,9 +7,8 @@ import {
 } from "@/components/admin/JobRegistryTable";
 import { appMainClass } from "@/components/site/layout";
 import { requireAdmin } from "@/lib/auth";
-import { getServiceClient } from "@/lib/supabase/service";
+import { getAdminClient } from "@/lib/supabase/admin";
 import type { Company, Job, Profile } from "@/lib/types";
-import { redirect } from "next/navigation";
 
 type RawJobRow = Job & {
   companies: Pick<Company, "name" | "website"> | Pick<Company, "name" | "website">[] | null;
@@ -33,8 +32,7 @@ export default async function AdminJobsPage({
 }) {
   const filters = await searchParams;
   const { profile } = await requireAdmin();
-  const supabase = getServiceClient();
-  if (!supabase) redirect("/");
+  const supabase = await getAdminClient();
 
   let query = supabase
     .from("jobs")

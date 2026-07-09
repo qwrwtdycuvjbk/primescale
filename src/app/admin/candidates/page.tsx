@@ -9,9 +9,8 @@ import {
   type AdminCandidateRow,
 } from "@/components/admin/CandidateRegistryTable";
 import { requireAdmin } from "@/lib/auth";
-import { getServiceClient } from "@/lib/supabase/service";
+import { getAdminClient } from "@/lib/supabase/admin";
 import type { MatchStatus } from "@/lib/types";
-import { redirect } from "next/navigation";
 
 const roleApplicationStatuses: MatchStatus[] = [
   "candidate_interested",
@@ -37,8 +36,7 @@ export default async function AdminCandidatesPage({
 }) {
   const filters = await searchParams;
   const { profile } = await requireAdmin();
-  const supabase = getServiceClient();
-  if (!supabase) redirect("/");
+  const supabase = await getAdminClient();
 
   let query = supabase
     .from("candidate_profiles")

@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireAdmin } from "@/lib/auth";
 import { loadAdminDashboardStats } from "@/lib/admin-dashboard";
+import { hasServiceRoleKey } from "@/lib/supabase/admin";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
@@ -103,6 +104,17 @@ export default async function AdminDashboardPage() {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Review matches, coordinate handoffs, or check roles with no candidates yet.
+            </p>
+          </div>
+        )}
+
+        {!hasServiceRoleKey() && (
+          <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-5 py-4">
+            <p className="font-medium text-amber-800 dark:text-amber-200">
+              Add SUPABASE_SERVICE_ROLE_KEY in Vercel to enable admin candidate creation and background matching.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Dashboard, candidates, and jobs still load using your admin login.
             </p>
           </div>
         )}

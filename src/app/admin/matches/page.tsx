@@ -3,13 +3,11 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireAdmin } from "@/lib/auth";
 import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
-import { getServiceClient } from "@/lib/supabase/service";
-import { redirect } from "next/navigation";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 export default async function AdminMatchesPage() {
   const { profile } = await requireAdmin();
-  const supabase = getServiceClient();
-  if (!supabase) redirect("/");
+  const supabase = await getAdminClient();
 
   const { data: pendingMatches } = await supabase
     .from("matches")

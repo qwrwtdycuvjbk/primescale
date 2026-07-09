@@ -4,9 +4,8 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { AdminHandoffFilters } from "@/components/admin/AdminHandoffFilters";
 import { requireAdmin } from "@/lib/auth";
-import { getServiceClient } from "@/lib/supabase/service";
+import { getAdminClient } from "@/lib/supabase/admin";
 import type { HandoffRequest, HandoffStatus, Profile } from "@/lib/types";
-import { redirect } from "next/navigation";
 
 const handoffStatuses: HandoffStatus[] = [
   "pending",
@@ -22,8 +21,7 @@ export default async function AdminHandoffsPage({
 }) {
   const { status } = await searchParams;
   const { profile } = await requireAdmin();
-  const supabase = getServiceClient();
-  if (!supabase) redirect("/");
+  const supabase = await getAdminClient();
 
   let query = supabase
     .from("handoff_requests")

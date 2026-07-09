@@ -1,5 +1,5 @@
 import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
-import { getServiceClient } from "@/lib/supabase/service";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 export function startOfWeekIso(): string {
   const now = new Date();
@@ -49,7 +49,7 @@ export type AdminDashboardStats = AdminNavCounts & {
 };
 
 export async function loadAdminNavCounts(): Promise<AdminNavCounts> {
-  const supabase = getServiceClient();
+  const supabase = await getAdminClient();
   if (!supabase) {
     return { pendingMatches: 0, pendingHandoffs: 0 };
   }
@@ -74,7 +74,7 @@ export async function loadAdminNavCounts(): Promise<AdminNavCounts> {
 }
 
 export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
-  const supabase = getServiceClient();
+  const supabase = await getAdminClient();
   const weekStart = startOfWeekIso();
 
   if (!supabase) {
