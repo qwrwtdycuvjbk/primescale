@@ -141,20 +141,7 @@ export function Hero() {
           <div className="absolute -right-2 -top-4 hidden h-full w-full rotate-3 rounded-3xl border border-white/10 bg-white/[0.03] lg:block" />
 
           <div className="relative rounded-2xl border border-white/10 bg-white/[0.06] p-5">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
-                New match
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-                92% fit
-              </span>
-            </div>
-
-            <div className="mt-5 flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary font-display text-2xl font-semibold text-primary-foreground">
                 AK
               </span>

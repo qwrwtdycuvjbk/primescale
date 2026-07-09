@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatAuthErrorMessage } from "@/lib/auth-errors";
 import type { UserRole } from "@/lib/types";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { ErrorBanner, PrimaryButton } from "@/components/site/form";
 import { fieldInputClass, fieldLabelClass } from "@/components/site/form-styles";
 
@@ -114,13 +115,8 @@ export function AuthLoginForm({
           <label htmlFor="password" className={fieldLabelClass}>
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="current-password"
             disabled={loading}
             className={compactInputClass}
           />

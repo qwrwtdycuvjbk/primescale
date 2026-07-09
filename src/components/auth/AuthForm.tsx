@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { AuthGoogleSection } from "@/components/auth/AuthGoogleSection";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { signOutAuth, submitAuth } from "@/lib/auth-actions";
 import { formatAuthErrorMessage } from "@/lib/auth-errors";
 import type { UserRole } from "@/lib/types";
@@ -120,15 +121,7 @@ export function AuthForm({
             <label htmlFor="password" className={fieldLabelClass}>
               Password
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="current-password"
-              className={compactInputClass}
-            />
+            <PasswordInput id="password" className={compactInputClass} />
           </div>
 
           {authErrorMessage && <ErrorBanner message={authErrorMessage} />}
