@@ -44,6 +44,13 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function formatCandidateDbError(message: string) {
+  if (message.includes("source") && message.includes("schema cache")) {
+    return "Database missing candidate source column. Run supabase/candidate-source.sql in the Supabase SQL Editor, then try again.";
+  }
+  return message;
+}
+
 export async function createAdminCandidate(
   input: AdminCreateCandidateInput,
 ): Promise<AdminCreateCandidateResult> {
@@ -196,7 +203,9 @@ export async function createAdminCandidate(
     await supabase.auth.admin.deleteUser(userId);
     return {
       ok: false,
-      error: candidateError?.message ?? "Could not create candidate profile",
+      error: formatCandidateDbError(
+        candidateError?.message ?? "Could not create candidate profile",
+      ),
       status: 500,
     };
   }

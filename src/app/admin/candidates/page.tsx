@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { AdminCandidateActions } from "@/components/admin/AdminCandidateActions";
 import { AdminCandidateFilters } from "@/components/admin/AdminCandidateFilters";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
@@ -138,13 +137,7 @@ export default async function AdminCandidatesPage({
               status, experience, work authorization, availability, and more.
             </p>
           </div>
-          <Link
-            href="/admin/candidates/new"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-          >
-            Add candidate
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <AdminCandidateActions />
         </div>
 
         {filters.added === "1" && (

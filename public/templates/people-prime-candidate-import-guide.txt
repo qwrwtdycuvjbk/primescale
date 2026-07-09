@@ -1,0 +1,37 @@
+PrimeScale — People Prime candidate import template
+==========================================
+
+Download: people-prime-candidate-import.csv
+Open in Excel or Google Sheets. Save as CSV before uploading.
+
+REQUIRED COLUMNS
+----------------
+full_name          Candidate's full name
+email              Unique work email (one account per email)
+headline           Short professional headline
+skills             Comma-separated list, e.g. AWS,Kubernetes,Terraform
+role_categories    Pipe-separated, must match: AI / ML | Cloud | Data | DevOps | Cybersecurity | Full-stack | Backend | Frontend | Mobile
+
+OPTIONAL COLUMNS
+----------------
+phone
+current_title
+years_experience   Number, e.g. 8
+experience_level   junior | mid | senior | lead  (default: mid)
+salary_min         Number, annual USD
+salary_max         Number, annual USD
+work_authorization us_citizen | green_card | h1b | ead | international_remote  (default: international_remote)
+location           e.g. Remote, India, CA
+preferred_work_type remote | hybrid | onsite  (default: remote)
+availability       actively_looking | open | not_looking  (default: actively_looking)
+bio
+linkedin_url
+github_url
+portfolio_url
+
+TIPS
+----
+- Keep the header row exactly as in the template.
+- Use quotes around skills if they contain commas: "AWS,Kubernetes,Terraform"
+- Use | between role categories: DevOps|Cloud
+- Delete the sample rows before uploading your real data, or replace them.

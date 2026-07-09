@@ -97,6 +97,7 @@ Run only what you still need, one file at a time:
 |--------------|-------------------|
 | International remote work auth label fix | `supabase/work-auth-international-remote.sql` |
 | Admin candidate views in Table Editor | `supabase/candidates-admin-views.sql` |
+| Admin add/import candidates (source column) | `supabase/candidate-source.sql` |
 | Anything else | Ask which step — don't paste the whole folder |
 
 **Optional (legacy):** `supabase/schema.sql` — only for brand-new projects without `role_submissions`.

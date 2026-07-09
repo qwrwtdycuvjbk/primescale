@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { AdminCandidateActions } from "@/components/admin/AdminCandidateActions";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireAdmin } from "@/lib/auth";
 import { loadAdminDashboardStats } from "@/lib/admin-dashboard";
-import { hasServiceRoleKey } from "@/lib/supabase/admin";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
@@ -87,14 +87,8 @@ export default async function AdminDashboardPage() {
           gaps in matching.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/admin/candidates/new"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-          >
-            Add candidate
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+        <div className="mt-6">
+          <AdminCandidateActions />
         </div>
 
         {needsAttention > 0 && (
@@ -104,17 +98,6 @@ export default async function AdminDashboardPage() {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Review matches, coordinate handoffs, or check roles with no candidates yet.
-            </p>
-          </div>
-        )}
-
-        {!hasServiceRoleKey() && (
-          <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-5 py-4">
-            <p className="font-medium text-amber-800 dark:text-amber-200">
-              Add SUPABASE_SERVICE_ROLE_KEY in Vercel to enable admin candidate creation and background matching.
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Dashboard, candidates, and jobs still load using your admin login.
             </p>
           </div>
         )}
