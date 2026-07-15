@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { AdminJobFilters } from "@/components/admin/AdminJobFilters";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
@@ -124,13 +126,24 @@ export default async function AdminJobsPage({
   return (
     <AdminShell name={profile.full_name} activePath="/admin/jobs">
       <main className={appMainClass}>
-        <h1 className="display-headline text-4xl sm:text-5xl">
-          Posted <span className="italic text-primary">roles.</span>
-        </h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Every job companies have posted on PrimeScale. Filter by status,
-          experience level, and role type.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <h1 className="display-headline text-4xl sm:text-5xl">
+              Posted <span className="italic text-primary">roles.</span>
+            </h1>
+            <p className="mt-3 max-w-2xl text-muted-foreground">
+              Every job companies have posted on PrimeScale. Filter by status,
+              experience level, and role type.
+            </p>
+          </div>
+          <Link
+            href="/admin/jobs/new"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+          >
+            Add job
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card px-5 py-4">

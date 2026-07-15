@@ -73,6 +73,7 @@ export async function AdminShell({
               <NavLink href="/admin" label="Dashboard" activePath={activePath} />
               <NavLink href="/admin/candidates" label="Candidates" activePath={activePath} />
               <NavLink href="/admin/jobs" label="Jobs" activePath={activePath} />
+              <NavLink href="/admin/job-leads" label="Job leads" activePath={activePath} />
               <NavLink
                 href="/admin/matches"
                 label="Match review"

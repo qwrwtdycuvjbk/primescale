@@ -22,7 +22,13 @@ export async function GET(
   const { id } = await params;
   const supabase = getServiceClient();
   if (!supabase) {
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+    return NextResponse.json(
+      {
+        error:
+          "SUPABASE_SERVICE_ROLE_KEY is not available on the server. Add it in Vercel (Production), then redeploy.",
+      },
+      { status: 503 },
+    );
   }
 
   const { data: candidate, error } = await supabase

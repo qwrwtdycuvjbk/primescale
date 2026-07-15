@@ -26,7 +26,17 @@ const initial: JobInput = {
   visaRequirements: "",
 };
 
-export function JobPostForm({ companyName }: { companyName: string }) {
+export function JobPostForm({
+  companyName,
+  companyId,
+  submitEndpoint = "/api/jobs",
+  redirectTo = "/employer/jobs",
+}: {
+  companyName: string;
+  companyId?: string;
+  submitEndpoint?: string;
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const [form, setForm] = useState<JobInput>(initial);
   const [pastedJd, setPastedJd] = useState("");
@@ -99,18 +109,19 @@ export function JobPostForm({ companyName }: { companyName: string }) {
     setStatus("loading");
     setError("");
     try {
-      const response = await fetch("/api/jobs", {
+      const response = await fetch(submitEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          companyId,
           description: form.description.trim() || pastedJd.trim(),
           publish,
         }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Failed to save job");
-      router.push("/employer/jobs");
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       setStatus("idle");

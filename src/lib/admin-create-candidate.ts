@@ -56,7 +56,12 @@ export async function createAdminCandidate(
 ): Promise<AdminCreateCandidateResult> {
   const supabase = getServiceClient();
   if (!supabase) {
-    return { ok: false, error: "Service unavailable", status: 503 };
+    return {
+      ok: false,
+      error:
+        "SUPABASE_SERVICE_ROLE_KEY is not available on the server. Add it in Vercel (Production), then redeploy.",
+      status: 503,
+    };
   }
 
   const fullName = input.fullName.trim();
@@ -229,7 +234,12 @@ export async function uploadAdminCandidateResume(
 ): Promise<{ ok: true; resumeUrl: string } | { ok: false; error: string; status: number }> {
   const supabase = getServiceClient();
   if (!supabase) {
-    return { ok: false, error: "Service unavailable", status: 503 };
+    return {
+      ok: false,
+      error:
+        "SUPABASE_SERVICE_ROLE_KEY is not available on the server. Add it in Vercel (Production), then redeploy.",
+      status: 503,
+    };
   }
 
   const allowed = [
