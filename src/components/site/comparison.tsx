@@ -23,13 +23,13 @@ const primeScale = [
 export function Comparison() {
   return (
     <section
-      id="why-us"
+      id="the-difference"
       className={`border-y border-border bg-secondary ${siteSectionClass}`}
     >
       <div className={appContainerClass}>
         <Reveal>
           <div className={siteEyebrowClass}>
-            <span className="text-primary">[03]</span>
+            <span className="text-primary">[04]</span>
             <span>The difference</span>
             <span className="h-px flex-1 bg-border" />
           </div>

@@ -5,7 +5,7 @@ import { appContainerClass } from "@/components/site/layout";
 
 const productLinks = [
   { label: "How it works", href: "#how-it-works" },
-  { label: "The difference", href: "#why-us" },
+  { label: "The difference", href: "#the-difference" },
   { label: "For employers", href: "#for-employers" },
   { label: "For candidates", href: "#for-candidates" },
 ];

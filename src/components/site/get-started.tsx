@@ -46,7 +46,7 @@ export function GetStarted() {
       <div className={appContainerClass}>
         <Reveal className="max-w-2xl">
           <div className={siteEyebrowClass}>
-            <span className="text-primary">[06]</span>
+            <span className="text-primary">[07]</span>
             <span>Get started</span>
             <span className="h-px flex-1 bg-border" />
           </div>

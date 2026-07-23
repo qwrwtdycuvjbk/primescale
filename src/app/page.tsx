@@ -6,6 +6,9 @@ import { Marquee } from "@/components/site/marquee";
 const HowItWorks = dynamic(() =>
   import("@/components/site/how-it-works").then((mod) => mod.HowItWorks),
 );
+const WhyUs = dynamic(() =>
+  import("@/components/site/why-us").then((mod) => mod.WhyUs),
+);
 const Comparison = dynamic(() =>
   import("@/components/site/comparison").then((mod) => mod.Comparison),
 );
@@ -41,11 +44,12 @@ export default function Home() {
       </div>
 
       <HowItWorks />
+      <WhyUs />
       <Comparison />
 
       <AudienceBlock
         id="for-employers"
-        index="04"
+        index="05"
         variant="dark"
         eyebrow="For employers"
         title="Post a role. Get matches."
@@ -62,7 +66,7 @@ export default function Home() {
 
       <AudienceBlock
         id="for-candidates"
-        index="05"
+        index="06"
         variant="light"
         eyebrow="For candidates"
         title="One profile. Ongoing matches."
