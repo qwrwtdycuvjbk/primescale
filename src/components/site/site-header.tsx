@@ -58,9 +58,9 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/auth/employer/signup"
-            className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold leading-none text-primary-foreground transition-transform hover:-translate-y-0.5"
           >
-            Post a role
+            Post a role for free
           </Link>
         </div>
 
@@ -96,9 +96,9 @@ export function SiteHeader() {
               </Link>
               <Link
                 href="/auth/employer/signup"
-                className="rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground"
+                className="rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold leading-none text-primary-foreground"
               >
-                Post a role
+                Post a role for free
               </Link>
             </div>
           </nav>

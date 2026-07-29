@@ -20,7 +20,7 @@ const cards = [
       "Skill and seniority matching",
       "One shortlist dashboard",
     ],
-    cta: "Post a role",
+    cta: "Post a role for free",
     href: "/auth/employer/signup",
     accent: true,
   },

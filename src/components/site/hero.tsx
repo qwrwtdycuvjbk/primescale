@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { appContainerClass } from "@/components/site/layout";
+import { HeroProductDemo } from "@/components/site/hero-product-demo";
 
 function Counter({
   to,
@@ -66,7 +68,22 @@ const stats = [
   { value: 24, suffix: "h", label: "To interview-ready matches" },
 ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 0.08 + i * 0.08,
+      duration: 0.65,
+      ease: [0.21, 0.47, 0.32, 0.98] as const,
+    },
+  }),
+};
+
 export function Hero() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <section
       id="top"
@@ -77,15 +94,15 @@ export function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 110% 85% at -2% -8%, rgba(193, 224, 69, 0.12) 0%, rgba(193, 224, 69, 0.03) 32%, transparent 58%)",
+              "radial-gradient(ellipse 90% 70% at 8% 20%, rgba(213, 236, 100, 0.16) 0%, rgba(213, 236, 100, 0.04) 36%, transparent 62%)",
           }}
         />
-        <div className="absolute -left-40 top-0 size-[28rem] rounded-full bg-[#C1E045]/10 blur-3xl" />
-        <div className="absolute left-[8%] top-[6%] size-56 rounded-full bg-[#C1E045]/5 blur-[72px]" />
+        <div className="absolute -left-32 top-8 size-[26rem] rounded-full bg-[#d5ec64]/12 blur-3xl" />
+        <div className="absolute right-[-8%] top-[22%] size-[20rem] rounded-full bg-[#d5ec64]/4 blur-[100px]" />
       </div>
 
       <div
-        className="pointer-events-none absolute inset-0 z-[2] opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 z-[2] opacity-[0.035]"
         style={{
           backgroundImage:
             "linear-gradient(to right, currentColor 1px, transparent 1px)",
@@ -93,113 +110,100 @@ export function Hero() {
         }}
       />
 
-      <div className={`relative z-10 grid items-center gap-10 pb-12 pt-28 lg:grid-cols-12 lg:gap-8 lg:pt-36 lg:pb-16 ${appContainerClass}`}>
-        <div className="lg:col-span-7">
-          <div className="animate-hero-in flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted [animation-delay:0ms]">
+      <div
+        className={`relative z-10 grid items-start gap-10 pb-10 pt-28 lg:items-center lg:gap-14 lg:pb-14 lg:pt-36 xl:grid-cols-[1.05fr_0.95fr] ${appContainerClass}`}
+      >
+        <div className="min-w-0 w-full max-w-xl">
+          <motion.div
+            custom={0}
+            variants={fadeUp}
+            initial={reduceMotion ? false : "hidden"}
+            animate="show"
+            className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted"
+          >
             <span className="text-primary">[01]</span>
-            <span>Global tech hiring</span>
+            <span>PrimeScale</span>
             <span className="h-px flex-1 bg-white/15" />
-          </div>
+          </motion.div>
 
-          <h1 className="display-headline mt-5 text-balance text-3xl sm:text-5xl lg:text-[4.25rem]">
-            <span className="animate-hero-in block [animation-delay:50ms]">
+          <h1 className="display-headline mt-5 text-balance text-4xl sm:text-5xl lg:text-[4.35rem]">
+            <motion.span
+              custom={1}
+              variants={fadeUp}
+              initial={reduceMotion ? false : "hidden"}
+              animate="show"
+              className="block"
+            >
               Great teams.
-            </span>
-            <span className="animate-hero-in block [animation-delay:130ms]">
+            </motion.span>
+            <motion.span
+              custom={2}
+              variants={fadeUp}
+              initial={reduceMotion ? false : "hidden"}
+              animate="show"
+              className="block"
+            >
               Great engineers.
-            </span>
-            <span className="animate-hero-in block italic text-primary [animation-delay:210ms]">
+            </motion.span>
+            <motion.span
+              custom={3}
+              variants={fadeUp}
+              initial={reduceMotion ? false : "hidden"}
+              animate="show"
+              className="block italic text-primary"
+            >
               Finally matched.
-            </span>
+            </motion.span>
           </h1>
 
-          <p className="animate-hero-in mt-5 max-w-lg text-pretty text-base leading-relaxed text-ink-muted [animation-delay:320ms]">
-            Hire top remote engineers without the complexity. We source, vet,
-            hire, manage payroll, and handle compliance so your team can scale
-            faster.
-          </p>
+          <motion.p
+            custom={4}
+            variants={fadeUp}
+            initial={reduceMotion ? false : "hidden"}
+            animate="show"
+            className="mt-6 max-w-md text-pretty text-base leading-relaxed text-ink-muted sm:text-lg"
+          >
+            Post a remote tech role. Get recruiter-vetted candidates in 24 hours,
+            with payroll, compliance, and onboarding handled.
+          </motion.p>
 
-          <div className="animate-hero-in mt-7 flex flex-col gap-3 sm:flex-row [animation-delay:420ms]">
+          <motion.div
+            custom={5}
+            variants={fadeUp}
+            initial={reduceMotion ? false : "hidden"}
+            animate="show"
+            className="mt-8 flex flex-col gap-3 sm:flex-row"
+          >
             <Link
               href="/auth/employer/signup"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_0_36px_-10px_rgba(213,236,100,0.65)] transition-transform hover:-translate-y-0.5"
             >
+              <span className="absolute inset-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
               I&apos;m hiring
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/auth/candidate/signup"
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-3.5 text-sm font-semibold text-ink-foreground transition-colors hover:bg-white/5"
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-7 py-3.5 text-sm font-semibold text-ink-foreground transition-colors hover:bg-white/5"
             >
               I&apos;m a candidate
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="animate-hero-card relative lg:col-span-5 [animation-delay:300ms]">
-          <div className="absolute -right-2 -top-4 hidden h-full w-full rotate-3 rounded-3xl border border-white/10 bg-white/[0.03] lg:block" />
-
-          <div className="relative rounded-2xl border border-white/10 bg-white/[0.06] p-5">
-            <div className="flex items-center gap-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary font-display text-2xl font-semibold text-primary-foreground">
-                AK
-              </span>
-              <div>
-                <p className="text-lg font-semibold">Alex Kumar</p>
-                <p className="text-sm text-ink-muted">Senior DevOps Engineer</p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              {[
-                "Global remote",
-                "$140k–$175k",
-                "AWS",
-                "Kubernetes",
-                "Terraform",
-              ].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-ink-foreground"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
-              {[
-                "Recruiter-reviewed",
-                "Contract or C2H",
-                "Stack-aligned match",
-              ].map((line, i) => (
-                <div
-                  key={line}
-                  className="animate-hero-in flex items-center gap-2.5 text-sm text-ink-muted"
-                  style={{ animationDelay: `${700 + i * 120}ms` }}
-                >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary">
-                    <Check className="h-3 w-3" />
-                  </span>
-                  {line}
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-white/10 py-3 text-sm font-semibold text-ink-foreground transition-colors hover:bg-white/15"
-            >
-              View match
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="min-w-0 w-full xl:pl-2">
+          <HeroProductDemo />
         </div>
       </div>
 
-      <div className={`animate-hero-in relative z-10 pb-12 [animation-delay:600ms] ${appContainerClass}`}>
-        <div className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className={`relative z-10 pb-12 ${appContainerClass}`}>
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+        >
           {stats.map((stat, i) => (
             <div
               key={stat.label}
@@ -214,7 +218,7 @@ export function Hero() {
               </div>
             </div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
