@@ -1,4 +1,4 @@
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import Link from "next/link";
 import { ArrowUpRight, Mail, Phone } from "lucide-react";
 import { appContainerClass } from "@/components/site/layout";
@@ -85,7 +85,7 @@ export function SiteFooter() {
 
         <div className="grid gap-10 py-12 lg:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <PrimeScaleLogo />
+            <PeopleRemotelyLogo />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
               Global remote tech hiring with recruiter review. Backed by People
               Prime Worldwide.
@@ -184,7 +184,7 @@ export function SiteFooter() {
           className="display-headline select-none border-t border-white/10 pt-6 text-[18vw] leading-[0.8] text-white/[0.06] lg:text-[12rem]"
           aria-hidden
         >
-          PrimeScale
+          People Remotely
         </div>
 
         <div className="flex flex-col items-center justify-between gap-4 py-8 text-sm text-ink-muted sm:flex-row">

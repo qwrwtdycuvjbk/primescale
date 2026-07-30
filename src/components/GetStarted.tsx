@@ -8,7 +8,7 @@ export function GetStarted() {
           Get started
         </p>
         <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Ready to join PrimeScale?
+          Ready to join People Remotely?
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
           Choose your path. US remote tech roles only.

@@ -1,4 +1,4 @@
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 
 const platformLinks = [
   { label: "Post a role", href: "#post-role" },
@@ -49,7 +49,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <PrimeScaleLogo className="h-14 w-auto sm:h-16" />
+            <PeopleRemotelyLogo className="h-14 w-auto sm:h-16" />
             <p className="mt-4 text-sm text-slate-400">
               Vetted remote tech talent in 24 hours
             </p>

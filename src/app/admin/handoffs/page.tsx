@@ -103,7 +103,7 @@ export default async function AdminHandoffsPage({
           People Prime <span className="italic text-primary">handoffs.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Mutual-fit matches from PrimeScale. Contact both parties, coordinate
+          Mutual-fit matches from People Remotely. Contact both parties, coordinate
           intros, and update queue status here.
         </p>
 

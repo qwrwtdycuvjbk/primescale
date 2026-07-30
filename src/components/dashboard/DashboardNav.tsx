@@ -23,7 +23,7 @@ export async function DashboardNav({
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="text-lg font-bold text-slate-900">
-            PrimeScale
+            People Remotely
           </Link>
           <nav className="hidden gap-6 text-sm text-slate-600 md:flex">
             {role === "employer" ? (

@@ -146,7 +146,7 @@ export function HeroProductDemo() {
               <span className="size-1.5 rounded-full bg-white/20" />
             </div>
             <span className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
-              primescale.io
+              peopleremotely.com
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] text-ink-muted">

@@ -12,7 +12,7 @@ export function ForCandidates() {
         </h2>
         <p className="mt-4 max-w-2xl text-lg text-slate-600">
           No more applying into the void. Create one profile, set your skills and
-          preferences, and let PrimeScale surface remote US tech opportunities
+          preferences, and let People Remotely surface remote US tech opportunities
           that actually fit.
         </p>
 

@@ -13,9 +13,9 @@ export default async function AdminJobLeadsPage() {
           Job <span className="italic text-primary">leads.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Pull fresh remote tech roles from OpenWeb Ninja. Use these to outreach
-          companies and match against the People Prime bench, then invite them to
-          post on PrimeScale.
+          Pull fresh worldwide remote tech roles from OpenWeb Ninja. Use these to
+          outreach companies and match against the People Prime bench, then invite
+          them to post on People Remotely. Worldwide mode skips US-only eligibility posts.
         </p>
 
         <div className="mt-10">

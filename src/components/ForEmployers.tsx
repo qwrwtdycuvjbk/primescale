@@ -11,7 +11,7 @@ export function ForEmployers() {
           Post a US remote tech role. Get matched candidates.
         </h2>
         <p className="mt-4 max-w-2xl text-lg text-slate-300">
-          Skip the flood of unqualified applicants. PrimeScale uses AI to match
+          Skip the flood of unqualified applicants. People Remotely uses AI to match
           your role to pre-vetted engineers across AI, Cloud, Data, DevOps, and
           Cybersecurity, with People Prime as your staffing backstop.
         </p>

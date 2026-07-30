@@ -1,10 +1,10 @@
-# PrimeScale
+# People Remotely
 
 AI hiring platform for **US remote tech roles**, built by [People Prime Worldwide](https://people-prime.com).
 
 Employers post roles for free and receive recruiter-vetted candidate matches. Candidates build one profile and get matched to roles that fit their skills and work authorization. People Prime handles staffing backstop — payroll, compliance, and onboarding for contract and C2H hires.
 
-**Live site:** [primescale.app](https://primescale.app)
+**Live site:** [peopleremotely.com](https://peopleremotely.com)
 
 ---
 
@@ -37,7 +37,7 @@ Employers post roles for free and receive recruiter-vetted candidate matches. Ca
 
 ```bash
 git clone https://github.com/qwrwtdycuvjbk/primescale.git
-cd primescale
+cd PrimeScale
 npm install
 ```
 
@@ -60,7 +60,7 @@ ADMIN_EMAILS=you@company.com
 
 # Email notifications (required for recruiter alerts)
 RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM_EMAIL=PrimeScale <onboarding@resend.dev>
+RESEND_FROM_EMAIL=People Remotely <onboarding@resend.dev>
 PEOPLE_PRIME_HANDOFF_EMAIL=remote@people-prime.com
 
 # Dev only — Resend sandbox redirects ops email here
@@ -215,9 +215,9 @@ Admin access is granted via the `ADMIN_EMAILS` env var.
 1. Connect the GitHub repo to [Vercel](https://vercel.com)
 2. Add all environment variables from `.env.local` in Vercel → Settings → Environment Variables
 3. Set production URLs:
-   - `NEXT_PUBLIC_APP_URL=https://primescale.app`
-   - `NEXT_PUBLIC_SITE_URL=https://primescale.app`
-4. Add `https://primescale.app/auth/callback` to Supabase OAuth redirect URLs
+   - `NEXT_PUBLIC_APP_URL=https://peopleremotely.com`
+   - `NEXT_PUBLIC_SITE_URL=https://peopleremotely.com`
+4. Add `https://peopleremotely.com/auth/callback` to Supabase OAuth redirect URLs
 5. Push to `main` — Vercel deploys automatically
 
 PR branches get preview deploy URLs for testing before merge.

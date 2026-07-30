@@ -132,7 +132,7 @@ export default async function AdminJobsPage({
               Posted <span className="italic text-primary">roles.</span>
             </h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Every job companies have posted on PrimeScale. Filter by status,
+              Every job companies have posted on People Remotely. Filter by status,
               experience level, and role type.
             </p>
           </div>

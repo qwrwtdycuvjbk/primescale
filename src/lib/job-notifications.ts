@@ -35,7 +35,7 @@ export async function notifyRecruitersJobPosted(jobId: string) {
   const appUrl = getAppUrl();
 
   const html = `
-    <h2>New role posted on PrimeScale</h2>
+    <h2>New role posted on People Remotely</h2>
     <p>An employer published a US remote tech role. Review matches at <a href="${appUrl}/admin/matches">${appUrl}/admin/matches</a>.</p>
     <h3>Role</h3>
     <ul>

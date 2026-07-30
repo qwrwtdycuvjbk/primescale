@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -35,7 +35,7 @@ export async function EmployerShell({
         <div className={`${appContainerClass} flex items-center justify-between gap-6 py-4`}>
           <div className="flex items-center gap-8">
             <Link href="/">
-              <PrimeScaleLogo variant="dark" />
+              <PeopleRemotelyLogo variant="dark" />
             </Link>
             <nav className="hidden gap-1 md:flex">
               {employerLinks.map((link) => (

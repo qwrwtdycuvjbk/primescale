@@ -9,7 +9,7 @@ const employerSteps = [
     number: "02",
     title: "Get matched candidates",
     description:
-      "PrimeScale scores candidates against your stack, seniority, and US work requirements.",
+      "People Remotely scores candidates against your stack, seniority, and US work requirements.",
   },
   {
     number: "03",
@@ -51,7 +51,7 @@ export function HowItWorks() {
           One platform. Two paths.
         </h2>
         <p className="mt-4 max-w-2xl text-lg text-slate-600">
-          PrimeScale connects US employers and remote tech professionals through
+          People Remotely connects US employers and remote tech professionals through
           AI-assisted matching, not endless job board scrolling.
         </p>
 

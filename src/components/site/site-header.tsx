@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
 
 const navLinks = [
@@ -34,7 +34,7 @@ export function SiteHeader() {
         }`}
       >
         <Link href="/" className="flex items-center gap-3">
-          <PrimeScaleLogo className="h-11 w-auto sm:h-12" />
+          <PeopleRemotelyLogo className="h-11 w-auto sm:h-12" />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

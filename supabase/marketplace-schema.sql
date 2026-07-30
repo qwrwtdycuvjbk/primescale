@@ -1,4 +1,4 @@
--- PrimeScale marketplace schema (run in Supabase SQL Editor after enabling Auth)
+-- People Remotely marketplace schema (run in Supabase SQL Editor after enabling Auth)
 -- US tech roles only; employers post jobs, candidates get matched via profile
 
 -- Profiles (one per auth user)

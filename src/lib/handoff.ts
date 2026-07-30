@@ -132,7 +132,7 @@ function buildHandoffEmailHtml(details: HandoffDetails) {
 
   return `
     <h2>Mutual fit — People Prime handoff</h2>
-    <p>A candidate and employer both expressed interest on PrimeScale.</p>
+    <p>A candidate and employer both expressed interest on People Remotely.</p>
     <h3>Role</h3>
     <ul>
       <li><strong>Title:</strong> ${details.jobTitle}</li>

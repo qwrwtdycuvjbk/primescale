@@ -1,4 +1,4 @@
-# PrimeScale marketing templates
+# People Remotely marketing templates
 
 ## Outbound email (cold outreach)
 
@@ -6,9 +6,9 @@
 
 Hi [Name],
 
-I noticed [Company] is hiring a [ROLE TITLE]. If speed matters, PrimeScale might help.
+I noticed [Company] is hiring a [ROLE TITLE]. If speed matters, People Remotely might help.
 
-PrimeScale is a platform by People Prime Worldwide where companies post remote tech roles and receive pre-vetted, interview-ready candidates within 24 hours. No job board chaos. No resume piles.
+People Remotely is a platform by People Prime Worldwide where companies post remote tech roles and receive pre-vetted, interview-ready candidates within 24 hours. No job board chaos. No resume piles.
 
 - AI, Cloud, Data, DevOps, Cybersecurity, and more
 - Contract and C2H options
@@ -28,7 +28,7 @@ People Prime Worldwide
 
 ## LinkedIn DM (short)
 
-Hi [Name], saw you're hiring a [ROLE]. We deliver pre-vetted remote tech candidates in 24h through PrimeScale (by People Prime Worldwide). Free to post: [URL]. Worth a look if speed matters.
+Hi [Name], saw you're hiring a [ROLE]. We deliver pre-vetted remote tech candidates in 24h through People Remotely (by People Prime Worldwide). Free to post: [URL]. Worth a look if speed matters.
 
 ---
 
@@ -36,7 +36,7 @@ Hi [Name], saw you're hiring a [ROLE]. We deliver pre-vetted remote tech candida
 
 Hiring senior tech talent in the US is slow and expensive, especially for AI, Cloud, and Data roles.
 
-We built PrimeScale to fix that.
+We built People Remotely to fix that.
 
 Post a remote tech role. Get interview-ready candidates in 24 hours. No applicants to sift through.
 
@@ -54,7 +54,7 @@ Try it free: [URL]
 Post a tech role. Get vetted candidates in 24 hours.
 
 **Description:**
-PrimeScale is the inverse of a job board. Companies post remote tech roles. People Prime Worldwide delivers pre-vetted, interview-ready engineers within one business day.
+People Remotely is the inverse of a job board. Companies post remote tech roles. People Prime Worldwide delivers pre-vetted, interview-ready engineers within one business day.
 
 Built for startups and hiring teams who need speed without sacrificing quality. Post a full job description or fill out a quick form. We handle sourcing, screening, and deliver a focused shortlist.
 
@@ -65,7 +65,7 @@ Built for startups and hiring teams who need speed without sacrificing quality. 
 - Free to post a role
 
 **First comment (maker intro):**
-Hey Product Hunt! We built PrimeScale because hiring managers are tired of job board chaos. You post once, and our team at People Prime Worldwide sends interview-ready remote engineers within 24 hours.
+Hey Product Hunt! We built People Remotely because hiring managers are tired of job board chaos. You post once, and our team at People Prime Worldwide sends interview-ready remote engineers within 24 hours.
 
 Would love your feedback. Happy to answer questions about how we vet candidates or how Contract vs C2H works.
 

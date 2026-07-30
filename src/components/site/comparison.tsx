@@ -14,7 +14,7 @@ const typicalHiring = [
   "You handle payroll and compliance",
 ];
 
-const primeScale = [
+const peopleRemotely = [
   "3–5 interview-ready matches in 24h",
   "Recruiter-reviewed before you see anyone",
   "People Prime handles payroll and onboarding",
@@ -72,13 +72,13 @@ export function Comparison() {
           <Reveal delay={0.16}>
             <div className="noise h-full rounded-2xl border border-primary/30 bg-ink p-6 text-ink-foreground sm:p-8">
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
-                PrimeScale
+                People Remotely
               </p>
               <h3 className="display-headline mt-3 text-3xl">
                 Post and match
               </h3>
               <Stagger className="mt-6">
-                {primeScale.map((item) => (
+                {peopleRemotely.map((item) => (
                   <StaggerItem key={item}>
                     <div className="flex items-start gap-3 border-t border-white/10 py-4">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">

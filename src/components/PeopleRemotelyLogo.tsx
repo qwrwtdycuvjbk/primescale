@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type PrimeScaleLogoProps = {
+type PeopleRemotelyLogoProps = {
   /** `light` = white logo for dark backgrounds; `dark` = dark logo for light backgrounds */
   variant?: "light" | "dark";
   className?: string;
@@ -25,23 +25,23 @@ function LogoSparkle({ className }: { className?: string }) {
   );
 }
 
-export function PrimeScaleLogo({
+export function PeopleRemotelyLogo({
   variant = "light",
   className,
-}: PrimeScaleLogoProps) {
+}: PeopleRemotelyLogoProps) {
   return (
     <span
       className={cn(
-        "inline-flex flex-col justify-center gap-0 font-sans text-[1.35rem] font-bold leading-none tracking-[-0.03em] sm:text-[1.45rem]",
+        "inline-flex flex-col justify-center gap-0 font-sans text-[1.15rem] font-bold leading-none tracking-[-0.03em] sm:text-[1.25rem]",
         variant === "light" ? "text-ink-foreground" : "text-foreground",
         className,
       )}
       role="img"
-      aria-label="PrimeScale"
+      aria-label="People Remotely"
     >
-      <span className="whitespace-nowrap">Prime</span>
+      <span className="whitespace-nowrap">People</span>
       <span className="-mt-[0.14em] inline-flex items-end whitespace-nowrap">
-        Scale
+        Remotely
         <LogoSparkle
           className={cn(
             "relative -bottom-px ml-0.5 h-[0.34em] w-[0.34em] shrink-0",

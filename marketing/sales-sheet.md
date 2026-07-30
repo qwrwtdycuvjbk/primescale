@@ -1,4 +1,4 @@
-# PrimeScale — Employer sales sheet
+# People Remotely — Employer sales sheet
 
 One-pager for LinkedIn DMs, cold email, and founder conversations.  
 *(Internal use — competitor names OK here, not on the public website.)*
@@ -7,7 +7,7 @@ One-pager for LinkedIn DMs, cold email, and founder conversations.
 
 ## The pitch (30 seconds)
 
-> Most hiring still means posting a role and sorting through hundreds of resumes. **PrimeScale is different:** post a US remote tech role for free, get a recruiter-vetted shortlist in 24 hours, and hire with payroll, compliance, and onboarding handled by People Prime Worldwide — a staffing partner with 14+ years and 50,000+ deployments behind every match.
+> Most hiring still means posting a role and sorting through hundreds of resumes. **People Remotely is different:** post a US remote tech role for free, get a recruiter-vetted shortlist in 24 hours, and hire with payroll, compliance, and onboarding handled by People Prime Worldwide — a staffing partner with 14+ years and 50,000+ deployments behind every match.
 
 ---
 
@@ -31,7 +31,7 @@ One-pager for LinkedIn DMs, cold email, and founder conversations.
 
 ---
 
-## How PrimeScale works
+## How People Remotely works
 
 1. **Post your role free** — paste a JD or fill in details. Real salary range required (no hidden pay).
 2. **AI matches + recruiter review** — skills, seniority, and US work authorization scored. People Prime vets every match before you see anyone.
@@ -42,9 +42,9 @@ One-pager for LinkedIn DMs, cold email, and founder conversations.
 
 ## Why companies choose us
 
-PrimeScale is **modern staffing with a platform on top** — not a job board, not software-only.
+People Remotely is **modern staffing with a platform on top** — not a job board, not software-only.
 
-| | PrimeScale | Job boards (Wellfound, LinkedIn) | Talent marketplaces (Toptal, Lemon.io, Arc) |
+| | People Remotely | Job boards (Wellfound, LinkedIn) | Talent marketplaces (Toptal, Lemon.io, Arc) |
 |---|---|---|---|
 | What you are | Staffing + matching platform | Self-serve posting | Curated marketplace |
 | Cost to post | Free | Free | Deposits / markups / % fees |
@@ -90,7 +90,7 @@ Engagement: **Contract** and **Contract-to-Hire (C2H)**
 
 ## LinkedIn DM (short)
 
-Hi [Name], saw you're hiring a [ROLE]. We built PrimeScale for exactly this — post a US remote tech role free, get recruiter-vetted matches in 24h (not a resume pile). Backed by People Prime (14 yrs, 50K+ placements). Worth a look: [URL]
+Hi [Name], saw you're hiring a [ROLE]. We built People Remotely for exactly this — post a US remote tech role free, get recruiter-vetted matches in 24h (not a resume pile). Backed by People Prime (14 yrs, 50K+ placements). Worth a look: [URL]
 
 ---
 
@@ -100,7 +100,7 @@ Hi [Name], saw you're hiring a [ROLE]. We built PrimeScale for exactly this — 
 
 Hi [Name],
 
-I noticed [Company] is hiring a [ROLE TITLE]. If speed and quality both matter, PrimeScale might help.
+I noticed [Company] is hiring a [ROLE TITLE]. If speed and quality both matter, People Remotely might help.
 
 **The short version:** Post a US remote tech role for free. Get a recruiter-vetted shortlist in 24 hours. No resume piles to sort through.
 
@@ -125,7 +125,7 @@ remote@people-prime.com
 ## Objection handling
 
 **"We already use Wellfound / LinkedIn."**
-→ Great for visibility. PrimeScale is for when you want a curated shortlist, not more applicants. Post here when you're tired of screening resumes — our recruiters do that for you.
+→ Great for visibility. People Remotely is for when you want a curated shortlist, not more applicants. Post here when you're tired of screening resumes — our recruiters do that for you.
 
 **"We already work with a staffing firm."**
 → Same model, faster front door. You post free, get matches in 24 hours through the platform, and People Prime handles the rest — vetting, payroll, compliance, onboarding. Think of it as your staffing partner with a self-serve entry point.
@@ -143,6 +143,6 @@ remote@people-prime.com
 
 ## CTA
 
-**Post a role for free:** https://primescale.app/auth/employer/signup
+**Post a role for free:** https://peopleremotely.com/auth/employer/signup
 
 **Questions:** remote@people-prime.com · +1 (747) 212-1886

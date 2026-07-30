@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
 import { loadAdminNavCounts } from "@/lib/admin-dashboard";
 import { createClient } from "@/lib/supabase/server";
@@ -67,7 +67,7 @@ export async function AdminShell({
         <div className={`${appContainerClass} flex items-center justify-between gap-6 py-4`}>
           <div className="flex flex-wrap items-center gap-4 lg:gap-6">
             <Link href="/admin">
-              <PrimeScaleLogo variant="dark" />
+              <PeopleRemotelyLogo variant="dark" />
             </Link>
             <nav className="flex flex-wrap gap-1">
               <NavLink href="/admin" label="Dashboard" activePath={activePath} />

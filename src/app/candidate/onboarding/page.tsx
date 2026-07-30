@@ -1,5 +1,5 @@
 import { CandidateProfileWizard } from "@/components/candidate/CandidateProfileWizard";
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass, appMainClass } from "@/components/site/layout";
 import { requireRole } from "@/lib/auth";
 import {
@@ -33,7 +33,7 @@ export default async function CandidateOnboardingPage() {
       <header className="border-b border-border bg-background">
         <div className={`${appContainerClass} flex items-center justify-between py-4`}>
           <Link href="/">
-            <PrimeScaleLogo variant="dark" />
+            <PeopleRemotelyLogo variant="dark" />
           </Link>
           <p className="text-base text-muted-foreground">5-step onboarding</p>
         </div>

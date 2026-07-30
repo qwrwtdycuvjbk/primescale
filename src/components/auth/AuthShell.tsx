@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EmployerAuthPanel } from "@/components/auth/EmployerAuthPanel";
-import { PrimeScaleLogo } from "@/components/PrimeScaleLogo";
+import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 
 export function AuthShell({
   children,
@@ -23,9 +23,9 @@ export function AuthShell({
         <Link
           href="/"
           className="absolute left-10 top-8 z-10 inline-flex items-center"
-          aria-label="Go to PrimeScale home"
+          aria-label="Go to People Remotely home"
         >
-          <PrimeScaleLogo variant="light" className="text-white" />
+          <PeopleRemotelyLogo variant="light" className="text-white" />
         </Link>
         {audience === "employer" ? (
           <EmployerAuthPanel title={title} description={description} />
@@ -60,9 +60,9 @@ export function AuthShell({
           <Link
             href="/"
             className="inline-flex items-center lg:hidden"
-            aria-label="Go to PrimeScale home"
+            aria-label="Go to People Remotely home"
           >
-            <PrimeScaleLogo variant="dark" />
+            <PeopleRemotelyLogo variant="dark" />
           </Link>
         </div>
         <div className="flex min-h-0 w-full flex-1 flex-col justify-center pt-10 pb-14 sm:pt-12 sm:pb-16 lg:pt-16">

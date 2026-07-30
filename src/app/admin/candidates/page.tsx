@@ -133,7 +133,7 @@ export default async function AdminCandidatesPage({
               Candidate <span className="italic text-primary">registry.</span>
             </h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Everyone who signed up as a candidate on PrimeScale. Filter by profile
+              Everyone who signed up as a candidate on People Remotely. Filter by profile
               status, experience, work authorization, availability, and more.
             </p>
           </div>

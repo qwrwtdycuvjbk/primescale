@@ -1,10 +1,10 @@
 const OPS_EMAIL =
   process.env.PEOPLE_PRIME_HANDOFF_EMAIL ?? "remote@people-prime.com";
 const RESEND_FROM =
-  process.env.RESEND_FROM_EMAIL ?? "PrimeScale <onboarding@resend.dev>";
+  process.env.RESEND_FROM_EMAIL ?? "People Remotely <onboarding@resend.dev>";
 
 export function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "https://primescale.app";
+  return process.env.NEXT_PUBLIC_APP_URL ?? "https://peopleremotely.com";
 }
 
 function sandboxAllowedRecipient(errorBody: string): string | null {

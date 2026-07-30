@@ -77,7 +77,7 @@ const examples = [
 ];
 
 const instructions = [
-  ["PrimeScale — People Prime candidate import"],
+  ["People Remotely — People Prime candidate import"],
   [""],
   ["1. Fill one row per candidate in the Candidates sheet."],
   ["2. Required columns: full_name, email, headline, skills, role_categories"],

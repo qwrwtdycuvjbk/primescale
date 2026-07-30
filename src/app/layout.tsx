@@ -34,7 +34,7 @@ const SpeedInsights = dynamic(() =>
 const googleSiteVerification = getGoogleSiteVerification();
 
 export const metadata: Metadata = {
-  title: "PrimeScale | Global tech hiring",
+  title: "People Remotely | Global tech hiring",
   description:
     "Hire top remote engineers without the complexity. We source, vet, hire, manage payroll, and handle compliance. Backed by People Prime Worldwide.",
   icons: {

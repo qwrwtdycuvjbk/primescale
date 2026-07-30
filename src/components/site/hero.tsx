@@ -122,7 +122,7 @@ export function Hero() {
             className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted"
           >
             <span className="text-primary">[01]</span>
-            <span>PrimeScale</span>
+            <span>People Remotely</span>
             <span className="h-px flex-1 bg-white/15" />
           </motion.div>
 

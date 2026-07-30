@@ -25,7 +25,7 @@ export function Hero() {
         </h1>
 
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl">
-          PrimeScale is an AI hiring platform for US remote tech roles. Employers
+          People Remotely is an AI hiring platform for US remote tech roles. Employers
           post roles. Candidates build a profile. Our matching engine connects
           both sides, backed by People Prime Worldwide&apos;s 14+ years in tech
           staffing.

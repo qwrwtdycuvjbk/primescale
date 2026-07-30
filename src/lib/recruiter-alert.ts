@@ -99,7 +99,7 @@ function buildMatchAlertHtml(details: MatchAlertDetails) {
       <li><strong>Skills:</strong> ${skills}</li>
     </ul>
     ${details.matchReason ? `<p><strong>Match reason:</strong> ${details.matchReason}</p>` : ""}
-    <p><a href="${appUrl}/admin/matches">Review in PrimeScale</a></p>
+    <p><a href="${appUrl}/admin/matches">Review in People Remotely</a></p>
   `;
 }
 

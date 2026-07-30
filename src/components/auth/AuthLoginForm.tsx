@@ -135,7 +135,7 @@ export function AuthLoginForm({
       </form>
 
       <p className="mt-3 text-center text-xs text-muted-foreground sm:text-sm">
-        New to PrimeScale?{" "}
+        New to People Remotely?{" "}
         <Link
           href={`${basePath}/signup`}
           className="font-medium text-foreground hover:text-primary"

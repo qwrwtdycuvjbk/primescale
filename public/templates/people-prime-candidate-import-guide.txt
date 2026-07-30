@@ -1,4 +1,4 @@
-PrimeScale — People Prime candidate import template
+People Remotely — People Prime candidate import template
 ==========================================
 
 Download: people-prime-candidate-import.csv
