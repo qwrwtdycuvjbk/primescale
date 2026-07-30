@@ -38,9 +38,12 @@ export const metadata: Metadata = {
   description:
     "Hire top remote engineers without the complexity. We source, vet, hire, manage payroll, and handle compliance. Backed by People Prime Worldwide.",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: ["/favicon.ico"],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   ...(googleSiteVerification
     ? {
