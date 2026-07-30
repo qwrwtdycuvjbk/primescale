@@ -34,7 +34,7 @@ export function SiteHeader() {
         }`}
       >
         <Link href="/" className="flex items-center gap-3">
-          <PeopleRemotelyLogo className="h-11 w-auto sm:h-12" />
+          <PeopleRemotelyLogo className="h-12 w-auto sm:h-14" />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
