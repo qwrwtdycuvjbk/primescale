@@ -33,7 +33,7 @@ function TalentCard({ candidate }: { candidate: PublicTalentCard }) {
           )}
           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
             <BadgeCheck className="h-4 w-4 text-primary" aria-hidden />
-            Recruiter vetted
+            AI vetted
           </span>
           {(candidate.yearsExperience != null || candidate.experienceLevelLabel) && (
             <span className="inline-flex items-center gap-1.5 text-muted-foreground">
@@ -155,7 +155,7 @@ export function TalentShowcase({ candidates }: { candidates: PublicTalentCard[] 
                 Talent profiles are growing.
               </p>
               <p className="mx-auto mt-4 max-w-xl text-pretty text-muted-foreground">
-                Post your first role and People Prime will deliver recruiter-vetted
+                Post your first role and People Prime will deliver AI-vetted
                 matches within 24 hours — from candidates on the platform and our
                 broader staffing network.
               </p>

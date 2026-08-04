@@ -87,7 +87,7 @@ export function SiteFooter() {
           <div>
             <PeopleRemotelyLogo />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
-              Global remote tech hiring with recruiter review. Backed by People
+              Global remote tech hiring with AI review. Backed by People
               Prime Worldwide.
             </p>
 

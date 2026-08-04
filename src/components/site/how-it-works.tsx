@@ -10,7 +10,7 @@ import {
 const employerSteps = [
   {
     title: "Post your role",
-    body: "Paste a JD. AI pulls out title, stack, and seniority.",
+    body: "Upload your JD. AI pulls out title, stack, and seniority.",
   },
   {
     title: "Get matched candidates",

@@ -14,7 +14,7 @@ const cards = [
     icon: Briefcase,
     kicker: "For employers",
     title: "I'm hiring",
-    body: "Post a remote tech role. Get recruiter-reviewed matches in your dashboard.",
+    body: "Post a remote tech role. Get AI-reviewed matches in your dashboard.",
     points: [
       "AI-assisted JD parsing",
       "Skill and seniority matching",

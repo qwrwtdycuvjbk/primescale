@@ -43,7 +43,7 @@ const phaseMeta: Record<
   },
   match: {
     label: "Matching",
-    detail: "Recruiter-reviewed shortlist building",
+    detail: "AI-reviewed shortlist building",
     progress: 58,
     nav: 1,
     step: 1,

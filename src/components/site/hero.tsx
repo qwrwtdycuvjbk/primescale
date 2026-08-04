@@ -163,7 +163,7 @@ export function Hero() {
             animate="show"
             className="mt-6 max-w-md text-pretty text-base leading-relaxed text-ink-muted sm:text-lg"
           >
-            Post a remote tech role. Get recruiter-vetted candidates in 24 hours,
+            Post a remote tech role. Get AI-vetted candidates in 24 hours,
             with payroll, compliance, and onboarding handled.
           </motion.p>
 

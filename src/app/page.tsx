@@ -53,7 +53,7 @@ export default function Home() {
         variant="dark"
         eyebrow="For employers"
         title="Post a role. Get matches."
-        intro="Recruiter-reviewed candidates in your dashboard, with People Prime as your staffing backstop."
+        intro="AI-reviewed candidates in your dashboard, with People Prime as your staffing backstop."
         bullets={[
           "AI-assisted JD parsing",
           "Skill and seniority matching",

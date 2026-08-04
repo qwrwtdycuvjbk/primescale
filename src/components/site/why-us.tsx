@@ -18,8 +18,8 @@ import {
 const features = [
   {
     icon: UserCheck,
-    title: "Recruiter-Reviewed",
-    body: "Every candidate is vetted by a real recruiter, not just AI-matched.",
+    title: "AI-Reviewed",
+    body: "Every candidate is scored and shortlisted by AI on skills, seniority, and fit.",
   },
   {
     icon: Globe2,
@@ -62,7 +62,7 @@ export function WhyUs() {
             <span className="h-px flex-1 bg-white/10" />
           </div>
           <h2 className={`${siteHeadlineClass} text-ink-foreground`}>
-            Recruiter-reviewed.{" "}
+            AI-reviewed.{" "}
             <span className="italic text-primary">Globally ready.</span>
           </h2>
           <p className={`${siteBodyClass} text-ink-muted`}>

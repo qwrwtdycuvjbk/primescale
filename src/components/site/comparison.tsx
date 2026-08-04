@@ -16,7 +16,7 @@ const typicalHiring = [
 
 const peopleRemotely = [
   "3–5 interview-ready matches in 24h",
-  "Recruiter-reviewed before you see anyone",
+  "AI-reviewed before you see anyone",
   "People Prime handles payroll and onboarding",
 ];
 
@@ -38,7 +38,7 @@ export function Comparison() {
             <span className="italic text-primary">not resume piles.</span>
           </h2>
           <p className={siteBodyClass}>
-            Post free. Get a recruiter-reviewed shortlist in 24 hours. People
+            Post free. Get an AI-reviewed shortlist in 24 hours. People
             Prime handles vetting, payroll, and onboarding.
           </p>
         </Reveal>
