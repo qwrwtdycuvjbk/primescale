@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { appContainerClass } from "@/components/site/layout";
 import { HeroProductDemo } from "@/components/site/hero-product-demo";
@@ -19,8 +19,14 @@ function Counter({
   const ref = useRef<HTMLSpanElement>(null);
   const [value, setValue] = useState(0);
   const [started, setStarted] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      setValue(to);
+      return;
+    }
+
     const node = ref.current;
     if (!node) return;
 
@@ -36,10 +42,10 @@ function Counter({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [reduceMotion, to]);
 
   useEffect(() => {
-    if (!started) return;
+    if (!started || reduceMotion) return;
     let raf = 0;
     const start = performance.now();
     const duration = 1400;
@@ -51,7 +57,7 @@ function Counter({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [started, to]);
+  }, [started, to, reduceMotion]);
 
   return (
     <span ref={ref}>
@@ -68,22 +74,7 @@ const stats = [
   { value: 24, suffix: "h", label: "To interview-ready matches" },
 ];
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 28 },
-  show: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: 0.08 + i * 0.08,
-      duration: 0.65,
-      ease: [0.21, 0.47, 0.32, 0.98] as const,
-    },
-  }),
-};
-
 export function Hero() {
-  const reduceMotion = useReducedMotion();
-
   return (
     <section
       id="top"
@@ -114,66 +105,24 @@ export function Hero() {
         className={`relative z-10 grid items-start gap-10 pb-10 pt-28 lg:items-center lg:gap-14 lg:pb-14 lg:pt-36 xl:grid-cols-[1.05fr_0.95fr] ${appContainerClass}`}
       >
         <div className="min-w-0 w-full max-w-xl">
-          <motion.div
-            custom={0}
-            variants={fadeUp}
-            initial={reduceMotion ? false : "hidden"}
-            animate="show"
-            className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted"
-          >
+          <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
             <span className="text-primary">[01]</span>
             <span>People Remotely</span>
             <span className="h-px flex-1 bg-white/15" />
-          </motion.div>
+          </div>
 
           <h1 className="display-headline mt-5 text-balance text-4xl sm:text-5xl lg:text-[4.35rem]">
-            <motion.span
-              custom={1}
-              variants={fadeUp}
-              initial={reduceMotion ? false : "hidden"}
-              animate="show"
-              className="block"
-            >
-              Great teams.
-            </motion.span>
-            <motion.span
-              custom={2}
-              variants={fadeUp}
-              initial={reduceMotion ? false : "hidden"}
-              animate="show"
-              className="block"
-            >
-              Great engineers.
-            </motion.span>
-            <motion.span
-              custom={3}
-              variants={fadeUp}
-              initial={reduceMotion ? false : "hidden"}
-              animate="show"
-              className="block italic text-primary"
-            >
-              Finally matched.
-            </motion.span>
+            <span className="block">Great teams.</span>
+            <span className="block">Great engineers.</span>
+            <span className="block italic text-primary">Finally matched.</span>
           </h1>
 
-          <motion.p
-            custom={4}
-            variants={fadeUp}
-            initial={reduceMotion ? false : "hidden"}
-            animate="show"
-            className="mt-6 max-w-md text-pretty text-base leading-relaxed text-ink-muted sm:text-lg"
-          >
+          <p className="mt-6 max-w-md text-pretty text-base leading-relaxed text-ink-muted sm:text-lg">
             Post a remote tech role. Get AI-vetted candidates in 24 hours,
             with payroll, compliance, and onboarding handled.
-          </motion.p>
+          </p>
 
-          <motion.div
-            custom={5}
-            variants={fadeUp}
-            initial={reduceMotion ? false : "hidden"}
-            animate="show"
-            className="mt-8 flex flex-col gap-3 sm:flex-row"
-          >
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/auth/employer/signup"
               className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_0_36px_-10px_rgba(213,236,100,0.65)] transition-transform hover:-translate-y-0.5"
@@ -189,7 +138,7 @@ export function Hero() {
               I&apos;m a candidate
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
-          </motion.div>
+          </div>
         </div>
 
         <div className="min-w-0 w-full xl:pl-2">
@@ -198,12 +147,7 @@ export function Hero() {
       </div>
 
       <div className={`relative z-10 pb-12 ${appContainerClass}`}>
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
-        >
+        <div className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {stats.map((stat, i) => (
             <div
               key={stat.label}
@@ -218,7 +162,7 @@ export function Hero() {
               </div>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

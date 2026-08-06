@@ -116,10 +116,8 @@ export function HeroProductDemo() {
       wait(15500, runLoop);
     };
 
-    wait(1800, () => {
-      setStarted(true);
-      runLoop();
-    });
+    setStarted(true);
+    runLoop();
 
     return () => {
       cancelled = true;
@@ -131,12 +129,7 @@ export function HeroProductDemo() {
   const playMotion = !reduceMotion && started;
 
   return (
-    <motion.div
-      className="relative w-full min-w-0"
-      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98], delay: 0.45 }}
-    >
+    <div className="relative w-full min-w-0">
       <div className="relative flex h-[520px] w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101418]/90 shadow-[0_24px_50px_-24px_rgba(0,0,0,0.7)] sm:h-[540px]">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -461,6 +454,6 @@ export function HeroProductDemo() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
