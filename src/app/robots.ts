@@ -17,6 +17,8 @@ export default function robots(): MetadataRoute.Robots {
         "/employer/",
         "/candidate",
         "/candidate/",
+        "/matching",
+        "/matching/",
         "/api/",
         "/auth/redirect",
         "/auth/callback",

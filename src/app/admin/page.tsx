@@ -74,6 +74,7 @@ export default async function AdminDashboardPage() {
   const needsAttention =
     stats.pendingMatches +
     stats.pendingHandoffs +
+    stats.candidateInterested +
     stats.activeJobsWithNoMatches;
 
   return (
@@ -108,6 +109,13 @@ export default async function AdminDashboardPage() {
             value={stats.pendingMatches}
             href="/admin/matches"
             detail="85%+ score, not yet released"
+            highlight
+          />
+          <StatCard
+            label="Candidates interested"
+            value={stats.candidateInterested}
+            href="/admin/matches"
+            detail="Said yes — release or outreach"
             highlight
           />
           <StatCard
@@ -147,6 +155,30 @@ export default async function AdminDashboardPage() {
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           <PreviewList
+            title="Candidates interested"
+            href="/admin/matches"
+            emptyMessage="No candidates have marked interest yet."
+          >
+            {stats.candidateInterestPreviews.length > 0 ? (
+              <ul className="divide-y divide-border">
+                {stats.candidateInterestPreviews.map((match) => (
+                  <li key={match.id} className="flex items-start justify-between gap-4 py-3 first:pt-0">
+                    <div>
+                      <p className="font-medium">
+                        {match.candidateName} → {match.jobTitle}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{match.companyName}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
+                      {match.matchScore}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </PreviewList>
+
+          <PreviewList
             title="Match review queue"
             href="/admin/matches"
             emptyMessage="No high-confidence matches waiting for approval."
@@ -159,7 +191,10 @@ export default async function AdminDashboardPage() {
                       <p className="font-medium">
                         {match.candidateName} → {match.jobTitle}
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">{match.companyName}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {match.companyName}
+                        {match.status === "candidate_interested" ? " · interested" : ""}
+                      </p>
                     </div>
                     <span className="shrink-0 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
                       {match.matchScore}%

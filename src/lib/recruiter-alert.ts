@@ -135,3 +135,39 @@ export async function notifyRecruitersForHighMatch(matchId: string) {
     })
     .eq("id", matchId);
 }
+
+function buildCandidateInterestHtml(details: MatchAlertDetails) {
+  const appUrl = getAppUrl();
+  const skills = details.candidateSkills.slice(0, 12).join(", ") || "—";
+
+  return `
+    <h2>Candidate interested</h2>
+    <p><strong>${details.candidateName}</strong> marked interest in a matched role (${details.matchScore}%).</p>
+    <h3>Role</h3>
+    <ul>
+      <li><strong>Title:</strong> ${details.jobTitle}</li>
+      <li><strong>Company:</strong> ${details.companyName}</li>
+    </ul>
+    <h3>Candidate</h3>
+    <ul>
+      <li><strong>Name:</strong> ${details.candidateName}</li>
+      <li><strong>Email:</strong> ${details.candidateEmail}</li>
+      <li><strong>Headline:</strong> ${details.candidateHeadline ?? "—"}</li>
+      <li><strong>Skills:</strong> ${skills}</li>
+    </ul>
+    ${details.matchReason ? `<p><strong>Match reason:</strong> ${details.matchReason}</p>` : ""}
+    <p>If not released yet, approve the match so the employer can see them. Or reach out and coordinate.</p>
+    <p><a href="${appUrl}/admin/matches">Open match review</a></p>
+  `;
+}
+
+/** Email ops when a candidate clicks “I’m interested”. */
+export async function notifyRecruitersCandidateInterested(matchId: string) {
+  const details = await loadMatchAlertDetails(matchId);
+  if (!details) return;
+
+  await sendOpsEmail(
+    `Candidate interested: ${details.candidateName} → ${details.jobTitle} @ ${details.companyName}`,
+    buildCandidateInterestHtml(details),
+  );
+}

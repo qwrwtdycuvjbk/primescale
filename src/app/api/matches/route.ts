@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createMutualFitHandoff, resolveMatchStatus } from "@/lib/handoff";
+import { notifyRecruitersCandidateInterested } from "@/lib/recruiter-alert";
 import { createClient } from "@/lib/supabase/server";
 import type { MatchStatus } from "@/lib/types";
 
@@ -42,6 +43,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Match is already closed" }, { status: 400 });
   }
 
+  const previousStatus = current.status;
   const finalStatus = resolveMatchStatus(current.status, status);
 
   const { error } = await supabase
@@ -51,6 +53,13 @@ export async function PATCH(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (
+    finalStatus === "candidate_interested" &&
+    previousStatus !== "candidate_interested"
+  ) {
+    await notifyRecruitersCandidateInterested(matchId);
   }
 
   if (finalStatus === "mutual_fit") {

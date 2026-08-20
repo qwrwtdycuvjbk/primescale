@@ -69,16 +69,16 @@ export default function Home() {
         index="06"
         variant="light"
         eyebrow="For candidates"
-        title="Join a matching queue."
-        intro="One profile. Get matched to seats we’re actively shortlisting, not a spam apply button."
+        title="One profile. Get matched."
+        intro="Build your profile once. We match you to remote tech roles we’re actively filling — not a spam apply button."
         bullets={[
-          "Queue by category: Backend, Full-stack, AI, DevOps, and more",
-          "See what’s matching this week",
+          "AI, Cloud, Data, DevOps, Full-stack, and more",
           "One profile, ongoing matches",
           "Mark roles you want on mutual fit",
+          "People Prime for payroll when you place",
         ]}
-        ctaLabel="Join the matching queue"
-        ctaHref="/matching"
+        ctaLabel="Create candidate profile"
+        ctaHref="/auth/candidate/signup"
         reverse
       />
 

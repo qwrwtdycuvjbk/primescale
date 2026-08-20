@@ -4,7 +4,6 @@ import { ArrowUpRight, Mail, Phone } from "lucide-react";
 import { appContainerClass } from "@/components/site/layout";
 
 const productLinks = [
-  { label: "Matching this week", href: "/matching" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "The difference", href: "/#the-difference" },
   { label: "For employers", href: "/#for-employers" },

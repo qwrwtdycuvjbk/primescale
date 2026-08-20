@@ -22,7 +22,16 @@ export type AdminDashboardStats = AdminNavCounts & {
   newEmployersThisWeek: number;
   activeJobsWithNoMatches: number;
   incompleteProfiles: number;
+  candidateInterested: number;
   pendingMatchPreviews: {
+    id: string;
+    matchScore: number;
+    status: string;
+    candidateName: string;
+    jobTitle: string;
+    companyName: string;
+  }[];
+  candidateInterestPreviews: {
     id: string;
     matchScore: number;
     candidateName: string;
@@ -87,7 +96,9 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
       newEmployersThisWeek: 0,
       activeJobsWithNoMatches: 0,
       incompleteProfiles: 0,
+      candidateInterested: 0,
       pendingMatchPreviews: [],
+      candidateInterestPreviews: [],
       pendingHandoffPreviews: [],
       unmatchedJobPreviews: [],
       incompleteProfilePreviews: [],
@@ -99,6 +110,8 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
     { count: newCandidatesThisWeek },
     { count: newEmployersThisWeek },
     { data: pendingMatches },
+    { count: candidateInterested },
+    { data: interestedMatches },
     { data: pendingHandoffs },
     { data: activeJobs },
     { data: incompleteCandidates },
@@ -121,6 +134,7 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
         `
         id,
         match_score,
+        status,
         jobs ( title, companies ( name ) ),
         candidate_profiles ( profiles ( full_name ) )
       `,
@@ -129,6 +143,23 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
       .gte("match_score", MIN_MATCH_SCORE)
       .neq("status", "rejected")
       .order("match_score", { ascending: false })
+      .limit(5),
+    supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "candidate_interested"),
+    supabase
+      .from("matches")
+      .select(
+        `
+        id,
+        match_score,
+        jobs ( title, companies ( name ) ),
+        candidate_profiles ( profiles ( full_name ) )
+      `,
+      )
+      .eq("status", "candidate_interested")
+      .order("updated_at", { ascending: false })
       .limit(5),
     supabase
       .from("handoff_requests")
@@ -170,28 +201,48 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
     return Array.isArray(matches) ? matches.length === 0 : false;
   });
 
+  function mapMatchPreview(match: {
+    id: string;
+    match_score: number;
+    status?: string;
+    jobs: unknown;
+    candidate_profiles: unknown;
+  }) {
+    const jobRaw = match.jobs;
+    const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
+    const companyRaw = job?.companies;
+    const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
+    const candidateRaw = match.candidate_profiles;
+    const candidate = Array.isArray(candidateRaw) ? candidateRaw[0] : candidateRaw;
+    const profileRaw = candidate?.profiles;
+    const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
+
+    return {
+      id: match.id,
+      matchScore: match.match_score,
+      status: match.status ?? "suggested",
+      candidateName: profile?.full_name ?? "Candidate",
+      jobTitle: job?.title ?? "Role",
+      companyName: company?.name ?? "Company",
+    };
+  }
+
   return {
     ...navCounts,
     newCandidatesThisWeek: newCandidatesThisWeek ?? 0,
     newEmployersThisWeek: newEmployersThisWeek ?? 0,
     activeJobsWithNoMatches: unmatchedJobs.length,
     incompleteProfiles: incompleteProfiles ?? 0,
-    pendingMatchPreviews: (pendingMatches ?? []).map((match) => {
-      const jobRaw = match.jobs;
-      const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
-      const companyRaw = job?.companies;
-      const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
-      const candidateRaw = match.candidate_profiles;
-      const candidate = Array.isArray(candidateRaw) ? candidateRaw[0] : candidateRaw;
-      const profileRaw = candidate?.profiles;
-      const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
-
+    candidateInterested: candidateInterested ?? 0,
+    pendingMatchPreviews: (pendingMatches ?? []).map(mapMatchPreview),
+    candidateInterestPreviews: (interestedMatches ?? []).map((match) => {
+      const preview = mapMatchPreview(match);
       return {
-        id: match.id,
-        matchScore: match.match_score,
-        candidateName: profile?.full_name ?? "Candidate",
-        jobTitle: job?.title ?? "Role",
-        companyName: company?.name ?? "Company",
+        id: preview.id,
+        matchScore: preview.matchScore,
+        candidateName: preview.candidateName,
+        jobTitle: preview.jobTitle,
+        companyName: preview.companyName,
       };
     }),
     pendingHandoffPreviews: (pendingHandoffs ?? []).map((handoff) => {

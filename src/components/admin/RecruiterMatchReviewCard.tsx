@@ -51,11 +51,25 @@ export function RecruiterMatchReviewCard({ match }: { match: Match }) {
             <p className="mt-2 text-sm text-muted-foreground">{candidate.headline}</p>
           )}
         </div>
-        <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-medium text-amber-700">
-          Awaiting review
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            match.status === "candidate_interested"
+              ? "bg-foreground text-background"
+              : "bg-amber-500/15 text-amber-700"
+          }`}
+        >
+          {match.status === "candidate_interested"
+            ? "Candidate interested"
+            : "Awaiting review"}
         </span>
       </div>
 
+      {match.status === "candidate_interested" && (
+        <p className="mt-4 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+          This candidate already said they&apos;re interested. Approve to show
+          them to the employer, or reach out and coordinate.
+        </p>
+      )}
       {match.match_reason && (
         <p className="mt-4 text-sm text-muted-foreground">{match.match_reason}</p>
       )}

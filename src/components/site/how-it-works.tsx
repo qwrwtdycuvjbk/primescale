@@ -9,16 +9,16 @@ import {
 
 const candidateSteps = [
   {
-    title: "Join a matching queue",
-    body: "Pick your category: Backend, Full-stack, AI, DevOps, and more.",
+    title: "Create your profile",
+    body: "Skills, experience, and work eligibility. One profile for remote tech.",
   },
   {
-    title: "Build your profile",
-    body: "Skills, experience, and work eligibility. One profile.",
-  },
-  {
-    title: "Get shortlisted to live seats",
+    title: "Get matched to live seats",
     body: "We match you to roles we’re actively filling, not a dead job wall.",
+  },
+  {
+    title: "Mark interest and move forward",
+    body: "Say yes to fits. Mutual interest leads to intro with People Prime support.",
   },
 ];
 
