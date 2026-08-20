@@ -11,11 +11,28 @@ import {
 import type { RemoteTechJobLead } from "@/lib/openweb-ninja";
 
 const QUERY_PRESETS = [
-  "software engineer remote",
-  "full stack developer remote",
-  "backend engineer remote",
-  "frontend engineer remote",
-  "devops engineer remote",
+  "software engineer remote UK",
+  "full stack developer remote UK",
+  "backend engineer remote London",
+  "frontend engineer remote United Kingdom",
+  "devops engineer remote UK",
+  "startup software engineer remote UK",
+];
+
+const COUNTRY_OPTIONS = [
+  { value: "gb", label: "United Kingdom" },
+  { value: "worldwide", label: "Worldwide (UK for now)" },
+  { value: "ie", label: "Ireland" },
+  { value: "nl", label: "Netherlands" },
+  { value: "de", label: "Germany" },
+  { value: "se", label: "Sweden" },
+  { value: "pt", label: "Portugal" },
+  { value: "es", label: "Spain" },
+  { value: "fr", label: "France" },
+  { value: "au", label: "Australia" },
+  { value: "sg", label: "Singapore" },
+  { value: "ca", label: "Canada" },
+  { value: "us", label: "United States" },
 ];
 
 function formatPostedAt(value: string | null) {
@@ -28,13 +45,26 @@ function formatPostedAt(value: string | null) {
   });
 }
 
+function formatLocation(lead: RemoteTechJobLead) {
+  const parts = [
+    lead.isRemote ? "Remote" : null,
+    lead.location || lead.country,
+    lead.sourceLocale
+      ? `via ${lead.sourceLocale.toUpperCase()}`
+      : null,
+  ].filter(Boolean);
+  return parts.join(" · ") || "—";
+}
+
 export function AdminJobLeadsClient() {
   const [query, setQuery] = useState(QUERY_PRESETS[0]);
   const [datePosted, setDatePosted] = useState("3days");
+  const [country, setCountry] = useState("gb");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [leads, setLeads] = useState<RemoteTechJobLead[]>([]);
   const [lastQuery, setLastQuery] = useState("");
+  const [countriesUsed, setCountriesUsed] = useState<string[]>([]);
 
   async function runSearch(event: React.FormEvent) {
     event.preventDefault();
@@ -45,7 +75,7 @@ export function AdminJobLeadsClient() {
       const params = new URLSearchParams({
         query: query.trim() || QUERY_PRESETS[0],
         datePosted,
-        country: "us",
+        country,
         pages: "1",
       });
 
@@ -54,19 +84,23 @@ export function AdminJobLeadsClient() {
         error?: string;
         leads?: RemoteTechJobLead[];
         queriesUsed?: string[];
+        countriesUsed?: string[];
       };
 
       if (!response.ok) {
         setError(data.error ?? "Could not fetch job leads.");
         setLeads([]);
+        setCountriesUsed([]);
         return;
       }
 
       setLeads(data.leads ?? []);
       setLastQuery(data.queriesUsed?.[0] ?? query);
+      setCountriesUsed(data.countriesUsed ?? []);
     } catch {
       setError("Could not fetch job leads.");
       setLeads([]);
+      setCountriesUsed([]);
     } finally {
       setLoading(false);
     }
@@ -78,7 +112,7 @@ export function AdminJobLeadsClient() {
         onSubmit={runSearch}
         className="rounded-3xl border border-border bg-card p-6"
       >
-        <div className="grid gap-4 sm:grid-cols-[1fr_180px_auto] sm:items-end">
+        <div className="grid gap-4 sm:grid-cols-[1fr_160px_160px_auto] sm:items-end">
           <div>
             <FieldLabel htmlFor="query">Search query</FieldLabel>
             <input
@@ -86,7 +120,7 @@ export function AdminJobLeadsClient() {
               className={fieldInputClass}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="software engineer remote"
+              placeholder="software engineer remote UK"
               list="job-lead-presets"
             />
             <datalist id="job-lead-presets">
@@ -94,6 +128,22 @@ export function AdminJobLeadsClient() {
                 <option key={preset} value={preset} />
               ))}
             </datalist>
+          </div>
+
+          <div>
+            <FieldLabel htmlFor="country">Scope</FieldLabel>
+            <select
+              id="country"
+              className={fieldInputClass}
+              value={country}
+              onChange={(event) => setCountry(event.target.value)}
+            >
+              {COUNTRY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -118,9 +168,10 @@ export function AdminJobLeadsClient() {
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Uses OpenWeb Ninja (Google for Jobs). Spam aggregators and listings
-          without a real company name are filtered out. ~10 results per search
-          before filtering; free tier allows 200 searches/month.
+          UK mode only keeps jobs that mention UK / London / £ etc. (the API
+          often leaves country blank, so we can’t trust location fields).
+          Restart the local server if you don’t see this change. Not live on
+          production until you deploy. 1 API call per search.
         </p>
       </form>
 
@@ -130,6 +181,9 @@ export function AdminJobLeadsClient() {
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             {leads.length} lead{leads.length === 1 ? "" : "s"} for “{lastQuery}”
+            {countriesUsed.length > 0
+              ? ` · locales ${countriesUsed.map((c) => c.toUpperCase()).join(", ")}`
+              : ""}
           </p>
 
           <div className="overflow-hidden rounded-3xl border border-border">
@@ -166,7 +220,7 @@ export function AdminJobLeadsClient() {
                       {formatPostedAt(lead.postedAt)}
                     </td>
                     <td className="px-4 py-4 align-top text-muted-foreground">
-                      {lead.isRemote ? "Remote" : lead.location || "—"}
+                      {formatLocation(lead)}
                     </td>
                     <td className="px-4 py-4 align-top">
                       <div className="flex flex-col gap-2">
@@ -175,7 +229,7 @@ export function AdminJobLeadsClient() {
                             href={lead.applyUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-foreground"
                           >
                             Job post
                             <ExternalLink className="h-3.5 w-3.5" />

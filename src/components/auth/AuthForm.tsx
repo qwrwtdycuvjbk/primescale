@@ -18,7 +18,7 @@ const employerCopy = {
 
 const candidateCopy = {
   signupTitle: "Create your candidate account",
-  signupSubtitle: "Build your profile and get matched to remote tech roles.",
+  signupSubtitle: "Join a matching queue and get matched to remote tech seats.",
   loginTitle: "Candidate log in",
   loginSubtitle: "Access your profile, matches, and dashboard.",
   emailLabel: "Email",
@@ -53,7 +53,7 @@ export function AuthForm({
     if (!showSignOut) return null;
 
     return (
-      <form action={signOutAuth} method="post" className="mt-3">
+      <form action={signOutAuth} className="mt-3">
         <input type="hidden" name="role" value={role} />
         <button
           type="submit"
@@ -189,7 +189,6 @@ export function AuthForm({
 
       <form
         action={submitAuth}
-        method="post"
         className={isLogin ? "mt-3 space-y-2.5" : "mt-4 space-y-3"}
       >
         <input type="hidden" name="mode" value={mode} />

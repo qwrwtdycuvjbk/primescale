@@ -10,7 +10,7 @@ export default async function AdminAddCandidatePage() {
     <AdminShell name={profile.full_name} activePath="/admin/candidates">
       <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
-          Add <span className="italic text-primary">candidate.</span>
+          Add <span className="italic text-foreground">candidate.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           Manually add someone from the People Prime bench or another source.

@@ -37,7 +37,7 @@ export default async function CandidateMatchesPage() {
     <CandidateShell name={profile.full_name} activePath="/candidate/matches">
       <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
-          Your <span className="italic text-primary">matches.</span>
+          Your <span className="italic text-foreground">matches.</span>
         </h1>
         <p className="mt-3 text-muted-foreground">
           Matched remote tech roles based on your profile and resume.

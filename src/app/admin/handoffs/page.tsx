@@ -27,12 +27,21 @@ export default async function AdminHandoffsPage({
     .from("handoff_requests")
     .select(
       `
-      *,
+      id,
+      match_id,
+      status,
+      notes,
+      created_at,
+      updated_at,
       matches (
         id,
+        candidate_profile_id,
+        job_id,
         match_score,
         match_reason,
         status,
+        created_at,
+        updated_at,
         jobs (
           title,
           salary_range,
@@ -51,7 +60,8 @@ export default async function AdminHandoffsPage({
       )
     `,
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(50);
 
   if (status && status !== "all" && handoffStatuses.includes(status as HandoffStatus)) {
     query = query.eq("status", status);
@@ -63,44 +73,80 @@ export default async function AdminHandoffsPage({
     ...new Set(
       (rawHandoffs ?? [])
         .map((handoff) => {
-          const jobs = handoff.matches?.jobs as { posted_by?: string } | undefined;
-          return jobs?.posted_by;
+          const matchRaw = handoff.matches;
+          const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
+          const jobs = match?.jobs as { posted_by?: string } | { posted_by?: string }[] | undefined;
+          const job = Array.isArray(jobs) ? jobs[0] : jobs;
+          return job?.posted_by;
         })
         .filter((id): id is string => Boolean(id)),
     ),
   ];
 
-  const { data: employers } = employerIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone")
-        .in("id", employerIds)
-    : { data: [] as Pick<Profile, "id" | "full_name" | "email" | "phone">[] };
+  const [{ data: employers }, { count: pendingCount }] = await Promise.all([
+    employerIds.length
+      ? supabase
+          .from("profiles")
+          .select("id, full_name, email, phone")
+          .in("id", employerIds)
+      : Promise.resolve({
+          data: [] as Pick<Profile, "id" | "full_name" | "email" | "phone">[],
+        }),
+    supabase
+      .from("handoff_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+  ]);
 
   const employerById = new Map((employers ?? []).map((row) => [row.id, row]));
 
   const handoffs = (rawHandoffs ?? []).map((handoff) => {
-    const jobs = handoff.matches?.jobs as { posted_by?: string } | undefined;
-    const employer = jobs?.posted_by
-      ? employerById.get(jobs.posted_by)
+    const matchRaw = handoff.matches;
+    const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
+    const jobsRaw = match?.jobs;
+    const job = Array.isArray(jobsRaw) ? jobsRaw[0] : jobsRaw;
+    const employer = job?.posted_by
+      ? employerById.get(job.posted_by)
       : undefined;
 
     return {
       ...handoff,
+      matches: match
+        ? {
+            ...match,
+            jobs: job
+              ? {
+                  ...job,
+                  companies: Array.isArray(job.companies)
+                    ? job.companies[0]
+                    : job.companies,
+                }
+              : undefined,
+            candidate_profiles: (() => {
+              const candidateRaw = match.candidate_profiles;
+              const candidate = Array.isArray(candidateRaw)
+                ? candidateRaw[0]
+                : candidateRaw;
+              if (!candidate) return undefined;
+              const profileRaw = candidate.profiles;
+              return {
+                ...candidate,
+                profiles: Array.isArray(profileRaw) ? profileRaw[0] : profileRaw,
+              };
+            })(),
+          }
+        : undefined,
       employer,
-    } as HandoffRequest & { employer?: Pick<Profile, "full_name" | "email" | "phone"> };
+    } as unknown as HandoffRequest & {
+      employer?: Pick<Profile, "full_name" | "email" | "phone">;
+    };
   });
-
-  const { count: pendingCount } = await supabase
-    .from("handoff_requests")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "pending");
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/handoffs">
       <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
-          People Prime <span className="italic text-primary">handoffs.</span>
+          People Prime <span className="italic text-foreground">handoffs.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           Mutual-fit matches from People Remotely. Contact both parties, coordinate

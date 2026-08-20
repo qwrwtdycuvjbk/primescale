@@ -38,7 +38,7 @@ export function RecruiterMatchReviewCard({ match }: { match: Match }) {
     <article className="rounded-3xl border border-border bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">
+          <p className="font-mono text-xs uppercase tracking-widest text-foreground">
             {match.match_score}% match
           </p>
           <h3 className="display-headline mt-2 text-2xl">

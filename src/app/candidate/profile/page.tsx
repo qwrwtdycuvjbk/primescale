@@ -40,7 +40,7 @@ export default async function CandidateProfilePage() {
         </Link>
 
         <h1 className="display-headline text-4xl sm:text-5xl">
-          Edit your <span className="italic text-primary">profile.</span>
+          Edit your <span className="italic text-foreground">profile.</span>
         </h1>
         <p className="mt-3 text-muted-foreground">
           Update any field below and save. No need to go through setup again.

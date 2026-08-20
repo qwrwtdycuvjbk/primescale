@@ -33,7 +33,7 @@ export function CandidateMatchCard({ match }: { match: Match }) {
     <article className="rounded-3xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">
+          <p className="font-mono text-xs uppercase tracking-widest text-foreground">
             {match.match_score}% match
           </p>
           <h3 className="display-headline mt-2 text-2xl">
@@ -106,7 +106,7 @@ export function EmptyMatches({ editProfileHref }: { editProfileHref: string }) {
         We scan active tech roles against your profile. Make sure your skills
         and resume are up to date for better matching.
       </p>
-      <Link href={editProfileHref} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+      <Link href={editProfileHref} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-foreground">
         Update profile
         <ArrowRight className="h-4 w-4" />
       </Link>

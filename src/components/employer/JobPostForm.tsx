@@ -206,7 +206,7 @@ export function JobPostForm({
           type="button"
           onClick={parseJd}
           disabled={status === "parsing" || !pastedJd.trim()}
-          className="mt-2 text-sm font-medium text-primary hover:opacity-80"
+          className="mt-2 text-sm font-medium text-foreground hover:opacity-80"
         >
           {status === "parsing" ? "Parsing..." : "Parse with AI"}
         </button>

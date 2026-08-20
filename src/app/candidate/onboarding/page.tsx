@@ -6,13 +6,23 @@ import {
   isCandidateProfileComplete,
   mapCandidateRowToInput,
 } from "@/lib/candidate-profile";
+import {
+  MATCHING_QUEUE_COOKIE,
+  isRoleCategory,
+} from "@/lib/matching-seats";
+import type { CandidateProfileInput } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function CandidateOnboardingPage() {
   const { profile } = await requireRole("candidate");
   const supabase = await createClient();
+  const cookieStore = await cookies();
+  const queueRaw = cookieStore.get(MATCHING_QUEUE_COOKIE)?.value;
+  const queueDecoded = queueRaw ? decodeURIComponent(queueRaw) : null;
+  const queueCategory = isRoleCategory(queueDecoded) ? queueDecoded : null;
 
   const { data: existing } = await supabase
     .from("candidate_profiles")
@@ -24,9 +34,18 @@ export default async function CandidateOnboardingPage() {
     redirect("/candidate");
   }
 
-  const initialData = existing
+  const fromRow: Partial<CandidateProfileInput> = existing
     ? mapCandidateRowToInput(existing, profile.phone)
     : { phone: profile.phone ?? "" };
+  const initialData: Partial<CandidateProfileInput> = {
+    ...fromRow,
+    roleCategories:
+      fromRow.roleCategories && fromRow.roleCategories.length > 0
+        ? fromRow.roleCategories
+        : queueCategory
+          ? [queueCategory]
+          : fromRow.roleCategories ?? [],
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,11 +61,13 @@ export default async function CandidateOnboardingPage() {
       <main className={appMainClass}>
         <div className="max-w-3xl">
         <h1 className="display-headline text-4xl sm:text-5xl">
-          Build your <span className="italic text-primary">profile.</span>
+          Join the matching{" "}
+          <span className="italic text-foreground">queue.</span>
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Five steps to get matched to remote tech roles. A resume upload is
-          required on the final step.
+          {queueCategory
+            ? `You’re joining the ${queueCategory} queue. Five steps to finish your profile. Resume upload required on the final step.`
+            : "Five steps to join a matching queue for remote tech seats. A resume upload is required on the final step."}
         </p>
 
         <div className="mt-10 rounded-3xl border border-border bg-card p-8">

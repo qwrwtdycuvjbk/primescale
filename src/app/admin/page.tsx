@@ -35,7 +35,7 @@ function StatCard({ label, value, href, detail, highlight }: StatCardProps) {
       <p className="text-3xl font-semibold">{value}</p>
       <p className="mt-1 text-sm font-medium">{label}</p>
       {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
-      <span className="mt-3 inline-flex items-center gap-1 text-sm text-primary opacity-0 transition group-hover:opacity-100">
+      <span className="mt-3 inline-flex items-center gap-1 text-sm text-foreground opacity-0 transition group-hover:opacity-100">
         View
         <ArrowRight className="h-3.5 w-3.5" />
       </span>
@@ -55,7 +55,7 @@ function PreviewList({ title, href, emptyMessage, children }: PreviewListProps) 
     <section className="rounded-3xl border border-border bg-card p-6">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-lg font-semibold">{title}</h2>
-        <Link href={href} className="text-sm font-medium text-primary hover:underline">
+        <Link href={href} className="text-sm font-medium text-foreground hover:underline">
           View all
         </Link>
       </div>
@@ -80,7 +80,7 @@ export default async function AdminDashboardPage() {
     <AdminShell name={profile.full_name} activePath="/admin">
       <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
-          <span className="italic text-primary">Dashboard.</span>
+          <span className="italic text-foreground">Dashboard.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           What needs attention today — pending reviews, handoffs, new signups, and
@@ -93,7 +93,7 @@ export default async function AdminDashboardPage() {
 
         {needsAttention > 0 && (
           <div className="mt-8 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4">
-            <p className="font-medium text-primary">
+            <p className="font-medium text-foreground">
               {needsAttention} item{needsAttention === 1 ? "" : "s"} need attention
             </p>
             <p className="mt-1 text-sm text-muted-foreground">

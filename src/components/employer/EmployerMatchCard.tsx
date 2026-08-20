@@ -55,7 +55,7 @@ export function EmployerMatchCard({ match }: { match: Match }) {
               For {jobTitle}
             </p>
           )}
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">
+          <p className="font-mono text-xs uppercase tracking-widest text-foreground">
             {match.match_score}% match
           </p>
           <h3 className="display-headline mt-2 text-2xl">{name}</h3>

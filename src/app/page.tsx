@@ -52,13 +52,13 @@ export default function Home() {
         index="05"
         variant="dark"
         eyebrow="For employers"
-        title="Post a role. Get matches."
-        intro="AI-reviewed candidates in your dashboard, with People Prime as your staffing backstop."
+        title="Post free. Get a shortlist."
+        intro="A small vetted set in 24 hours, optional 2-day trial, People Prime for payroll and onboarding."
         bullets={[
-          "AI-assisted JD parsing",
-          "Skill and seniority matching",
-          "Global remote tech roles",
-          "Shortlist from one dashboard",
+          "Free to post a remote tech role",
+          "3 to 5 interview-ready matches, not a resume pile",
+          "Optional 2-day trial before you commit",
+          "Payroll, compliance, and onboarding handled",
         ]}
         ctaLabel="Post a role free"
         ctaHref="/auth/employer/signup"
@@ -69,16 +69,16 @@ export default function Home() {
         index="06"
         variant="light"
         eyebrow="For candidates"
-        title="One profile. Ongoing matches."
-        intro="Add skills and eligibility once. See remote tech roles that fit — no spam."
+        title="Join a matching queue."
+        intro="One profile. Get matched to seats we’re actively shortlisting, not a spam apply button."
         bullets={[
+          "Queue by category: Backend, Full-stack, AI, DevOps, and more",
+          "See what’s matching this week",
           "One profile, ongoing matches",
-          "Global remote tech roles",
-          "Skill and seniority matching",
-          "Mark roles you want",
+          "Mark roles you want on mutual fit",
         ]}
-        ctaLabel="Create your profile"
-        ctaHref="/auth/candidate/signup"
+        ctaLabel="Join the matching queue"
+        ctaHref="/matching"
         reverse
       />
 

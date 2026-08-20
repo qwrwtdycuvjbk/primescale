@@ -301,7 +301,7 @@ export function AdminAddCandidateForm() {
                   onClick={() => toggleCategory(category)}
                   className={`rounded-full border px-4 py-2 text-sm transition ${
                     selected
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-muted text-foreground"
                       : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >

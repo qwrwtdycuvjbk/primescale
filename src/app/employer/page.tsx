@@ -153,7 +153,7 @@ export default async function EmployerDashboardPage() {
 
           <aside className="space-y-6">
             <div className="rounded-3xl border border-border bg-card p-6">
-              <p className="font-mono text-xs uppercase tracking-widest text-primary">
+              <p className="font-mono text-xs uppercase tracking-widest text-foreground">
                 Company
               </p>
               <h3 className="display-headline mt-4 text-3xl">{company.name}</h3>
@@ -174,12 +174,12 @@ export default async function EmployerDashboardPage() {
                   </span>
                 )}
                 {company.badge_remote_first && (
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs text-foreground">
                     Remote-first
                   </span>
                 )}
                 {company.badge_visa_sponsor && (
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs text-foreground">
                     Visa sponsor
                   </span>
                 )}

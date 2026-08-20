@@ -1,85 +1,155 @@
 # People Remotely marketing templates
 
-## Outbound email (cold outreach)
+## Positioning line (use everywhere)
 
-**Subject:** Hiring [ROLE TITLE]? Candidates in 24 hours
+Most remote hiring tools dump you into a resume pile. People Remotely does the opposite: post free, get a small shortlist in 24 hours, and try someone for 2 days before you commit.
+
+Public matching page: https://peopleremotely.com/matching
+
+---
+
+## Outbound email (cold) — free 3-profile shortlist
+
+**Subject:** 3 free profiles for your [ROLE TITLE] seat
 
 Hi [Name],
 
-I noticed [Company] is hiring a [ROLE TITLE]. If speed matters, People Remotely might help.
+Saw [Company] is hiring a [ROLE TITLE]. Open roles get messy fast: big resume piles, lots of screening, and too many people who aren’t a real fit.
 
-People Remotely is a platform by People Prime Worldwide where companies post remote tech roles and receive pre-vetted, interview-ready candidates within 24 hours. No job board chaos. No resume piles.
+I build People Remotely (People Prime Worldwide). For your hardest seat this week, I can send **3 named profiles for free** within 24–48 hours — a small vetted shortlist, not a resume dump. Optional 2-day trial if you want to test fit.
 
-- AI, Cloud, Data, DevOps, Cybersecurity, and more
-- Contract and C2H options
-- Free to post a role
+Reply with the seat (or a JD link) and I’ll put the shortlist together.
 
-Post a role here: [YOUR LIVE URL]
+Site: https://peopleremotely.com  
+Matching this week: https://peopleremotely.com/matching
 
-Happy to answer questions or jump on a quick call.
-
-Best,
-[Your name]
-People Prime Worldwide
+Thanks,
+Jahnavi
+People Remotely / People Prime Worldwide
 +1 (747) 212-1886
-[remote@people-prime.com](mailto:remote@people-prime.com)
+remote@people-prime.com
+
+---
+
+## Outbound follow-up (warm, leave room for another bump)
+
+Hi [Name],
+
+Quick follow-up on the [ROLE TITLE] hire at [Company].
+
+Happy to tailor a free 3-profile shortlist around that seat if useful.
+
+Thanks,
+Jahnavi
+https://peopleremotely.com
+
+---
+
+## HN / founder outbound (short)
+
+Hey,
+
+Saw [Company] on HN. [One line about what they build].
+
+Hiring [ROLE] is usually painful: lots of generic resumes, long loop to find who’s real. I build People Remotely — small vetted shortlist for US remote tech, plus a 2-day trial.
+
+I can give you 3 free profiles for the hardest seat right now. Just shout if useful.
+
+https://peopleremotely.com
+
+---
+
+## Apollo template (merge fields)
+
+Hi {{first_name}},
+
+Hope you’re doing well. I noticed {{company}} is hiring and wanted to reach out.
+
+Open roles can get messy fast: big resume piles, lots of screening time, and too many candidates who aren’t a real fit.
+
+I’m Jahnavi from People Prime Worldwide. We built People Remotely so you can post a role free and get a small shortlist of matched candidates in 24 hours — and if you hire, we can also help with payroll, compliance, and onboarding.
+
+If useful, reply with the hardest seat and I’ll send 3 free profiles.
+
+https://peopleremotely.com
 
 ---
 
 ## LinkedIn DM (short)
 
-Hi [Name], saw you're hiring a [ROLE]. We deliver pre-vetted remote tech candidates in 24h through People Remotely (by People Prime Worldwide). Free to post: [URL]. Worth a look if speed matters.
+Hi [Name], saw you're hiring a [ROLE]. I can send 3 free named profiles in 24–48h via People Remotely (shortlist, not a resume pile). Optional 2-day trial. Worth a look if speed matters: https://peopleremotely.com/matching
 
 ---
 
-## LinkedIn post
+## Shortlist Thursday — LinkedIn post (weekly ritual)
 
-Hiring senior tech talent in the US is slow and expensive, especially for AI, Cloud, and Data roles.
+**Shortlist Thursday.**
 
-We built People Remotely to fix that.
+This week we’re matching:
 
-Post a remote tech role. Get interview-ready candidates in 24 hours. No applicants to sift through.
+1. [Seat title] — [stack] — [US/Canada remote] — status: collecting / shortlisting / trial
+2. [Seat title] — …
+3. [Seat title] — …
 
-Powered by People Prime Worldwide. 14+ years. 50,000+ deployments.
+What we’re screening for: [one sentence].
 
-Try it free: [URL]
+Companies: post free → get a small shortlist in 24 hours → optional 2-day trial.
+Candidates: join the matching queue for your category.
 
-#hiring #remotework #techrecruiting #startups
+Live board: https://peopleremotely.com/matching
+
+Most tools dump you into a resume pile. We do the opposite.
+
+#remotework #techhiring #shortlist
 
 ---
 
-## Product Hunt
+## LinkedIn posts (Week 3 candidate magnet)
 
-**Tagline (60 chars max):**
-Post a tech role. Get vetted candidates in 24 hours.
+### Post A — Why we don’t scrape jobs
+We don’t run a public job scrape on People Remotely.
 
-**Description:**
-People Remotely is the inverse of a job board. Companies post remote tech roles. People Prime Worldwide delivers pre-vetted, interview-ready engineers within one business day.
+Empty scraped boards look busy and convert poorly. Instead we show seats we’re actually shortlisting, and invite candidates into a matching queue by category.
 
-Built for startups and hiring teams who need speed without sacrificing quality. Post a full job description or fill out a quick form. We handle sourcing, screening, and deliver a focused shortlist.
+If you’re hiring: post free. If you’re looking: https://peopleremotely.com/matching
 
-- 24-hour candidate turnaround
-- AI, Cloud, Data, DevOps, Cybersecurity, and more
-- Contract and C2H models
-- Backed by People Prime Worldwide (14+ years, 50,000+ deployments)
-- Free to post a role
+### Post B — What a 3-person shortlist looks like
+When we say shortlist, we mean three named profiles:
 
-**First comment (maker intro):**
-Hey Product Hunt! We built People Remotely because hiring managers are tired of job board chaos. You post once, and our team at People Prime Worldwide sends interview-ready remote engineers within 24 hours.
+- Skills + seniority that match the seat
+- Why they fit (one paragraph)
+- Availability + rate band
+- Ready for intro or a 2-day trial
 
-Would love your feedback. Happy to answer questions about how we vet candidates or how Contract vs C2H works.
+Not 80 Easy Apply resumes. Reply “shortlist” if you want one for a live seat.
 
-**Gallery suggestions:**
+### Post C — Anonymized match story
+[Company type] needed a [role] fast. We sent 3 profiles in [X] hours. They interviewed [N], started a 2-day trial with [1].
 
-1. Homepage hero screenshot
-2. Post-a-role form (paste JD option)
-3. How it works section
-4. People Prime / stats section
+That’s the product: shortlist + trial, not a job board.
 
-**Launch day checklist:**
+---
 
-- Custom domain live (or Vercel URL ready)
-- Team ready to fulfill submissions within 24h
-- Someone monitoring Supabase and email
-- LinkedIn post scheduled for same day
-- Reply to every PH comment within 1 hour
+## Shortlist card format (send to companies — no login wall)
+
+**Seat:** [Role title]  
+**Company:** [Name]  
+**Date:** [YYYY-MM-DD]
+
+| # | Name | Title / years | Stack highlights | Why fit | Availability | Rate band |
+|---|---|---|---|---|---|---|
+| 1 | | | | | | |
+| 2 | | | | | | |
+| 3 | | | | | | |
+
+Next step: 30-min intro or 2-day trial.
+
+---
+
+## Product Hunt (optional later)
+
+**Tagline:** Post free. Get a shortlist in 24 hours.
+
+**Description:** People Remotely is the inverse of a job board. Post a remote tech role, get a small vetted shortlist within one business day, and try someone for 2 days before you commit. Backed by People Prime Worldwide.
+
+Launch only after 1–2 real shortlist stories exist.

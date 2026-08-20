@@ -33,7 +33,7 @@ function NavLink({
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
             isActive
               ? "bg-background text-foreground"
-              : "bg-primary/15 text-primary"
+              : "bg-muted text-foreground"
           }`}
         >
           {badge}

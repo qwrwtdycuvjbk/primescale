@@ -10,7 +10,7 @@ export default async function AdminJobLeadsPage() {
     <AdminShell name={profile.full_name} activePath="/admin/job-leads">
       <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
-          Job <span className="italic text-primary">leads.</span>
+          Job <span className="italic text-foreground">leads.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           Pull fresh worldwide remote tech roles from OpenWeb Ninja. Use these to

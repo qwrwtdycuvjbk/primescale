@@ -9,13 +9,8 @@ import {
 } from "@/components/admin/CandidateRegistryTable";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminClient } from "@/lib/supabase/admin";
-import type { MatchStatus } from "@/lib/types";
 
-const roleApplicationStatuses: MatchStatus[] = [
-  "candidate_interested",
-  "employer_shortlisted",
-  "mutual_fit",
-];
+const PAGE_SIZE = 100;
 
 export default async function AdminCandidatesPage({
   searchParams,
@@ -41,12 +36,31 @@ export default async function AdminCandidatesPage({
     .from("candidate_profiles")
     .select(
       `
-      *,
+      id,
+      user_id,
+      headline,
+      phone,
+      current_title,
+      years_experience,
+      experience_level,
+      work_authorization,
+      us_state,
+      availability_status,
+      profile_completeness,
+      open_to_matching,
+      profile_complete,
+      resume_url,
+      github_url,
+      linkedin_url,
+      source,
+      created_at,
+      updated_at,
       profiles!inner ( full_name, email, phone, created_at, role )
     `,
     )
     .eq("profiles.role", "candidate")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
 
   if (filters.complete === "yes") query = query.eq("profile_complete", true);
   if (filters.complete === "no") query = query.eq("profile_complete", false);
@@ -73,9 +87,36 @@ export default async function AdminCandidatesPage({
     query = query.eq("source", filters.source);
   }
 
-  const { data: rawCandidates } = await query;
+  const [
+    { data: rawCandidates },
+    { count: totalCount },
+    { count: completeCount },
+    { count: activeCount },
+  ] = await Promise.all([
+    query,
+    supabase
+      .from("candidate_profiles")
+      .select("id, profiles!inner(role)", { count: "exact", head: true })
+      .eq("profiles.role", "candidate"),
+    supabase
+      .from("candidate_profiles")
+      .select("id, profiles!inner(role)", { count: "exact", head: true })
+      .eq("profiles.role", "candidate")
+      .eq("profile_complete", true),
+    supabase
+      .from("candidate_profiles")
+      .select("id, profiles!inner(role)", { count: "exact", head: true })
+      .eq("profiles.role", "candidate")
+      .eq("availability_status", "actively_looking"),
+  ]);
 
-  let candidates = (rawCandidates ?? []) as AdminCandidateRow[];
+  let candidates = (rawCandidates ?? []).map((row) => {
+    const profiles = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    return {
+      ...row,
+      profiles,
+    } as AdminCandidateRow;
+  });
 
   if (filters.q?.trim()) {
     const term = filters.q.trim().toLowerCase();
@@ -86,51 +127,13 @@ export default async function AdminCandidatesPage({
     });
   }
 
-  const candidateIds = candidates.map((candidate) => candidate.id);
-  const applicationCountByCandidate = new Map<string, number>();
-
-  if (candidateIds.length) {
-    const { data: applications } = await supabase
-      .from("matches")
-      .select("candidate_profile_id")
-      .in("candidate_profile_id", candidateIds)
-      .in("status", roleApplicationStatuses);
-
-    for (const row of applications ?? []) {
-      const current = applicationCountByCandidate.get(row.candidate_profile_id) ?? 0;
-      applicationCountByCandidate.set(row.candidate_profile_id, current + 1);
-    }
-  }
-
-  candidates = candidates.map((candidate) => ({
-    ...candidate,
-    roleApplications: applicationCountByCandidate.get(candidate.id) ?? 0,
-  }));
-
-  const { count: totalCount } = await supabase
-    .from("candidate_profiles")
-    .select("*, profiles!inner(role)", { count: "exact", head: true })
-    .eq("profiles.role", "candidate");
-
-  const { count: completeCount } = await supabase
-    .from("candidate_profiles")
-    .select("*, profiles!inner(role)", { count: "exact", head: true })
-    .eq("profiles.role", "candidate")
-    .eq("profile_complete", true);
-
-  const { count: activeCount } = await supabase
-    .from("candidate_profiles")
-    .select("*, profiles!inner(role)", { count: "exact", head: true })
-    .eq("profiles.role", "candidate")
-    .eq("availability_status", "actively_looking");
-
   return (
     <AdminShell name={profile.full_name} activePath="/admin/candidates">
       <main className={appMainClass}>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="display-headline text-4xl sm:text-5xl">
-              Candidate <span className="italic text-primary">registry.</span>
+              Candidate <span className="italic text-foreground">registry.</span>
             </h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
               Everyone who signed up as a candidate on People Remotely. Filter by profile
@@ -142,10 +145,11 @@ export default async function AdminCandidatesPage({
 
         {filters.added === "1" && (
           <div className="mt-8 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4">
-            <p className="font-medium text-primary">Candidate added successfully.</p>
+            <p className="font-medium text-foreground">Candidate added successfully.</p>
             {filters.matches && Number(filters.matches) > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">
-                {filters.matches} automatic match{Number(filters.matches) === 1 ? "" : "es"} created.
+                {filters.matches} automatic match
+                {Number(filters.matches) === 1 ? "" : "es"} created.
               </p>
             )}
           </div>
@@ -174,6 +178,7 @@ export default async function AdminCandidatesPage({
 
         <p className="mt-6 text-sm text-muted-foreground">
           Showing {candidates.length} candidate{candidates.length === 1 ? "" : "s"}
+          {candidates.length >= PAGE_SIZE ? ` (latest ${PAGE_SIZE})` : ""}
         </p>
 
         <div className="mt-4">

@@ -1,6 +1,21 @@
 import type { Company, Job, JobStatus, Profile } from "@/lib/types";
 
-export type AdminJobRow = Omit<Job, "companies"> & {
+export type AdminJobRow = Pick<
+  Job,
+  | "id"
+  | "company_id"
+  | "posted_by"
+  | "title"
+  | "role_type"
+  | "experience_level"
+  | "tech_stack"
+  | "salary_range"
+  | "work_type"
+  | "status"
+  | "expires_at"
+  | "created_at"
+  | "updated_at"
+> & {
   companies: Pick<Company, "name" | "website"> | null;
   profiles: Pick<Profile, "full_name" | "email" | "phone"> | null;
   matchCount: number;
@@ -35,7 +50,7 @@ function statusLabel(status: JobStatus) {
 function statusClass(status: JobStatus) {
   switch (status) {
     case "active":
-      return "bg-primary/15 text-primary";
+      return "bg-muted text-foreground";
     case "draft":
       return "bg-muted text-muted-foreground";
     case "paused":

@@ -17,7 +17,7 @@ export default async function AdminNewJobPage() {
       <main className={appMainClass}>
         <div className="max-w-3xl">
           <h1 className="display-headline text-4xl sm:text-5xl">
-            Add <span className="italic text-primary">job.</span>
+            Add <span className="italic text-foreground">job.</span>
           </h1>
           <p className="mt-3 text-muted-foreground">
             Add a role for People Prime or another company. Publish immediately

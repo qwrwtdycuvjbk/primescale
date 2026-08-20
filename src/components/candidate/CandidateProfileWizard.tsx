@@ -211,7 +211,7 @@ export function CandidateProfileWizard({
           <p className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
             Profile builder · Step {STEPS[step].code}
           </p>
-          <p className="font-mono text-xs text-primary">
+          <p className="font-mono text-xs text-foreground">
             {wizardProgress}% complete
           </p>
         </div>
@@ -542,7 +542,7 @@ export function CandidateProfileWizard({
               </p>
               <div>
                 <FieldLabel htmlFor="resume">
-                  Resume (PDF or DOCX) <span className="text-primary">*</span>
+                  Resume (PDF or DOCX) <span className="text-foreground">*</span>
                 </FieldLabel>
                 <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-10 transition-colors hover:border-primary/50 hover:bg-muted/60">
                   <Upload className="h-8 w-8 text-muted-foreground" />

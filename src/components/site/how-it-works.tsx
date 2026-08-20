@@ -7,33 +7,33 @@ import {
   siteSectionClass,
 } from "@/components/site/layout";
 
-const employerSteps = [
-  {
-    title: "Post your role",
-    body: "Upload your JD. AI pulls out title, stack, and seniority.",
-  },
-  {
-    title: "Get matched candidates",
-    body: "Scored on skills, seniority, and work eligibility. No inbox flood.",
-  },
-  {
-    title: "Shortlist and hire",
-    body: "Review matches. People Prime helps you close.",
-  },
-];
-
 const candidateSteps = [
+  {
+    title: "Join a matching queue",
+    body: "Pick your category: Backend, Full-stack, AI, DevOps, and more.",
+  },
   {
     title: "Build your profile",
     body: "Skills, experience, and work eligibility. One profile.",
   },
   {
-    title: "Get matched to roles",
-    body: "Remote tech roles that fit your profile.",
+    title: "Get shortlisted to live seats",
+    body: "We match you to roles we’re actively filling, not a dead job wall.",
+  },
+];
+
+const employerSteps = [
+  {
+    title: "Post your role free",
+    body: "Upload your JD. AI pulls out title, stack, and seniority.",
   },
   {
-    title: "Express interest",
-    body: "Mark roles you want. Connect on mutual fit.",
+    title: "Get a small shortlist",
+    body: "3 to 5 vetted matches in 24 hours. No resume pile.",
+  },
+  {
+    title: "Try before you hire",
+    body: "Optional 2-day trial. People Prime helps you close and onboard.",
   },
 ];
 

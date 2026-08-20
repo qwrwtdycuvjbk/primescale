@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     | "week"
     | "month"
     | "all";
-  const country = searchParams.get("country") ?? "us";
+  const country = searchParams.get("country") ?? "worldwide";
   const pages = Number(searchParams.get("pages") ?? "1");
 
   const result = await searchRemoteTechJobs({
@@ -40,6 +40,7 @@ export async function GET(request: Request) {
     ok: true,
     count: result.leads.length,
     queriesUsed: result.queriesUsed,
+    countriesUsed: result.countriesUsed,
     leads: result.leads,
   });
 }

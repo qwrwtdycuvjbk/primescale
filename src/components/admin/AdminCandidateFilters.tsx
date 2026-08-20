@@ -194,7 +194,7 @@ export function AdminCandidateFilters() {
         <button
           type="button"
           onClick={() => router.push("/admin/candidates")}
-          className="text-sm font-medium text-primary hover:opacity-80"
+          className="text-sm font-medium text-foreground hover:opacity-80"
         >
           Clear all filters
         </button>

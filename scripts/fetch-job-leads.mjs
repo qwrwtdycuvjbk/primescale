@@ -37,14 +37,16 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const query = process.argv[2] || "software engineer remote";
+const query = process.argv[2] || "software engineer remote UK";
 const params = new URLSearchParams({
   query,
-  country: "us",
+  country: "gb",
   date_posted: "3days",
   work_from_home: "true",
   employment_types: "FULLTIME,CONTRACTOR",
   num_pages: "1",
+  exclude_job_publishers:
+    "BoardJobs,Jooble,BeBee,Vacancy Target Jobs,Jobot,CyberCoders,TEKsystems,Robert Half",
 });
 
 const response = await fetch(

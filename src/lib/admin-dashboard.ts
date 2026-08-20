@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
 import { getAdminClient } from "@/lib/supabase/admin";
 
@@ -48,7 +49,8 @@ export type AdminDashboardStats = AdminNavCounts & {
   }[];
 };
 
-export async function loadAdminNavCounts(): Promise<AdminNavCounts> {
+/** Deduped per request so AdminShell + dashboard don't hit Supabase twice. */
+export const loadAdminNavCounts = cache(async (): Promise<AdminNavCounts> => {
   const supabase = await getAdminClient();
   if (!supabase) {
     return { pendingMatches: 0, pendingHandoffs: 0 };
@@ -57,13 +59,13 @@ export async function loadAdminNavCounts(): Promise<AdminNavCounts> {
   const [{ count: pendingMatches }, { count: pendingHandoffs }] = await Promise.all([
     supabase
       .from("matches")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("visible_to_employer", false)
       .gte("match_score", MIN_MATCH_SCORE)
       .neq("status", "rejected"),
     supabase
       .from("handoff_requests")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
   ]);
 
@@ -71,7 +73,7 @@ export async function loadAdminNavCounts(): Promise<AdminNavCounts> {
     pendingMatches: pendingMatches ?? 0,
     pendingHandoffs: pendingHandoffs ?? 0,
   };
-}
+});
 
 export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
   const supabase = await getAdminClient();
@@ -144,9 +146,10 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
       .limit(5),
     supabase
       .from("jobs")
-      .select("id, title, created_at, companies ( name )")
+      .select("id, title, created_at, companies ( name ), matches ( id )")
       .eq("status", "active")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(100),
     supabase
       .from("candidate_profiles")
       .select("id, created_at, profiles!inner ( full_name, email, role )")
@@ -156,28 +159,16 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
       .limit(5),
     supabase
       .from("candidate_profiles")
-      .select("*, profiles!inner(role)", { count: "exact", head: true })
+      .select("id, profiles!inner(role)", { count: "exact", head: true })
       .eq("profiles.role", "candidate")
       .eq("profile_complete", false),
   ]);
 
-  const activeJobIds = (activeJobs ?? []).map((job) => job.id);
-  const matchCountByJob = new Map<string, number>();
-
-  if (activeJobIds.length) {
-    const { data: jobMatches } = await supabase
-      .from("matches")
-      .select("job_id")
-      .in("job_id", activeJobIds);
-
-    for (const row of jobMatches ?? []) {
-      matchCountByJob.set(row.job_id, (matchCountByJob.get(row.job_id) ?? 0) + 1);
-    }
-  }
-
-  const unmatchedJobs = (activeJobs ?? []).filter(
-    (job) => (matchCountByJob.get(job.id) ?? 0) === 0,
-  );
+  const unmatchedJobs = (activeJobs ?? []).filter((job) => {
+    const matches = job.matches;
+    if (!matches) return true;
+    return Array.isArray(matches) ? matches.length === 0 : false;
+  });
 
   return {
     ...navCounts,

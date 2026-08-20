@@ -97,7 +97,7 @@ export default async function EmployerMatchesPage({
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="display-headline text-4xl sm:text-5xl">
-              Matched <span className="italic text-primary">candidates.</span>
+              Matched <span className="italic text-foreground">candidates.</span>
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
               Review matched talent for your remote tech roles. People Prime

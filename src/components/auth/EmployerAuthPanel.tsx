@@ -18,7 +18,8 @@ const steps: {
   },
   {
     title: "Get a shortlist of candidates in 24 hours",
-    description: "Our AI matches pre-vetted talent to your requirements instantly.",
+    description:
+      "3 named profiles for your hardest seat, optional 2-day trial before you commit.",
     icon: UserCheck,
   },
 ];

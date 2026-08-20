@@ -4,10 +4,11 @@ import { ArrowUpRight, Mail, Phone } from "lucide-react";
 import { appContainerClass } from "@/components/site/layout";
 
 const productLinks = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "The difference", href: "#the-difference" },
-  { label: "For employers", href: "#for-employers" },
-  { label: "For candidates", href: "#for-candidates" },
+  { label: "Matching this week", href: "/matching" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "The difference", href: "/#the-difference" },
+  { label: "For employers", href: "/#for-employers" },
+  { label: "For candidates", href: "/#for-candidates" },
 ];
 
 const companyLinks = [
@@ -61,8 +62,8 @@ export function SiteFooter() {
               Ready when you are
             </p>
             <h2 className="display-headline mt-4 max-w-xl text-balance text-3xl sm:text-5xl">
-              Match global tech talent{" "}
-              <span className="italic text-primary">faster.</span>
+              Post free. Get a shortlist.{" "}
+              <span className="italic text-primary">Try before you hire.</span>
             </h2>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">

@@ -161,7 +161,7 @@ export function CandidateProfileEditForm({
     <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
       <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/40 px-5 py-4">
         <p className="text-sm text-muted-foreground">Profile completeness</p>
-        <p className="font-mono text-sm text-primary">{completeness}%</p>
+        <p className="font-mono text-sm text-foreground">{completeness}%</p>
       </div>
 
       <Section title="Personal">
@@ -425,7 +425,7 @@ export function CandidateProfileEditForm({
       <Section title="Resume & links">
         <div>
           <FieldLabel htmlFor="resume">
-            Resume <span className="text-primary">*</span>
+            Resume <span className="text-foreground">*</span>
           </FieldLabel>
           <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-8 transition-colors hover:border-primary/50">
             <Upload className="h-7 w-7 text-muted-foreground" />

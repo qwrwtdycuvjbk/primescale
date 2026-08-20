@@ -15,8 +15,8 @@ const typicalHiring = [
 ];
 
 const peopleRemotely = [
-  "3–5 interview-ready matches in 24h",
-  "AI-reviewed before you see anyone",
+  "3 named profiles for free on your hardest seat",
+  "Shortlist in 24-48 hours, optional 2-day trial",
   "People Prime handles payroll and onboarding",
 ];
 

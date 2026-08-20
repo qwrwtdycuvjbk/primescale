@@ -15,6 +15,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }> = [
     { path: "/", changeFrequency: "weekly", priority: 1 },
     {
+      path: "/matching",
+      changeFrequency: "weekly",
+      priority: 0.95,
+    },
+    {
       path: "/auth/employer/signup",
       changeFrequency: "monthly",
       priority: 0.9,

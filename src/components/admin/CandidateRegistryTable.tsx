@@ -1,9 +1,29 @@
 import { workAuthLabel } from "@/lib/constants";
 import type { CandidateProfile, Profile } from "@/lib/types";
 
-export type AdminCandidateRow = CandidateProfile & {
+export type AdminCandidateRow = Pick<
+  CandidateProfile,
+  | "id"
+  | "user_id"
+  | "headline"
+  | "phone"
+  | "current_title"
+  | "years_experience"
+  | "experience_level"
+  | "work_authorization"
+  | "us_state"
+  | "availability_status"
+  | "profile_completeness"
+  | "open_to_matching"
+  | "profile_complete"
+  | "resume_url"
+  | "github_url"
+  | "linkedin_url"
+  | "source"
+  | "created_at"
+  | "updated_at"
+> & {
   profiles: Pick<Profile, "full_name" | "email" | "phone" | "created_at">;
-  roleApplications: number;
 };
 
 function formatDate(value: string) {
@@ -53,6 +73,15 @@ function experienceLabel(value?: string | null) {
   }
 }
 
+/** Compact labels so the registry table stays readable. */
+function workAuthShortLabel(value?: string | null) {
+  if (value === "international_remote" || value === "other") {
+    return "Remote outside US";
+  }
+  if (value === "h1b") return "H-1B";
+  return workAuthLabel(value);
+}
+
 export function CandidateRegistryTable({ candidates }: { candidates: AdminCandidateRow[] }) {
   if (!candidates.length) {
     return (
@@ -79,7 +108,6 @@ export function CandidateRegistryTable({ candidates }: { candidates: AdminCandid
               <th className="px-5 py-4 font-medium text-muted-foreground">Work auth</th>
               <th className="px-5 py-4 font-medium text-muted-foreground">Availability</th>
               <th className="px-5 py-4 font-medium text-muted-foreground">Profile</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Role apps</th>
               <th className="px-5 py-4 font-medium text-muted-foreground">Contact</th>
             </tr>
           </thead>
@@ -99,7 +127,7 @@ export function CandidateRegistryTable({ candidates }: { candidates: AdminCandid
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-medium ${
                         candidate.source === "people_prime"
-                          ? "bg-primary/15 text-primary"
+                          ? "bg-muted text-foreground"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -117,7 +145,9 @@ export function CandidateRegistryTable({ candidates }: { candidates: AdminCandid
                     )}
                   </td>
                   <td className="px-5 py-4 text-muted-foreground">
-                    {workAuthLabel(candidate.work_authorization)}
+                    <span title={workAuthLabel(candidate.work_authorization)}>
+                      {workAuthShortLabel(candidate.work_authorization)}
+                    </span>
                     {candidate.us_state && (
                       <span className="mt-1 block">{candidate.us_state}</span>
                     )}
@@ -129,7 +159,7 @@ export function CandidateRegistryTable({ candidates }: { candidates: AdminCandid
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-medium ${
                         candidate.profile_complete
-                          ? "bg-primary/15 text-primary"
+                          ? "bg-muted text-foreground"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -138,7 +168,6 @@ export function CandidateRegistryTable({ candidates }: { candidates: AdminCandid
                         : "Incomplete"}
                     </span>
                   </td>
-                  <td className="px-5 py-4 font-medium">{candidate.roleApplications}</td>
                   <td className="px-5 py-4">
                     <p className="text-muted-foreground">{profile.email}</p>
                     {(candidate.phone || profile.phone) && (

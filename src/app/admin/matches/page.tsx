@@ -9,11 +9,19 @@ export default async function AdminMatchesPage() {
   const { profile } = await requireAdmin();
   const supabase = await getAdminClient();
 
-  const { data: pendingMatches } = await supabase
-    .from("matches")
-    .select(
-      `
-      *,
+  const [{ data: pendingMatches }, { count: pendingCount }] = await Promise.all([
+    supabase
+      .from("matches")
+      .select(
+        `
+      id,
+      candidate_profile_id,
+      job_id,
+      match_score,
+      match_reason,
+      status,
+      created_at,
+      updated_at,
       jobs (
         title,
         companies ( name )
@@ -24,24 +32,25 @@ export default async function AdminMatchesPage() {
         profiles ( full_name, email )
       )
     `,
-    )
-    .eq("visible_to_employer", false)
-    .gte("match_score", MIN_MATCH_SCORE)
-    .neq("status", "rejected")
-    .order("match_score", { ascending: false });
-
-  const { count: pendingCount } = await supabase
-    .from("matches")
-    .select("*", { count: "exact", head: true })
-    .eq("visible_to_employer", false)
-    .gte("match_score", MIN_MATCH_SCORE)
-    .neq("status", "rejected");
+      )
+      .eq("visible_to_employer", false)
+      .gte("match_score", MIN_MATCH_SCORE)
+      .neq("status", "rejected")
+      .order("match_score", { ascending: false })
+      .limit(50),
+    supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("visible_to_employer", false)
+      .gte("match_score", MIN_MATCH_SCORE)
+      .neq("status", "rejected"),
+  ]);
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/matches">
       <main className={appMainClass}>
         <h1 className="display-headline text-4xl sm:text-5xl">
-          Match <span className="italic text-primary">review.</span>
+          Match <span className="italic text-foreground">review.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           High-confidence matches ({MIN_MATCH_SCORE}%+) are held here until People
@@ -55,9 +64,40 @@ export default async function AdminMatchesPage() {
 
         <div className="mt-8 space-y-4">
           {pendingMatches?.length ? (
-            pendingMatches.map((match) => (
-              <RecruiterMatchReviewCard key={match.id} match={match} />
-            ))
+            pendingMatches.map((row) => {
+              const jobRaw = row.jobs;
+              const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
+              const companyRaw = job?.companies;
+              const candidateRaw = row.candidate_profiles;
+              const candidate = Array.isArray(candidateRaw)
+                ? candidateRaw[0]
+                : candidateRaw;
+              const profileRaw = candidate?.profiles;
+
+              const match = {
+                ...row,
+                jobs: job
+                  ? {
+                      ...job,
+                      companies: Array.isArray(companyRaw)
+                        ? companyRaw[0]
+                        : companyRaw,
+                    }
+                  : undefined,
+                candidate_profiles: candidate
+                  ? {
+                      ...candidate,
+                      profiles: Array.isArray(profileRaw)
+                        ? profileRaw[0]
+                        : profileRaw,
+                    }
+                  : undefined,
+              };
+
+              return (
+                <RecruiterMatchReviewCard key={row.id} match={match as never} />
+              );
+            })
           ) : (
             <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
               <p className="text-lg font-medium">No matches awaiting review</p>

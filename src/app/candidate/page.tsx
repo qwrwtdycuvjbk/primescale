@@ -50,7 +50,7 @@ export default async function CandidateDashboardPage() {
           <div>
             <h1 className="display-headline text-4xl sm:text-5xl">
               Welcome back,{" "}
-              <span className="italic text-primary">
+              <span className="italic text-foreground">
                 {profile.full_name.split(" ")[0] || "there"}.
               </span>
             </h1>
@@ -121,7 +121,7 @@ export default async function CandidateDashboardPage() {
           </div>
 
           <aside className="rounded-3xl border border-border bg-card p-6">
-            <p className="font-mono text-xs uppercase tracking-widest text-primary">
+            <p className="font-mono text-xs uppercase tracking-widest text-foreground">
               Your profile
             </p>
             <h3 className="display-headline mt-4 text-3xl">
@@ -157,7 +157,7 @@ export default async function CandidateDashboardPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Resume</dt>
-                <dd className="font-medium text-primary">Uploaded</dd>
+                <dd className="font-medium text-foreground">Uploaded</dd>
               </div>
             </dl>
 

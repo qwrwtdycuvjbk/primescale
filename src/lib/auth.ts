@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getServiceClient } from "@/lib/supabase/service";
 import { ensureProfileForUser, isAdminEmail, preferredRoleFromUser } from "@/lib/ensure-profile";
@@ -42,7 +43,8 @@ async function loadAdminProfile(user: User): Promise<Profile | null> {
   return profile;
 }
 
-export async function getSessionProfile() {
+/** Deduped per request so layout + page don't re-run auth/profile lookups. */
+export const getSessionProfile = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -121,7 +123,7 @@ export async function getSessionProfile() {
   }
 
   return { user, profile: null };
-}
+});
 
 export async function requireRole(role: UserRole) {
   const { user, profile } = await getSessionProfile();
