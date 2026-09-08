@@ -225,3 +225,102 @@ class JobApiTests(TestCase):
 
         res = self.client.get("/api/v1/jobs/?experience_level=junior")
         self.assertEqual(len(res.data), 0)
+
+    def test_candidate_cannot_create_or_modify_job(self):
+        self._auth(self.candidate)
+        # Create attempt
+        res = self.client.post(
+            "/api/v1/jobs/",
+            {
+                "title": "Unauthorized Job",
+                "description": "Desc",
+                "role_type": "full-time",
+                "experience_level": "mid",
+                "tech_stack": ["Python", "Django", "Postgres"],
+                "salary_range": "$100k - $120k",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Modify attempt
+        job = Job.objects.create(
+            company=self.company1,
+            posted_by=self.employer1,
+            title="Backend Role",
+            description="Desc",
+            role_type="full-time",
+            experience_level="mid",
+            tech_stack=["Python", "Django", "Postgres"],
+            salary_range="$100k - $120k",
+            status="active",
+        )
+        patch_res = self.client.patch(f"/api/v1/jobs/{job.id}/", {"title": "Changed"}, format="json")
+        self.assertEqual(patch_res.status_code, status.HTTP_403_FORBIDDEN)
+
+        del_res = self.client.delete(f"/api/v1/jobs/{job.id}/")
+        self.assertEqual(del_res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_full_access(self):
+        self._auth(self.admin)
+        # Admin creates job for company
+        res = self.client.post(
+            "/api/v1/jobs/",
+            {
+                "company_id": str(self.company1.id),
+                "title": "Admin Posted Job",
+                "description": "Admin description",
+                "role_type": "full-time",
+                "experience_level": "senior",
+                "tech_stack": ["Python", "Django", "Postgres"],
+                "salary_range": "$150k - $180k",
+                "visa_requirements": "Open to all",
+                "publish": True,
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        job_id = res.data["jobId"]
+
+        # Admin patches job
+        patch_res = self.client.patch(f"/api/v1/jobs/{job_id}/", {"status": "paused"}, format="json")
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_res.data["job"]["status"], "paused")
+
+        # Admin deletes job
+        del_res = self.client.delete(f"/api/v1/jobs/{job_id}/")
+        self.assertEqual(del_res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Job.objects.filter(id=job_id).exists())
+
+    def test_employer_my_company_view(self):
+        Job.objects.create(
+            company=self.company1,
+            posted_by=self.employer1,
+            title="Acme Job 1",
+            description="Desc",
+            role_type="full-time",
+            experience_level="mid",
+            tech_stack=["Python", "Django", "Postgres"],
+            salary_range="$100k - $120k",
+            status="draft",
+        )
+        Job.objects.create(
+            company=self.company2,
+            posted_by=self.employer2,
+            title="Beta Job 1",
+            description="Desc",
+            role_type="full-time",
+            experience_level="mid",
+            tech_stack=["Go", "Kubernetes", "AWS"],
+            salary_range="$130k - $160k",
+            status="active",
+        )
+
+        self._auth(self.employer1)
+        res = self.client.get("/api/v1/jobs/?view=my_company")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["title"], "Acme Job 1")
+        # Ensure company_id and companies are serialized
+        self.assertEqual(str(res.data[0]["company_id"]), str(self.company1.id))
+        self.assertIn("companies", res.data[0])

@@ -4,6 +4,7 @@ import {
   createRouteHandlerClient,
   safeAuthNextPath,
 } from "@/lib/supabase/auth-route";
+import { djangoAuth } from "@/lib/api/auth";
 import type { UserRole } from "@/lib/types";
 
 function parseRole(
@@ -60,6 +61,51 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (user) {
+    // 1. Sync / Link with Django backend
+    if (user.email) {
+      try {
+        const role =
+          preferredRole ??
+          (preferredRoleFromUser(user) === "employer" ? "employer" : "candidate");
+        const djangoRes = await djangoAuth.googleLogin({
+          email: user.email,
+          full_name:
+            user.user_metadata?.full_name ||
+            user.user_metadata?.name ||
+            user.email.split("@")[0],
+          role,
+        });
+
+        if (djangoRes && djangoRes.access) {
+          const isSecure = process.env.NODE_ENV === "production";
+          response.cookies.set({
+            name: "access_token",
+            value: djangoRes.access,
+            httpOnly: true,
+            secure: isSecure,
+            sameSite: "lax",
+            path: "/",
+            maxAge: 3600,
+          });
+
+          if (djangoRes.refresh) {
+            response.cookies.set({
+              name: "refresh_token",
+              value: djangoRes.refresh,
+              httpOnly: true,
+              secure: isSecure,
+              sameSite: "lax",
+              path: "/api/v1/auth/",
+              maxAge: 7 * 24 * 3600,
+            });
+          }
+        }
+      } catch {
+        // Fallback continues with Supabase session
+      }
+    }
+
+    // 2. Ensure profile for Supabase compatibility
     try {
       await ensureProfileForUser(supabase, user, preferredRole);
     } catch (profileError) {

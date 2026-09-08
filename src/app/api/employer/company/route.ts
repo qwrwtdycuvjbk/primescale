@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import {
   isWorkEmailDomainVerified,
 } from "@/lib/employer";
@@ -7,10 +8,8 @@ import type { CompanyInput } from "@/lib/types";
 import { companiesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getSessionProfile();
+  const token = await getAccessToken();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,10 +28,13 @@ export async function POST(request: Request) {
 
   // Attempt Django REST API post
   try {
-    const res = await companiesApi.saveMyCompany({
-      ...body,
-      workEmail: body.workEmail ?? user.email ?? "",
-    });
+    const res = await companiesApi.saveMyCompany(
+      {
+        ...body,
+        workEmail: body.workEmail ?? user.email ?? "",
+      },
+      { token },
+    );
     if (res && res.companyId) {
       return NextResponse.json({
         ok: true,
@@ -67,6 +69,8 @@ export async function POST(request: Request) {
     country: "US",
     updated_at: new Date().toISOString(),
   };
+
+  const supabase = await createClient();
 
   const { data: existing } = await supabase
     .from("companies")

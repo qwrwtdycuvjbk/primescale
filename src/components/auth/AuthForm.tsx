@@ -118,9 +118,17 @@ export function AuthForm({
           </div>
 
           <div>
-            <label htmlFor="password" className={fieldLabelClass}>
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className={fieldLabelClass}>
+                Password
+              </label>
+              <Link
+                href={`/auth/password-reset?role=${role}`}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <PasswordInput id="password" className={compactInputClass} />
           </div>
 

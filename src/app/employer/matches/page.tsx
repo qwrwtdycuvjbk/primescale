@@ -5,9 +5,10 @@ import { EmployerMatchCard } from "@/components/employer/EmployerMatchCard";
 import { EmployerMatchesFilters } from "@/components/employer/EmployerMatchesFilters";
 import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
+import { companiesApi, jobsApi } from "@/lib/api";
 import type { MatchStatus } from "@/lib/types";
 import { redirect } from "next/navigation";
 
@@ -26,23 +27,48 @@ export default async function EmployerMatchesPage({
 }) {
   const { status, job } = await searchParams;
   const { profile } = await requireRole("employer");
+  const token = await getAccessToken();
+
+  let company = null;
+  try {
+    company = await companiesApi.getMyCompany({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
   const supabase = await createClient();
 
-  const { data: company } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("owner_id", profile.id)
-    .maybeSingle();
+  if (!company) {
+    const { data: sbCompany } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("owner_id", profile.id)
+      .maybeSingle();
+    company = sbCompany;
+  }
 
   if (!company || !isCompanyProfileComplete(company)) {
     redirect("/employer/onboarding");
   }
 
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("id, title")
-    .eq("company_id", company.id)
-    .order("created_at", { ascending: false });
+  let jobs: Array<{ id: string; title: string }> | null = null;
+  try {
+    const djangoJobs = await jobsApi.getMyJobs({ token });
+    if (djangoJobs) {
+      jobs = djangoJobs.map((j) => ({ id: j.id, title: j.title }));
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!jobs) {
+    const { data: sbJobs } = await supabase
+      .from("jobs")
+      .select("id, title")
+      .eq("company_id", company.id)
+      .order("created_at", { ascending: false });
+    jobs = sbJobs;
+  }
 
   let matchesQuery = supabase
     .from("matches")
@@ -136,7 +162,7 @@ export default async function EmployerMatchesPage({
 
         <div className="mt-8 space-y-4">
           {matches?.length ? (
-            matches.map((match) => <EmployerMatchCard key={match.id} match={match} />)
+            ((matches as any[]) ?? []).map((match: any) => <EmployerMatchCard key={match.id} match={match} />)
           ) : (
             <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
               <p className="text-lg font-medium">No matches in this view</p>

@@ -64,7 +64,7 @@ export default async function AdminMatchesPage() {
 
         <div className="mt-8 space-y-4">
           {pendingMatches?.length ? (
-            pendingMatches.map((row) => {
+            ((pendingMatches as any[]) ?? []).map((row: any) => {
               const jobRaw = row.jobs;
               const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
               const companyRaw = job?.companies;

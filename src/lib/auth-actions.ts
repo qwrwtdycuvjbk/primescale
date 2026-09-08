@@ -1,11 +1,13 @@
 "use server";
 
 import type { User } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfileForUser, isAdminEmail } from "@/lib/ensure-profile";
 import { getServiceClient } from "@/lib/supabase/service";
 import { safeAuthNextPath } from "@/lib/supabase/auth-route";
+import { djangoAuth } from "@/lib/api/auth";
 import type { UserRole } from "@/lib/types";
 
 function parseRole(value: FormDataEntryValue | null): Extract<
@@ -56,10 +58,63 @@ async function ensureAdminProfile(
   );
 }
 
+async function setDjangoAuthCookies(accessToken: string, refreshToken?: string) {
+  const cookieStore = await cookies();
+  const isSecure = process.env.NODE_ENV === "production";
+
+  cookieStore.set({
+    name: "access_token",
+    value: accessToken,
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 3600,
+  });
+
+  if (refreshToken) {
+    cookieStore.set({
+      name: "refresh_token",
+      value: refreshToken,
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: "lax",
+      path: "/api/v1/auth/",
+      maxAge: 7 * 24 * 3600,
+    });
+  }
+}
+
+async function clearDjangoAuthCookies() {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get("refresh_token")?.value;
+  if (refreshToken) {
+    try {
+      await djangoAuth.logout(refreshToken);
+    } catch {
+      // Best-effort logout
+    }
+  }
+  cookieStore.delete("access_token");
+  cookieStore.delete("refresh_token");
+}
+
 export async function signOutAuth(formData: FormData) {
   const role = formData.get("role") === "employer" ? "employer" : "candidate";
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+
+  // Clear Django session
+  await clearDjangoAuthCookies();
+
+  // Clear Supabase session if configured
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    try {
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Best-effort
+    }
+  }
+
   redirect(`/auth/${role}/login`);
 }
 
@@ -97,6 +152,76 @@ export async function submitAuth(formData: FormData) {
     );
   }
 
+  const isDjangoActive = process.env.NEXT_PUBLIC_AUTH_PROVIDER !== "supabase";
+
+  // -------------------------------------------------------------
+  // DJANGO AUTHENTICATION PATH
+  // -------------------------------------------------------------
+  if (isDjangoActive) {
+    if (mode === "signup") {
+      try {
+        const regRes = await djangoAuth.register({
+          email,
+          password,
+          full_name: fullName,
+          phone: phone || null,
+          role,
+        });
+
+        if (regRes && regRes.access) {
+          await setDjangoAuthCookies(regRes.access, regRes.refresh);
+          redirect(
+            authFormPath(role, mode, {
+              awaiting: email,
+            }),
+          );
+        }
+      } catch (djangoErr: unknown) {
+        const errorMsg =
+          djangoErr instanceof Error
+            ? djangoErr.message
+            : "Registration failed. Please check your details.";
+        redirect(
+          authFormPath(role, mode, {
+            ...returnParams,
+            error: "signup_failed",
+            details: errorMsg,
+          }),
+        );
+      }
+    } else {
+      // Login
+      try {
+        const loginRes = await djangoAuth.login({ email, password });
+        if (loginRes && loginRes.access && loginRes.user) {
+          await setDjangoAuthCookies(loginRes.access, loginRes.refresh);
+          if (loginRes.user.role === "admin") {
+            redirect("/admin");
+          }
+          redirect(next === "/auth/redirect" ? "/auth/redirect" : next);
+        }
+      } catch (djangoLoginErr: unknown) {
+        // If Supabase fallback exists, allow fallback down below; otherwise redirect with error
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const errorMsg =
+            djangoLoginErr instanceof Error
+              ? djangoLoginErr.message
+              : "Invalid email or password.";
+          redirect(
+            authFormPath(role, mode, {
+              ...returnParams,
+              error: "login_failed",
+              details: errorMsg,
+            }),
+          );
+        }
+      }
+    }
+  }
+
+  // -------------------------------------------------------------
+  // SUPABASE AUTHENTICATION FALLBACK PATH (Compatibility Mode)
+  // -------------------------------------------------------------
   const supabase = await createClient();
 
   if (mode === "signup") {

@@ -3,23 +3,35 @@ import { ArrowLeft } from "lucide-react";
 import { CandidateProfileEditForm } from "@/components/candidate/CandidateProfileEditForm";
 import { appMainClass } from "@/components/site/layout";
 import { CandidateShell } from "@/components/candidate/CandidateShell";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import {
   isCandidateProfileComplete,
   mapCandidateRowToInput,
 } from "@/lib/candidate-profile";
 import { createClient } from "@/lib/supabase/server";
+import { candidatesApi } from "@/lib/api";
 import { redirect } from "next/navigation";
 
 export default async function CandidateProfilePage() {
   const { profile } = await requireRole("candidate");
-  const supabase = await createClient();
+  const token = await getAccessToken();
 
-  const { data: existing } = await supabase
-    .from("candidate_profiles")
-    .select("*")
-    .eq("user_id", profile.id)
-    .maybeSingle();
+  let existing = null;
+  try {
+    existing = await candidatesApi.getMyProfile({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!existing) {
+    const supabase = await createClient();
+    const { data: sbExisting } = await supabase
+      .from("candidate_profiles")
+      .select("*")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    existing = sbExisting;
+  }
 
   if (!isCandidateProfileComplete(existing)) {
     redirect("/candidate/onboarding");

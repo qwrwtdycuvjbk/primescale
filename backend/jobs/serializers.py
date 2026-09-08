@@ -12,7 +12,9 @@ class JobCompanySummarySerializer(serializers.ModelSerializer):
 
 
 class JobSerializer(serializers.ModelSerializer):
+    company_id = serializers.UUIDField(source="company.id", read_only=True)
     company_details = JobCompanySummarySerializer(source="company", read_only=True)
+    companies = JobCompanySummarySerializer(source="company", read_only=True)
     posted_by_email = serializers.EmailField(source="posted_by.email", read_only=True)
     posted_by_full_name = serializers.CharField(source="posted_by.full_name", read_only=True)
 
@@ -21,7 +23,9 @@ class JobSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "company",
+            "company_id",
             "company_details",
+            "companies",
             "posted_by",
             "posted_by_email",
             "posted_by_full_name",
@@ -77,9 +81,8 @@ class JobCreateUpdateSerializer(serializers.Serializer):
     description = serializers.CharField()
     role_type = serializers.ChoiceField(choices=Job.RoleType.choices)
     experience_level = serializers.ChoiceField(choices=Job.ExperienceLevel.choices)
-    tech_stack = serializers.ListField(
-        child=serializers.CharField(), required=False, default=list
-    )
+    tech_stack = serializers.JSONField(required=False)
+
     salary_range = serializers.CharField(max_length=100)
     work_type = serializers.CharField(max_length=50, required=False, default="remote")
     visa_requirements = serializers.CharField(required=False, allow_blank=True, default="")

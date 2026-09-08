@@ -7,6 +7,15 @@ import { djangoApi, RequestOptions } from "./client";
 export interface DjangoJob {
   id: string;
   company?: string;
+  company_id?: string;
+  companies?: {
+    id: string;
+    name: string;
+    website?: string;
+    logo_url?: string;
+    hq_city?: string;
+    country?: string;
+  };
   company_details?: {
     id: string;
     name: string;
@@ -76,6 +85,17 @@ export const jobsApi = {
       params: params as Record<string, string | number | boolean | undefined>,
     });
   },
+
+  /**
+   * List authenticated employer's company jobs
+   */
+  async getMyJobs(options?: RequestOptions): Promise<DjangoJob[]> {
+    return djangoApi.get<DjangoJob[]>("/api/v1/jobs/", {
+      ...options,
+      params: { view: "my_company" },
+    });
+  },
+
 
   /**
    * Retrieve a single job by UUID

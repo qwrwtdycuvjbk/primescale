@@ -92,4 +92,37 @@ export const companiesApi = {
       options,
     );
   },
+
+  /**
+   * Get company by ID (public / member / owner view)
+   */
+  async getCompanyById(
+    id: string,
+    options?: RequestOptions,
+  ): Promise<DjangoCompany> {
+    return djangoApi.get<DjangoCompany>(`/api/v1/companies/${id}/`, options);
+  },
+
+  /**
+   * Get company members
+   */
+  async getCompanyMembers(
+    companyId: string,
+    options?: RequestOptions,
+  ): Promise<
+    Array<{
+      id: string;
+      user_id: string;
+      user_email: string;
+      user_full_name?: string;
+      member_role: string;
+      created_at: string;
+    }>
+  > {
+    return djangoApi.get(
+      `/api/v1/companies/${companyId}/members/`,
+      options,
+    );
+  },
 };
+

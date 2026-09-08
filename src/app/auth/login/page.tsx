@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { formatAuthErrorMessage } from "@/lib/auth-errors";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/auth";
 import { ErrorBanner } from "@/components/site/form";
 
 export default async function LoginChooserPage({
@@ -12,11 +12,8 @@ export default async function LoginChooserPage({
   searchParams: Promise<{ error?: string; details?: string }>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user && !params.error) redirect("/auth/redirect");
+  const session = await getSessionProfile();
+  if (session?.user && !params.error) redirect("/auth/redirect");
 
   const authErrorMessage = formatAuthErrorMessage(
     params.error,

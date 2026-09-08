@@ -57,7 +57,7 @@ class CandidateProfileInputSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=50, required=False, allow_blank=True, allow_null=True)
     current_title = serializers.CharField(max_length=255, required=False, allow_blank=True)
     years_experience = serializers.IntegerField(required=False, allow_null=True, min_value=0)
-    skills = serializers.CharField(required=False, allow_blank=True)
+    skills = serializers.JSONField(required=False)
     role_categories = serializers.ListField(
         child=serializers.CharField(), required=False, default=list
     )

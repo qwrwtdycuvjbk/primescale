@@ -195,7 +195,7 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
       .eq("profile_complete", false),
   ]);
 
-  const unmatchedJobs = (activeJobs ?? []).filter((job) => {
+  const unmatchedJobs = ((activeJobs as any[]) ?? []).filter((job: any) => {
     const matches = job.matches;
     if (!matches) return true;
     return Array.isArray(matches) ? matches.length === 0 : false;
@@ -234,8 +234,8 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
     activeJobsWithNoMatches: unmatchedJobs.length,
     incompleteProfiles: incompleteProfiles ?? 0,
     candidateInterested: candidateInterested ?? 0,
-    pendingMatchPreviews: (pendingMatches ?? []).map(mapMatchPreview),
-    candidateInterestPreviews: (interestedMatches ?? []).map((match) => {
+    pendingMatchPreviews: ((pendingMatches as any[]) ?? []).map(mapMatchPreview),
+    candidateInterestPreviews: ((interestedMatches as any[]) ?? []).map((match: any) => {
       const preview = mapMatchPreview(match);
       return {
         id: preview.id,
@@ -245,7 +245,7 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
         companyName: preview.companyName,
       };
     }),
-    pendingHandoffPreviews: (pendingHandoffs ?? []).map((handoff) => {
+    pendingHandoffPreviews: ((pendingHandoffs as any[]) ?? []).map((handoff: any) => {
       const matchRaw = handoff.matches;
       const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
       const jobRaw = match?.jobs;
@@ -264,7 +264,7 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
         companyName: company?.name ?? "Company",
       };
     }),
-    unmatchedJobPreviews: unmatchedJobs.slice(0, 5).map((job) => {
+    unmatchedJobPreviews: (unmatchedJobs.slice(0, 5) as any[]).map((job: any) => {
       const companyRaw = job.companies;
       const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
 
@@ -275,7 +275,7 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
         postedAt: job.created_at,
       };
     }),
-    incompleteProfilePreviews: (incompleteCandidates ?? []).map((row) => {
+    incompleteProfilePreviews: ((incompleteCandidates as any[]) ?? []).map((row: any) => {
       const profileRaw = row.profiles;
       const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
 

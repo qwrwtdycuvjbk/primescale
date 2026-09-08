@@ -1,7 +1,7 @@
 import { CandidateProfileWizard } from "@/components/candidate/CandidateProfileWizard";
 import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass, appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import {
   isCandidateProfileComplete,
   mapCandidateRowToInput,
@@ -12,23 +12,35 @@ import {
 } from "@/lib/matching-seats";
 import type { CandidateProfileInput } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
+import { candidatesApi } from "@/lib/api";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function CandidateOnboardingPage() {
   const { profile } = await requireRole("candidate");
-  const supabase = await createClient();
+  const token = await getAccessToken();
   const cookieStore = await cookies();
   const queueRaw = cookieStore.get(MATCHING_QUEUE_COOKIE)?.value;
   const queueDecoded = queueRaw ? decodeURIComponent(queueRaw) : null;
   const queueCategory = isRoleCategory(queueDecoded) ? queueDecoded : null;
 
-  const { data: existing } = await supabase
-    .from("candidate_profiles")
-    .select("*")
-    .eq("user_id", profile.id)
-    .maybeSingle();
+  let existing = null;
+  try {
+    existing = await candidatesApi.getMyProfile({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!existing) {
+    const supabase = await createClient();
+    const { data: sbExisting } = await supabase
+      .from("candidate_profiles")
+      .select("*")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    existing = sbExisting;
+  }
 
   if (isCandidateProfileComplete(existing)) {
     redirect("/candidate");

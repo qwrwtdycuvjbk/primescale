@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import {
   defaultJobExpiry,
   isValidSalaryRange,
@@ -8,13 +9,11 @@ import { parseSkills } from "@/lib/matching";
 import { notifyRecruitersJobPosted } from "@/lib/job-notifications";
 import { runMatchingForJob } from "@/lib/match-runner";
 import type { JobInput, JobStatus } from "@/lib/types";
-import { jobsApi } from "@/lib/api";
+import { jobsApi, companiesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getSessionProfile();
+  const token = await getAccessToken();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,13 +53,30 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: company } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("owner_id", user.id)
-    .maybeSingle();
+  let companyId: string | null = null;
+  try {
+    const comp = await companiesApi.getMyCompany({ token });
+    if (comp && comp.id) {
+      companyId = comp.id;
+    }
+  } catch {
+    // Fall back to Supabase
+  }
 
-  if (!company) {
+  const supabase = await createClient();
+
+  if (!companyId) {
+    const { data: company } = await supabase
+      .from("companies")
+      .select("id")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (company) {
+      companyId = company.id;
+    }
+  }
+
+  if (!companyId) {
     return NextResponse.json({ error: "Complete company profile first" }, { status: 400 });
   }
 
@@ -69,21 +85,24 @@ export async function POST(request: Request) {
 
   // Attempt Django REST API post if available
   try {
-    const djangoRes = await jobsApi.createJob({
-      company_id: company.id,
-      title: body.title.trim(),
-      description,
-      role_type: body.roleType,
-      experience_level: body.experienceLevel,
-      tech_stack: techStack,
-      salary_range: body.salaryRange.trim(),
-      work_type: body.workType || "remote",
-      visa_requirements: body.visaRequirements.trim(),
-      publish: body.publish,
-      status,
-      jd_quality_score: body.jdQualityScore ?? null,
-      jd_quality_feedback: body.jdQualityFeedback ?? null,
-    });
+    const djangoRes = await jobsApi.createJob(
+      {
+        company_id: companyId,
+        title: body.title.trim(),
+        description,
+        role_type: body.roleType,
+        experience_level: body.experienceLevel,
+        tech_stack: techStack,
+        salary_range: body.salaryRange.trim(),
+        work_type: body.workType || "remote",
+        visa_requirements: body.visaRequirements.trim(),
+        publish: body.publish,
+        status,
+        jd_quality_score: body.jdQualityScore ?? null,
+        jd_quality_feedback: body.jdQualityFeedback ?? null,
+      },
+      { token },
+    );
 
     if (djangoRes && djangoRes.jobId) {
       return NextResponse.json({
@@ -100,7 +119,7 @@ export async function POST(request: Request) {
   const { data: job, error } = await supabase
     .from("jobs")
     .insert({
-      company_id: company.id,
+      company_id: companyId,
       posted_by: user.id,
       title: body.title.trim(),
       description,

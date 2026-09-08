@@ -1,26 +1,34 @@
 import { JobPostForm } from "@/components/employer/JobPostForm";
 import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
+import { companiesApi } from "@/lib/api";
 import { redirect } from "next/navigation";
 
 export default async function NewJobPage() {
   const { profile } = await requireRole("employer");
-  const supabase = await createClient();
+  const token = await getAccessToken();
 
-  const { data: company } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("owner_id", profile.id)
-    .maybeSingle();
-
-  if (!company) {
-    redirect("/employer/onboarding");
+  let company = null;
+  try {
+    company = await companiesApi.getMyCompany({ token });
+  } catch {
+    // Fall back to Supabase
   }
 
-  if (!isCompanyProfileComplete(company)) {
+  if (!company) {
+    const supabase = await createClient();
+    const { data: sbCompany } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("owner_id", profile.id)
+      .maybeSingle();
+    company = sbCompany;
+  }
+
+  if (!company || !isCompanyProfileComplete(company)) {
     redirect("/employer/onboarding");
   }
 

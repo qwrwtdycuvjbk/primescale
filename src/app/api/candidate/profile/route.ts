@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { parseSkills } from "@/lib/matching";
 import { runMatchingForCandidate } from "@/lib/match-runner";
 import { calculateProfileCompleteness } from "@/lib/profile-completeness";
@@ -7,10 +8,8 @@ import type { CandidateProfileInput } from "@/lib/types";
 import { candidatesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getSessionProfile();
+  const token = await getAccessToken();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -42,10 +41,13 @@ export async function POST(request: Request) {
 
   // Attempt Django REST API post
   try {
-    const res = await candidatesApi.saveMyProfile({
-      ...body,
-      skills,
-    });
+    const res = await candidatesApi.saveMyProfile(
+      {
+        ...body,
+        skills,
+      },
+      { token },
+    );
     if (res && res.candidateProfileId) {
       return NextResponse.json({
         ok: true,
@@ -57,6 +59,8 @@ export async function POST(request: Request) {
   } catch (apiErr) {
     // Fall back to Supabase database during progressive migration phase
   }
+
+  const supabase = await createClient();
 
   if (body.phone) {
     await supabase

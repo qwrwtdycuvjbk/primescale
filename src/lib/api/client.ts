@@ -5,7 +5,9 @@
  */
 
 export const DJANGO_API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_DJANGO_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://127.0.0.1:8000";
 
 export class ApiError extends Error {
   status: number;
@@ -70,6 +72,7 @@ export async function apiRequest<T = unknown>(
   }
 
   const config: RequestInit = {
+    credentials: "include",
     ...customConfig,
     headers: {
       ...defaultHeaders,

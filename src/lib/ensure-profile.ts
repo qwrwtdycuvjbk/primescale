@@ -27,8 +27,9 @@ export function isAdminEmail(email: string | undefined) {
   return allowlist.includes(email.toLowerCase());
 }
 
-export function preferredRoleFromUser(user: User): UserRole | null {
-  const role = user.user_metadata?.role;
+export function preferredRoleFromUser(user: { email?: string; user_metadata?: Record<string, unknown> } | null | undefined): UserRole | null {
+  if (!user) return null;
+  const role = user.user_metadata?.role as string | undefined;
   if (role === "employer" || role === "candidate" || role === "admin") {
     return role;
   }

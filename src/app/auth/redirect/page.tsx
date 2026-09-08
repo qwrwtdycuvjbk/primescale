@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
-import { getSessionProfile } from "@/lib/auth";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { ensureProfileForUser, isAdminEmail, preferredRoleFromUser } from "@/lib/ensure-profile";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
+import { companiesApi, candidatesApi } from "@/lib/api";
+import type { User } from "@supabase/supabase-js";
 
 export default async function AuthRedirectPage() {
   const { user, profile: initialProfile } = await getSessionProfile();
@@ -19,7 +21,7 @@ export default async function AuthRedirectPage() {
     const supabase = await createClient();
 
     try {
-      await ensureProfileForUser(supabase, user, preferredRole);
+      await ensureProfileForUser(supabase, user as User, preferredRole);
     } catch {
       // getSessionProfile already retries with the service client
     }
@@ -46,14 +48,26 @@ export default async function AuthRedirectPage() {
     redirect("/admin");
   }
 
-  const supabase = await createClient();
+  const token = await getAccessToken();
 
   if (profile.role === "employer") {
-    const { data: company } = await supabase
-      .from("companies")
-      .select("id, name, size, description, hq_city, industry, profile_complete")
-      .eq("owner_id", user.id)
-      .maybeSingle();
+    // 1. Try Django companies API
+    let company = null;
+    try {
+      company = await companiesApi.getMyCompany({ token });
+    } catch {
+      // Fall back to Supabase
+    }
+
+    if (!company) {
+      const supabase = await createClient();
+      const { data: sbCompany } = await supabase
+        .from("companies")
+        .select("id, name, size, description, hq_city, industry, profile_complete")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      company = sbCompany;
+    }
 
     if (!company || !isCompanyProfileComplete(company)) {
       redirect("/employer/onboarding");
@@ -62,11 +76,23 @@ export default async function AuthRedirectPage() {
     redirect("/employer");
   }
 
-  const { data: candidateProfile } = await supabase
-    .from("candidate_profiles")
-    .select("profile_complete, resume_url")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Candidate
+  let candidateProfile = null;
+  try {
+    candidateProfile = await candidatesApi.getMyProfile({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!candidateProfile) {
+    const supabase = await createClient();
+    const { data: sbCandidate } = await supabase
+      .from("candidate_profiles")
+      .select("profile_complete, resume_url")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    candidateProfile = sbCandidate;
+  }
 
   if (!isCandidateProfileComplete(candidateProfile)) {
     redirect("/candidate/onboarding");

@@ -6,20 +6,34 @@ import {
 } from "@/components/employer/EmployerMatchCard";
 import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
+import { companiesApi, jobsApi } from "@/lib/api";
+import type { Job } from "@/lib/types";
 import { redirect } from "next/navigation";
 
 export default async function EmployerDashboardPage() {
   const { profile } = await requireRole("employer");
+  const token = await getAccessToken();
+
+  let company = null;
+  try {
+    company = await companiesApi.getMyCompany({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
   const supabase = await createClient();
 
-  const { data: company } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("owner_id", profile.id)
-    .maybeSingle();
+  if (!company) {
+    const { data: sbCompany } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("owner_id", profile.id)
+      .maybeSingle();
+    company = sbCompany;
+  }
 
   if (!company) {
     redirect("/employer/onboarding");
@@ -29,17 +43,33 @@ export default async function EmployerDashboardPage() {
     redirect("/employer/onboarding");
   }
 
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("*")
-    .eq("company_id", company.id)
-    .order("created_at", { ascending: false })
-    .limit(3);
+  let jobs: Job[] | null = null;
+  let jobCount = 0;
+  try {
+    const djangoJobs = await jobsApi.getMyJobs({ token });
+    if (djangoJobs) {
+      jobs = (djangoJobs as unknown as Job[]).slice(0, 3);
+      jobCount = djangoJobs.length;
+    }
+  } catch {
+    // Fall back to Supabase
+  }
 
-  const { count: jobCount } = await supabase
-    .from("jobs")
-    .select("*", { count: "exact", head: true })
-    .eq("company_id", company.id);
+  if (!jobs) {
+    const { data: sbJobs } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("company_id", company.id)
+      .order("created_at", { ascending: false })
+      .limit(3);
+    jobs = sbJobs;
+
+    const { count: sbJobCount } = await supabase
+      .from("jobs")
+      .select("*", { count: "exact", head: true })
+      .eq("company_id", company.id);
+    jobCount = sbJobCount ?? 0;
+  }
 
   const { data: matches } = await supabase
     .from("matches")
@@ -136,7 +166,7 @@ export default async function EmployerDashboardPage() {
             </div>
             <div className="mt-6 space-y-4">
               {matches?.length ? (
-                matches.map((match) => (
+                ((matches as any[]) ?? []).map((match: any) => (
                   <EmployerMatchCard key={match.id} match={match} />
                 ))
               ) : (

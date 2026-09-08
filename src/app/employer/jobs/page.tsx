@@ -3,40 +3,57 @@ import { ArrowRight } from "lucide-react";
 import { JobCard } from "@/components/employer/EmployerMatchCard";
 import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
+import { companiesApi, jobsApi } from "@/lib/api";
+import type { Job } from "@/lib/types";
 import { redirect } from "next/navigation";
 
 export default async function EmployerJobsPage() {
   const { profile } = await requireRole("employer");
+  const token = await getAccessToken();
+
+  let company = null;
+  try {
+    company = await companiesApi.getMyCompany({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
   const supabase = await createClient();
 
-  const { data: company } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("owner_id", profile.id)
-    .maybeSingle();
-
   if (!company) {
+    const { data: sbCompany } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("owner_id", profile.id)
+      .maybeSingle();
+    company = sbCompany;
+  }
+
+  if (!company || !isCompanyProfileComplete(company)) {
     redirect("/employer/onboarding");
   }
 
-  const { data: fullCompany } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("id", company.id)
-    .single();
-
-  if (!isCompanyProfileComplete(fullCompany)) {
-    redirect("/employer/onboarding");
+  let jobs: Job[] | null = null;
+  try {
+    const djangoJobs = await jobsApi.getMyJobs({ token });
+    if (djangoJobs) {
+      jobs = djangoJobs as unknown as Job[];
+    }
+  } catch {
+    // Fall back to Supabase
   }
 
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("*")
-    .eq("company_id", company.id)
-    .order("created_at", { ascending: false });
+  if (!jobs) {
+    const { data: sbJobs } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("company_id", company.id)
+      .order("created_at", { ascending: false });
+    jobs = sbJobs;
+  }
 
   return (
     <EmployerShell name={profile.full_name} activePath="/employer/jobs">

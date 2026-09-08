@@ -27,3 +27,7 @@ wheels/
 db.sqlite3
 db.sqlite3-journal
 staticfiles/
+migration_backups/
+*.backup.json
+*.export.json
+

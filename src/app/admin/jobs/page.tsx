@@ -111,7 +111,7 @@ export default async function AdminJobsPage({
       .eq("status", "draft"),
   ]);
 
-  let jobs: AdminJobRow[] = (rawJobs ?? []).map((row) => {
+  let jobs: AdminJobRow[] = ((rawJobs as any[]) ?? []).map((row: any) => {
     const job = row as RawJobRow;
     return {
       ...job,

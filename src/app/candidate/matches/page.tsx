@@ -45,7 +45,7 @@ export default async function CandidateMatchesPage() {
 
         <div className="mt-10 space-y-4">
           {matches?.length ? (
-            matches.map((match) => (
+            ((matches as any[]) ?? []).map((match: any) => (
               <CandidateMatchCard key={match.id} match={match} />
             ))
           ) : (

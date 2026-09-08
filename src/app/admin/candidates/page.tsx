@@ -110,7 +110,7 @@ export default async function AdminCandidatesPage({
       .eq("availability_status", "actively_looking"),
   ]);
 
-  let candidates = (rawCandidates ?? []).map((row) => {
+  let candidates = ((rawCandidates as any[]) ?? []).map((row: any) => {
     const profiles = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
     return {
       ...row,

@@ -1,10 +1,18 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getServiceClient } from "@/lib/supabase/service";
 import { ensureProfileForUser, isAdminEmail, preferredRoleFromUser } from "@/lib/ensure-profile";
-import { redirect } from "next/navigation";
+import { djangoAuth } from "@/lib/api/auth";
 import type { Profile, UserRole } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
+
+interface SessionUser {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+}
 
 async function loadAdminProfile(user: User): Promise<Profile | null> {
   const service = getServiceClient();
@@ -43,8 +51,90 @@ async function loadAdminProfile(user: User): Promise<Profile | null> {
   return profile;
 }
 
-/** Deduped per request so layout + page don't re-run auth/profile lookups. */
+/**
+ * Attempts to retrieve authenticated user from Django backend via HttpOnly cookies.
+ */
+async function getDjangoSessionProfile(): Promise<{
+  user: SessionUser | null;
+  profile: Profile | null;
+} | null> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("access_token")?.value;
+  const refreshToken = cookieStore.get("refresh_token")?.value;
+
+  if (!accessToken && !refreshToken) {
+    return null;
+  }
+
+  // 1. Try with existing access token
+  if (accessToken) {
+    try {
+      const djangoUser = await djangoAuth.getCurrentUser(accessToken);
+      if (djangoUser && djangoUser.id) {
+        return {
+          user: {
+            id: djangoUser.id,
+            email: djangoUser.email,
+            user_metadata: {
+              full_name: djangoUser.full_name,
+              role: djangoUser.role,
+              phone: djangoUser.phone,
+            },
+          },
+          profile: djangoUser,
+        };
+      }
+    } catch {
+      // Access token expired or invalid; proceed to refresh below
+    }
+  }
+
+  // 2. Try refreshing token if refresh_token cookie exists
+  if (refreshToken) {
+    try {
+      const tokens = await djangoAuth.refreshToken(refreshToken);
+      if (tokens.access) {
+        const djangoUser = await djangoAuth.getCurrentUser(tokens.access);
+        if (djangoUser && djangoUser.id) {
+          return {
+            user: {
+              id: djangoUser.id,
+              email: djangoUser.email,
+              user_metadata: {
+                full_name: djangoUser.full_name,
+                role: djangoUser.role,
+                phone: djangoUser.phone,
+              },
+            },
+            profile: djangoUser,
+          };
+        }
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Deduped per request so layout + page don't re-run auth/profile lookups.
+ * Priority:
+ * 1. If Django session is active, returns Django authenticated user & profile.
+ * 2. If no Django session, falls back to Supabase session (compatibility mode).
+ */
 export const getSessionProfile = cache(async () => {
+  const isDjangoActive = process.env.NEXT_PUBLIC_AUTH_PROVIDER !== "supabase";
+
+  if (isDjangoActive) {
+    const djangoSession = await getDjangoSessionProfile();
+    if (djangoSession && djangoSession.user) {
+      return djangoSession;
+    }
+  }
+
+  // Supabase Fallback / Compatibility Mode
   const supabase = await createClient();
   const {
     data: { user },
@@ -155,4 +245,12 @@ export async function requireAdmin() {
 
 export function redirectIfLoggedIn() {
   redirect("/auth/redirect");
+}
+
+/**
+ * Returns access token from cookies if present for server component API requests.
+ */
+export async function getAccessToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get("access_token")?.value;
 }

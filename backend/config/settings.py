@@ -81,10 +81,26 @@ ASGI_APPLICATION = "config.asgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 # Database Configuration
-# Fallback to local SQLite for initial development if DATABASE_URL or psycopg is not available/configured
+# Supports explicit DB_* environment variables, DATABASE_URL, or fallback to local SQLite
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_PORT = os.getenv("DB_PORT", "5432")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-if DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://"):
+if DB_NAME:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME,
+            "USER": DB_USER or "postgres",
+            "PASSWORD": DB_PASSWORD or "",
+            "HOST": DB_HOST,
+            "PORT": int(DB_PORT) if DB_PORT else 5432,
+        }
+    }
+elif DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://"):
     import urllib.parse
     url = urllib.parse.urlparse(DATABASE_URL)
     DATABASES = {
@@ -104,6 +120,7 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -146,6 +163,7 @@ CORS_ALLOWED_ORIGINS = [
     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
     if origin.strip()
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 # Celery & Redis Configuration
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")

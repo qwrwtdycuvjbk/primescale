@@ -3,20 +3,33 @@ import { ArrowRight, Briefcase, FileText, Sparkles } from "lucide-react";
 import { CandidateMatchCard } from "@/components/candidate/CandidateMatchCard";
 import { CandidateShell } from "@/components/candidate/CandidateShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
 import { createClient } from "@/lib/supabase/server";
+import { candidatesApi } from "@/lib/api";
 import { redirect } from "next/navigation";
 
 export default async function CandidateDashboardPage() {
   const { profile } = await requireRole("candidate");
+  const token = await getAccessToken();
+
+  let candidateProfile = null;
+  try {
+    candidateProfile = await candidatesApi.getMyProfile({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
   const supabase = await createClient();
 
-  const { data: candidateProfile } = await supabase
-    .from("candidate_profiles")
-    .select("*")
-    .eq("user_id", profile.id)
-    .maybeSingle();
+  if (!candidateProfile) {
+    const { data: sbCandidateProfile } = await supabase
+      .from("candidate_profiles")
+      .select("*")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    candidateProfile = sbCandidateProfile;
+  }
 
   if (!isCandidateProfileComplete(candidateProfile)) {
     redirect("/candidate/onboarding");
@@ -41,7 +54,7 @@ export default async function CandidateDashboardPage() {
     .select("*", { count: "exact", head: true });
 
   const interestedCount =
-    matches?.filter((m) => m.status === "candidate_interested").length ?? 0;
+    ((matches as any[]) ?? []).filter((m: any) => m.status === "candidate_interested").length ?? 0;
 
   return (
     <CandidateShell name={profile.full_name} activePath="/candidate">
@@ -106,7 +119,7 @@ export default async function CandidateDashboardPage() {
             </div>
             <div className="mt-6 space-y-4">
               {matches?.length ? (
-                matches.map((match) => (
+                ((matches as any[]) ?? []).map((match: any) => (
                   <CandidateMatchCard key={match.id} match={match} />
                 ))
               ) : (

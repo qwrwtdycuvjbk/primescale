@@ -71,8 +71,8 @@ export default async function AdminHandoffsPage({
 
   const employerIds = [
     ...new Set(
-      (rawHandoffs ?? [])
-        .map((handoff) => {
+      ((rawHandoffs as any[]) ?? [])
+        .map((handoff: any) => {
           const matchRaw = handoff.matches;
           const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
           const jobs = match?.jobs as { posted_by?: string } | { posted_by?: string }[] | undefined;
@@ -98,9 +98,9 @@ export default async function AdminHandoffsPage({
       .eq("status", "pending"),
   ]);
 
-  const employerById = new Map((employers ?? []).map((row) => [row.id, row]));
+  const employerById = new Map(((employers as any[]) ?? []).map((row: any) => [row.id, row]));
 
-  const handoffs = (rawHandoffs ?? []).map((handoff) => {
+  const handoffs = ((rawHandoffs as any[]) ?? []).map((handoff: any) => {
     const matchRaw = handoff.matches;
     const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
     const jobsRaw = match?.jobs;
