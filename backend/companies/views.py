@@ -13,6 +13,13 @@ from .serializers import (
     CompanyPublicSerializer,
     CompanySerializer,
 )
+from django.conf import settings
+from common.storage import (
+    ALLOWED_LOGO_TYPES,
+    generate_storage_path,
+    get_public_storage,
+    validate_file_upload,
+)
 
 
 class CompanyMeView(APIView):
@@ -162,3 +169,69 @@ class CompanyMembersView(APIView):
             company=company, user=target_user, member_role=member_role
         )
         return Response(CompanyMemberSerializer(member).data, status=status.HTTP_201_CREATED)
+
+
+class CompanyLogoUploadView(APIView):
+    """
+    POST /api/v1/companies/me/logo/ -> Upload company logo for current user's company
+    POST /api/v1/companies/<uuid:pk>/logo/ -> Upload company logo by company ID
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk=None):
+        if pk:
+            company = get_object_or_404(Company, pk=pk)
+        else:
+            company = Company.objects.filter(owner=request.user).first()
+            if not company:
+                return Response(
+                    {"error": "Company profile not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        # Authorization check: owner, admin/recruiter member, or platform admin
+        is_owner = company.owner == request.user
+        is_admin = request.user.role == User.Role.ADMIN or request.user.is_staff or request.user.is_superuser
+        is_company_admin = company.members.filter(
+            user=request.user,
+            member_role__in=[CompanyMember.MemberRole.ADMIN, CompanyMember.MemberRole.RECRUITER],
+        ).exists()
+
+        if not (is_owner or is_admin or is_company_admin):
+            return Response(
+                {"error": "You do not have permission to manage logos for this company."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        file_obj = request.FILES.get("file")
+        if not file_obj:
+            return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from rest_framework.exceptions import ValidationError
+        try:
+            validate_file_upload(
+                file_obj,
+                allowed_types=ALLOWED_LOGO_TYPES,
+                max_size_bytes=settings.MAX_LOGO_SIZE_BYTES,
+            )
+        except ValidationError as e:
+            return Response({"error": str(e.detail[0] if isinstance(e.detail, list) else e.detail)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save to public storage
+        storage_path = generate_storage_path(str(company.id), file_obj.name)
+        storage = get_public_storage()
+        saved_path = storage.save(storage_path, file_obj)
+        public_url = storage.url(saved_path)
+
+        # Update company record
+        company.logo_url = public_url
+        company.save(update_fields=["logo_url", "updated_at"])
+
+        return Response(
+            {
+                "ok": True,
+                "url": public_url,
+                "logoPath": saved_path,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -1,3 +1,4 @@
+import { djangoApi } from "@/lib/api/client";
 import { workAuthLabel as formatWorkAuthLabel } from "@/lib/constants";
 import { getServiceClient } from "@/lib/supabase/service";
 import type { ExperienceLevel } from "@/lib/types";
@@ -88,6 +89,18 @@ function truncateBio(value?: string | null, maxLength = 180): string | undefined
 export async function getPublicTalentShowcase(
   limit = 8,
 ): Promise<PublicTalentCard[]> {
+  try {
+    const djangoCards = await djangoApi.get<PublicTalentCard[]>(
+      "/api/v1/candidates/public-showcase/",
+      { params: { limit } },
+    );
+    if (djangoCards && djangoCards.length > 0) {
+      return djangoCards;
+    }
+  } catch {
+    // Fall back to Supabase if Django API is not available in current environment
+  }
+
   const supabase = getServiceClient();
   if (!supabase) return [];
 

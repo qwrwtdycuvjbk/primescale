@@ -3,6 +3,7 @@ import { createMutualFitHandoff, resolveMatchStatus } from "@/lib/handoff";
 import { notifyRecruitersCandidateInterested } from "@/lib/recruiter-alert";
 import { createClient } from "@/lib/supabase/server";
 import type { MatchStatus } from "@/lib/types";
+import { matchingApi } from "@/lib/api";
 
 const allowedStatuses: MatchStatus[] = [
   "candidate_interested",
@@ -27,6 +28,19 @@ export async function PATCH(request: Request) {
 
   if (!allowedStatuses.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  // Attempt Django REST API match status update
+  try {
+    const res = await matchingApi.updateMatchStatus(
+      matchId,
+      status as "candidate_interested" | "employer_shortlisted" | "rejected",
+    );
+    if (res && res.ok) {
+      return NextResponse.json({ ok: true, status: res.status });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
   }
 
   const { data: current, error: readError } = await supabase
@@ -68,3 +82,4 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ ok: true, status: finalStatus });
 }
+

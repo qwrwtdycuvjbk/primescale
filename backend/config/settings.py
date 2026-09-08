@@ -163,6 +163,14 @@ AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
+AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN", "")
+
+# File Upload Limits & Media Paths
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024  # 5MB
+MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024    # 2MB
+RESUME_PRESIGNED_EXPIRATION = 3600       # 1 hour
 
 # OpenAI Settings
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

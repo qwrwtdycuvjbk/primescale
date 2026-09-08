@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase/service";
+import { matchingApi } from "@/lib/api";
 
 async function assertAdmin() {
   const { user, profile } = await getSessionProfile();
@@ -24,6 +25,16 @@ export async function PATCH(
 
   if (action !== "approve" && action !== "reject") {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  }
+
+  // Attempt Django REST API admin match action
+  try {
+    const res = await matchingApi.adminMatchAction(id, action);
+    if (res && res.ok) {
+      return NextResponse.json({ ok: true });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
   }
 
   const supabase = getServiceClient();
@@ -51,3 +62,4 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+

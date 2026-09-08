@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
-  defaultJobExpiry,
-  isValidSalaryRange,
   isWorkEmailDomainVerified,
 } from "@/lib/employer";
-import { parseSkills } from "@/lib/matching";
-import { runMatchingForJob } from "@/lib/match-runner";
 import type { CompanyInput } from "@/lib/types";
+import { companiesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -25,17 +22,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Company name is required" }, { status: 400 });
   }
 
+  const domainVerified = isWorkEmailDomainVerified(
+    body.workEmail ?? user.email ?? "",
+    body.website,
+  );
+
+  // Attempt Django REST API post
+  try {
+    const res = await companiesApi.saveMyCompany({
+      ...body,
+      workEmail: body.workEmail ?? user.email ?? "",
+    });
+    if (res && res.companyId) {
+      return NextResponse.json({
+        ok: true,
+        companyId: res.companyId,
+        domainVerified: res.domainVerified,
+      });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
+  }
+
   const profileComplete = Boolean(
     body.name?.trim() &&
       body.size &&
       body.description?.trim() &&
       body.hqCity?.trim() &&
       body.industry?.trim(),
-  );
-
-  const domainVerified = isWorkEmailDomainVerified(
-    body.workEmail ?? user.email ?? "",
-    body.website,
   );
 
   const row = {
@@ -85,3 +99,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, companyId: data.id, domainVerified });
 }
+

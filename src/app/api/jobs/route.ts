@@ -8,6 +8,7 @@ import { parseSkills } from "@/lib/matching";
 import { notifyRecruitersJobPosted } from "@/lib/job-notifications";
 import { runMatchingForJob } from "@/lib/match-runner";
 import type { JobInput, JobStatus } from "@/lib/types";
+import { jobsApi } from "@/lib/api";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -66,6 +67,36 @@ export async function POST(request: Request) {
   const status: JobStatus = body.publish ? "active" : "draft";
   const expiresAt = body.publish ? defaultJobExpiry() : null;
 
+  // Attempt Django REST API post if available
+  try {
+    const djangoRes = await jobsApi.createJob({
+      company_id: company.id,
+      title: body.title.trim(),
+      description,
+      role_type: body.roleType,
+      experience_level: body.experienceLevel,
+      tech_stack: techStack,
+      salary_range: body.salaryRange.trim(),
+      work_type: body.workType || "remote",
+      visa_requirements: body.visaRequirements.trim(),
+      publish: body.publish,
+      status,
+      jd_quality_score: body.jdQualityScore ?? null,
+      jd_quality_feedback: body.jdQualityFeedback ?? null,
+    });
+
+    if (djangoRes && djangoRes.jobId) {
+      return NextResponse.json({
+        ok: true,
+        jobId: djangoRes.jobId,
+        status: djangoRes.status,
+        matchesCreated: 0,
+      });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
+  }
+
   const { data: job, error } = await supabase
     .from("jobs")
     .insert({
@@ -104,3 +135,4 @@ export async function POST(request: Request) {
     matchesCreated: matchResult.matched,
   });
 }
+

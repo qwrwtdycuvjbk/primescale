@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { companiesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -21,6 +22,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image files only" }, { status: 400 });
   }
 
+  // Attempt Django REST API upload
+  try {
+    const res = await companiesApi.uploadLogo(file);
+    if (res && res.url) {
+      return NextResponse.json({ ok: true, url: res.url });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase Storage during progressive migration phase
+  }
+
   const ext = file.name.split(".").pop() ?? "png";
   const path = `${user.id}/logo-${Date.now()}.${ext}`;
 
@@ -35,3 +46,4 @@ export async function POST(request: Request) {
   const { data } = supabase.storage.from("company-logos").getPublicUrl(path);
   return NextResponse.json({ ok: true, url: data.publicUrl });
 }
+

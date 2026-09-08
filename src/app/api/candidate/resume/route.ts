@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { candidatesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -31,6 +32,20 @@ export async function POST(request: Request) {
     );
   }
 
+  // Attempt Django REST API upload
+  try {
+    const res = await candidatesApi.uploadResume(file);
+    if (res && res.downloadUrl) {
+      return NextResponse.json({
+        ok: true,
+        url: res.downloadUrl,
+        path: res.resumePath,
+      });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase Storage during progressive migration phase
+  }
+
   const ext = file.name.split(".").pop() ?? "pdf";
   const path = `${user.id}/resume-${Date.now()}.${ext}`;
 
@@ -52,3 +67,4 @@ export async function POST(request: Request) {
     path,
   });
 }
+

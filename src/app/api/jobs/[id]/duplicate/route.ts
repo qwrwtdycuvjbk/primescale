@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { jobsApi } from "@/lib/api";
 
 export async function POST(
   _request: Request,
@@ -13,6 +14,16 @@ export async function POST(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Attempt Django REST API duplicate
+  try {
+    const res = await jobsApi.duplicateJob(id);
+    if (res && res.jobId) {
+      return NextResponse.json({ ok: true, jobId: res.jobId });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
   }
 
   const { data: source } = await supabase
@@ -52,3 +63,4 @@ export async function POST(
 
   return NextResponse.json({ ok: true, jobId: copy.id });
 }
+

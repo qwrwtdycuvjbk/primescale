@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { HandoffStatus } from "@/lib/types";
+import { handoffsApi } from "@/lib/api";
 
 const allowedStatuses: HandoffStatus[] = [
   "pending",
@@ -37,6 +38,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
+  // Attempt Django REST API handoff update
+  try {
+    const res = await handoffsApi.updateHandoff(id, {
+      status,
+      notes,
+    });
+    if (res && res.ok) {
+      return NextResponse.json({ ok: true });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
+  }
+
   const supabase = await createClient();
   const updates: { status?: HandoffStatus; notes?: string; updated_at: string } =
     {
@@ -57,3 +71,4 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+

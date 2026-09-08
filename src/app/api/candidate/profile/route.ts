@@ -4,6 +4,7 @@ import { parseSkills } from "@/lib/matching";
 import { runMatchingForCandidate } from "@/lib/match-runner";
 import { calculateProfileCompleteness } from "@/lib/profile-completeness";
 import type { CandidateProfileInput } from "@/lib/types";
+import { candidatesApi } from "@/lib/api";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -38,6 +39,24 @@ export async function POST(request: Request) {
     body.roleCategories.length > 0;
 
   const isComplete = hasRequiredFields && Boolean(body.resumeUrl?.trim());
+
+  // Attempt Django REST API post
+  try {
+    const res = await candidatesApi.saveMyProfile({
+      ...body,
+      skills,
+    });
+    if (res && res.candidateProfileId) {
+      return NextResponse.json({
+        ok: true,
+        candidateProfileId: res.candidateProfileId,
+        profileCompleteness: res.profileCompleteness ?? completeness,
+        matchesCreated: 0,
+      });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
+  }
 
   if (body.phone) {
     await supabase
@@ -118,3 +137,4 @@ export async function POST(request: Request) {
     matchesCreated: matchResult.matched,
   });
 }
+

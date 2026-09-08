@@ -4,6 +4,7 @@ import { notifyRecruitersJobPosted } from "@/lib/job-notifications";
 import { defaultJobExpiry } from "@/lib/employer";
 import { runMatchingForJob } from "@/lib/match-runner";
 import type { JobStatus } from "@/lib/types";
+import { jobsApi } from "@/lib/api";
 
 export async function PATCH(
   request: Request,
@@ -20,6 +21,16 @@ export async function PATCH(
   }
 
   const { status } = (await request.json()) as { status: JobStatus };
+
+  // Attempt Django REST API update
+  try {
+    const res = await jobsApi.updateJob(id, { status });
+    if (res && res.ok) {
+      return NextResponse.json({ ok: true });
+    }
+  } catch (apiErr) {
+    // Fall back to Supabase database during progressive migration phase
+  }
 
   const updates: Record<string, unknown> = {
     status,
@@ -47,3 +58,4 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
