@@ -3,7 +3,6 @@ import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
-import { createClient } from "@/lib/supabase/server";
 import { companiesApi } from "@/lib/api";
 import { redirect } from "next/navigation";
 
@@ -14,18 +13,8 @@ export default async function EmployerOnboardingPage() {
   let company = null;
   try {
     company = await companiesApi.getMyCompany({ token });
-  } catch {
-    // Fall back to Supabase
-  }
-
-  if (!company) {
-    const supabase = await createClient();
-    const { data: sbCompany } = await supabase
-      .from("companies")
-      .select("*")
-      .eq("owner_id", profile.id)
-      .maybeSingle();
-    company = sbCompany;
+  } catch (err) {
+    console.error("Failed to load company from Django:", err);
   }
 
   if (company && isCompanyProfileComplete(company)) {
@@ -58,7 +47,7 @@ export default async function EmployerOnboardingPage() {
           <EmployerCompanyForm
             initialData={initialData}
             workEmail={profile.email}
-            redirectTo="/employer/jobs/new"
+            redirectTo="/employer"
           />
         </div>
         </div>

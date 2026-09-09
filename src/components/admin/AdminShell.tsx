@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
 import { loadAdminNavCounts } from "@/lib/admin-dashboard";
-import { createClient } from "@/lib/supabase/server";
+import { clearDjangoAuthCookies } from "@/lib/auth-actions";
 import { redirect } from "next/navigation";
 
 function NavLink({
@@ -56,8 +56,7 @@ export async function AdminShell({
 
   async function signOut() {
     "use server";
-    const client = await createClient();
-    await client.auth.signOut();
+    await clearDjangoAuthCookies();
     redirect("/");
   }
 

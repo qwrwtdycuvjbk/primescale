@@ -93,6 +93,18 @@ class CompanyMeView(APIView):
         return Response(CompanySerializer(updated).data, status=status.HTTP_200_OK)
 
 
+class CompanyListView(APIView):
+    """
+    GET /api/v1/companies/ -> List companies for dropdowns and public listings.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        queryset = Company.objects.all().order_by("name")
+        serializer = CompanyPublicSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class CompanyDetailView(APIView):
     """
     GET /api/v1/companies/<uuid:pk>/ -> Public/Authenticated company view

@@ -1,4 +1,5 @@
 import uuid
+import io
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -159,3 +160,106 @@ class CandidateApiTests(TestCase):
         self._auth(self.candidate2)
         res = self.client.get(f"/api/v1/candidates/{profile.id}/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_candidate_registry_listing_and_filtering(self):
+        # Setup candidate profiles
+        p1 = CandidateProfile.objects.create(
+            user=self.candidate1,
+            headline="Python Wizard",
+            experience_level="senior",
+            work_authorization="us_citizen",
+            availability_status="actively_looking",
+            profile_complete=True,
+            source="people_prime",
+        )
+        p2 = CandidateProfile.objects.create(
+            user=self.candidate2,
+            headline="Junior React Dev",
+            experience_level="junior",
+            work_authorization="international_remote",
+            availability_status="not_looking",
+            profile_complete=False,
+            source="platform",
+        )
+
+        # Admin access
+        self._auth(self.admin)
+        res = self.client.get("/api/v1/admin/candidates/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("candidates", res.data)
+        self.assertEqual(res.data["totalCount"], 2)
+        self.assertEqual(res.data["completeCount"], 1)
+        self.assertEqual(res.data["activeCount"], 1)
+
+        # Filter by experience
+        res_exp = self.client.get("/api/v1/admin/candidates/?experience=senior")
+        self.assertEqual(len(res_exp.data["candidates"]), 1)
+        self.assertEqual(res_exp.data["candidates"][0]["headline"], "Python Wizard")
+
+        # Search by query
+        res_q = self.client.get("/api/v1/admin/candidates/?q=alice")
+        self.assertEqual(len(res_q.data["candidates"]), 1)
+        self.assertEqual(res_q.data["candidates"][0]["profiles"]["email"], "candidate1@test.com")
+
+        # Candidate denied
+        self._auth(self.candidate1)
+        res_cand = self.client.get("/api/v1/admin/candidates/")
+        self.assertEqual(res_cand.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Employer denied
+        self._auth(self.employer)
+        res_emp = self.client.get("/api/v1/admin/candidates/")
+        self.assertEqual(res_emp.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Unauthenticated denied
+        self.client.credentials()
+        res_unauth = self.client.get("/api/v1/admin/candidates/")
+        self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_admin_candidate_create_and_duplicate_rejection(self):
+        self._auth(self.admin)
+        payload = {
+            "fullName": "Admin Added User",
+            "email": "admin_added@test.com",
+            "headline": "Lead Platform Engineer",
+            "skills": ["Docker", "Kubernetes", "AWS"],
+            "roleCategories": ["DevOps", "Infrastructure"],
+            "experienceLevel": "lead",
+            "workAuthorization": "us_citizen",
+        }
+        res = self.client.post("/api/v1/admin/candidates/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(res.data["ok"])
+        self.assertTrue(User.objects.filter(email="admin_added@test.com").exists())
+
+        # Duplicate email rejected
+        res_dup = self.client.post("/api/v1/admin/candidates/", payload, format="json")
+        self.assertEqual(res_dup.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already exists", str(res_dup.data))
+
+        # Non-admin forbidden
+        self._auth(self.candidate1)
+        res_cand = self.client.post("/api/v1/admin/candidates/", payload, format="json")
+        self.assertEqual(res_cand.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_candidate_bulk_import_csv(self):
+        self._auth(self.admin)
+        csv_content = (
+            "full_name,email,headline,skills,role_categories,experience_level,work_authorization\n"
+            "Imported One,import1@test.com,Go Developer,Go;Kubernetes,Backend,mid,us_citizen\n"
+            "Imported Two,import2@test.com,Frontend Architect,React;CSS,Frontend,senior,green_card\n"
+        )
+        file_obj = io.BytesIO(csv_content.encode("utf-8"))
+        file_obj.name = "candidates.csv"
+
+        res = self.client.post(
+            "/api/v1/admin/candidates/import/",
+            {"file": file_obj},
+            format="multipart",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["created"], 2)
+        self.assertEqual(res.data["failed"], 0)
+        self.assertTrue(User.objects.filter(email="import1@test.com").exists())
+        self.assertTrue(User.objects.filter(email="import2@test.com").exists())
+

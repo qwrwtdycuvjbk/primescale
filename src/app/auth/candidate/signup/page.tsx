@@ -3,7 +3,6 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { QueuePreferenceCapture } from "@/components/site/queue-preference-capture";
 import { handleLoggedInAuthPage } from "@/lib/auth-visitor";
 import { isRoleCategory } from "@/lib/matching-seats";
-import { createClient } from "@/lib/supabase/server";
 
 export default async function CandidateSignupPage({
   searchParams,
@@ -18,16 +17,10 @@ export default async function CandidateSignupPage({
 }) {
   const params = await searchParams;
   const queue = isRoleCategory(params.queue) ? params.queue : null;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) {
-    await handleLoggedInAuthPage(user, "candidate", {
-      hasError: !!params.error,
-      page: "signup",
-    });
-  }
+
+  await handleLoggedInAuthPage("candidate", {
+    hasError: !!params.error,
+  });
 
   const title = queue ? `Join the ${queue} queue.` : "Get matched.";
   const description = queue

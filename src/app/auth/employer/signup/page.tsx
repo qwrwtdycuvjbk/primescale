@@ -1,7 +1,6 @@
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { handleLoggedInAuthPage } from "@/lib/auth-visitor";
-import { createClient } from "@/lib/supabase/server";
 
 export default async function EmployerSignupPage({
   searchParams,
@@ -14,16 +13,9 @@ export default async function EmployerSignupPage({
   }>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) {
-    await handleLoggedInAuthPage(user, "employer", {
-      hasError: !!params.error,
-      page: "signup",
-    });
-  }
+  await handleLoggedInAuthPage("employer", {
+    hasError: !!params.error,
+  });
 
   return (
     <AuthShell

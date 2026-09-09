@@ -3,7 +3,7 @@ export const authErrorMessages: Record<string, string> = {
   session_missing: "Your session expired. Please log in again.",
   profile_missing: "We could not set up your account profile.",
   missing_code:
-    "Google did not return a sign-in code. Check Supabase redirect URLs.",
+    "OAuth provider did not return an authorization code. Please try again.",
   validation: "Check the form and try again.",
   login_failed: "Could not sign you in.",
   signup_failed: "Could not create your account.",
@@ -29,7 +29,7 @@ export function formatAuthErrorMessage(
     error === "profile_missing" &&
     detailText.includes("infinite recursion")
   ) {
-    return "Account setup is blocked by a database policy. Run supabase/profiles-rls-fix.sql in Supabase, then try again.";
+    return "Account setup encountered a database policy error. Please try again or contact support.";
   }
 
   return details

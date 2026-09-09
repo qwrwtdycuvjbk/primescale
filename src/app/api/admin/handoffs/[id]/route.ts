@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionProfile, getAccessToken } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import type { HandoffStatus } from "@/lib/types";
 import { handoffsApi } from "@/lib/api";
 
@@ -39,7 +38,6 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  // Attempt Django REST API handoff update
   try {
     const res = await handoffsApi.updateHandoff(
       id,
@@ -52,28 +50,11 @@ export async function PATCH(
     if (res && res.ok) {
       return NextResponse.json({ ok: true });
     }
-  } catch (apiErr) {
-    // Fall back to Supabase database during progressive migration phase
+    return NextResponse.json({ error: "Failed to update handoff" }, { status: 400 });
+  } catch (apiErr: any) {
+    return NextResponse.json(
+      { error: apiErr?.message || apiErr?.error || "Failed to update handoff" },
+      { status: apiErr?.status || 400 },
+    );
   }
-
-  const supabase = await createClient();
-  const updates: { status?: HandoffStatus; notes?: string; updated_at: string } =
-    {
-      updated_at: new Date().toISOString(),
-    };
-
-  if (status) updates.status = status;
-  if (notes !== undefined) updates.notes = notes;
-
-  const { error } = await supabase
-    .from("handoff_requests")
-    .update(updates)
-    .eq("id", id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
 }
-

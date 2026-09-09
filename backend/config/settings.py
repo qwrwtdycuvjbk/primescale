@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "jobs",
     "matching",
     "handoffs",
+    "applications",
+    "job_leads",
     "common",
 ]
 
@@ -172,6 +174,9 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+CELERY_IMPORTS = ["matching.tasks", "accounts.tasks"]
+CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "True").lower() == "true"
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # AWS S3 Storage Configuration
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")

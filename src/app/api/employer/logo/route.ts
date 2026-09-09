@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { companiesApi } from "@/lib/api";
 
@@ -21,30 +20,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image files only" }, { status: 400 });
   }
 
-  // Attempt Django REST API upload
   try {
     const res = await companiesApi.uploadLogo(file, { token });
     if (res && res.url) {
       return NextResponse.json({ ok: true, url: res.url });
     }
-  } catch (apiErr) {
-    // Fall back to Supabase Storage during progressive migration phase
+    return NextResponse.json({ error: "Failed to upload logo" }, { status: 500 });
+  } catch (apiErr: any) {
+    return NextResponse.json(
+      { error: apiErr?.message || apiErr?.error || "Failed to upload logo" },
+      { status: apiErr?.status || 500 },
+    );
   }
-
-  const supabase = await createClient();
-
-  const ext = file.name.split(".").pop() ?? "png";
-  const path = `${user.id}/logo-${Date.now()}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from("company-logos")
-    .upload(path, file, { upsert: true });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const { data } = supabase.storage.from("company-logos").getPublicUrl(path);
-  return NextResponse.json({ ok: true, url: data.publicUrl });
 }
-

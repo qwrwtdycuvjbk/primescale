@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { createMutualFitHandoff, resolveMatchStatus } from "@/lib/handoff";
-import { notifyRecruitersCandidateInterested } from "@/lib/recruiter-alert";
-import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import type { MatchStatus } from "@/lib/types";
 import { matchingApi } from "@/lib/api";
@@ -29,7 +26,6 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  // Attempt Django REST API match status update
   try {
     const res = await matchingApi.updateMatchStatus(
       matchId,
@@ -39,49 +35,11 @@ export async function PATCH(request: Request) {
     if (res && res.ok) {
       return NextResponse.json({ ok: true, status: res.status });
     }
-  } catch (apiErr) {
-    // Fall back to Supabase database during progressive migration phase
+    return NextResponse.json({ error: "Failed to update match status" }, { status: 400 });
+  } catch (apiErr: any) {
+    return NextResponse.json(
+      { error: apiErr?.message || apiErr?.error || "Failed to update match status" },
+      { status: apiErr?.status || 400 },
+    );
   }
-
-  const supabase = await createClient();
-
-  const { data: current, error: readError } = await supabase
-    .from("matches")
-    .select("id, status")
-    .eq("id", matchId)
-    .single();
-
-  if (readError || !current) {
-    return NextResponse.json({ error: "Match not found" }, { status: 404 });
-  }
-
-  if (current.status === "mutual_fit" || current.status === "rejected") {
-    return NextResponse.json({ error: "Match is already closed" }, { status: 400 });
-  }
-
-  const previousStatus = current.status;
-  const finalStatus = resolveMatchStatus(current.status, status);
-
-  const { error } = await supabase
-    .from("matches")
-    .update({ status: finalStatus, updated_at: new Date().toISOString() })
-    .eq("id", matchId);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (
-    finalStatus === "candidate_interested" &&
-    previousStatus !== "candidate_interested"
-  ) {
-    await notifyRecruitersCandidateInterested(matchId);
-  }
-
-  if (finalStatus === "mutual_fit") {
-    await createMutualFitHandoff(matchId);
-  }
-
-  return NextResponse.json({ ok: true, status: finalStatus });
 }
-

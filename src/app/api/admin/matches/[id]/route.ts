@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionProfile, getAccessToken } from "@/lib/auth";
-import { getServiceClient } from "@/lib/supabase/service";
 import { matchingApi } from "@/lib/api";
 
 async function assertAdmin() {
@@ -28,39 +27,16 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
-  // Attempt Django REST API admin match action
   try {
     const res = await matchingApi.adminMatchAction(id, action, { token });
     if (res && res.ok) {
       return NextResponse.json({ ok: true });
     }
-  } catch (apiErr) {
-    // Fall back to Supabase database during progressive migration phase
+    return NextResponse.json({ error: "Action failed" }, { status: 400 });
+  } catch (apiErr: any) {
+    return NextResponse.json(
+      { error: apiErr?.message || apiErr?.error || "Action failed" },
+      { status: apiErr?.status || 400 },
+    );
   }
-
-  const supabase = getServiceClient();
-  if (!supabase) {
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
-  }
-
-  const updates =
-    action === "approve"
-      ? {
-          visible_to_employer: true,
-          updated_at: new Date().toISOString(),
-        }
-      : {
-          visible_to_employer: false,
-          status: "rejected",
-          updated_at: new Date().toISOString(),
-        };
-
-  const { error } = await supabase.from("matches").update(updates).eq("id", id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
 }
-

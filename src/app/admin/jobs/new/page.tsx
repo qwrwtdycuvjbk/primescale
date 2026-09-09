@@ -1,16 +1,23 @@
 import { AdminJobPostForm } from "@/components/admin/AdminJobPostForm";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireAdmin } from "@/lib/auth";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin, getAccessToken } from "@/lib/auth";
+import { companiesApi } from "@/lib/api";
 
 export default async function AdminNewJobPage() {
   const { profile } = await requireAdmin();
-  const supabase = await getAdminClient();
-  const { data: companies } = await supabase
-    .from("companies")
-    .select("id, name")
-    .order("name");
+  const token = await getAccessToken();
+
+  let companies: { id: string; name: string }[] = [];
+
+  try {
+    const djangoCompanies = await companiesApi.listCompanies({ token });
+    if (Array.isArray(djangoCompanies)) {
+      companies = djangoCompanies.map((c) => ({ id: c.id, name: c.name }));
+    }
+  } catch (err) {
+    console.error("Failed to load companies from Django:", err);
+  }
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/jobs">
@@ -25,7 +32,7 @@ export default async function AdminNewJobPage() {
           </p>
 
           <div className="mt-10 rounded-3xl border border-border bg-card p-8">
-            <AdminJobPostForm companies={companies ?? []} />
+            <AdminJobPostForm companies={companies} />
           </div>
         </div>
       </main>

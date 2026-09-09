@@ -6,7 +6,6 @@ import {
   type CsvImportRowResult,
 } from "@/lib/admin-candidate-csv";
 import { getSessionProfile } from "@/lib/auth";
-import { getServiceClient } from "@/lib/supabase/service";
 
 async function assertAdmin() {
   const { user, profile } = await getSessionProfile();
@@ -18,16 +17,6 @@ export async function POST(request: Request) {
   const user = await assertAdmin();
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (!getServiceClient()) {
-    return NextResponse.json(
-      {
-        error:
-          "SUPABASE_SERVICE_ROLE_KEY is not available on the server. Add it in Vercel (Production), then redeploy.",
-      },
-      { status: 503 },
-    );
   }
 
   const formData = await request.formData();

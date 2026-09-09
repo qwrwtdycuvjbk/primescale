@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth";
 import { uploadAdminCandidateResume } from "@/lib/admin-create-candidate";
-import { resumeStoragePath } from "@/lib/resume-storage";
-import { getServiceClient } from "@/lib/supabase/service";
+import { candidatesApi } from "@/lib/api";
 
 async function assertAdmin() {
   const { user, profile } = await getSessionProfile();
@@ -20,44 +19,19 @@ export async function GET(
   }
 
   const { id } = await params;
-  const supabase = getServiceClient();
-  if (!supabase) {
-    return NextResponse.json(
-      {
-        error:
-          "SUPABASE_SERVICE_ROLE_KEY is not available on the server. Add it in Vercel (Production), then redeploy.",
-      },
-      { status: 503 },
-    );
-  }
 
-  const { data: candidate, error } = await supabase
-    .from("candidate_profiles")
-    .select("resume_url")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !candidate?.resume_url) {
+  try {
+    const res = await candidatesApi.getAdminCandidateResume(id);
+    if (res && res.ok && res.downloadUrl) {
+      return NextResponse.redirect(res.downloadUrl);
+    }
     return NextResponse.json({ error: "Resume not found" }, { status: 404 });
-  }
-
-  const path = resumeStoragePath(candidate.resume_url);
-  if (!path) {
-    return NextResponse.json({ error: "Invalid resume path" }, { status: 400 });
-  }
-
-  const { data, error: signedError } = await supabase.storage
-    .from("resumes")
-    .createSignedUrl(path, 60 * 60);
-
-  if (signedError || !data?.signedUrl) {
+  } catch (err: any) {
     return NextResponse.json(
-      { error: signedError?.message ?? "Could not open resume" },
-      { status: 500 },
+      { error: err?.message || err?.error || "Resume not found" },
+      { status: err?.status || 404 },
     );
   }
-
-  return NextResponse.redirect(data.signedUrl);
 }
 
 export async function POST(

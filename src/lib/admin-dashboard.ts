@@ -1,7 +1,6 @@
 import { cache } from "react";
-import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
-import { getAdminClient } from "@/lib/supabase/admin";
-import { handoffsApi, matchingApi } from "@/lib/api";
+import { MIN_MATCH_SCORE } from "@/lib/constants";
+import { adminApi, handoffsApi, matchingApi } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 
 export function startOfWeekIso(): string {
@@ -60,264 +59,62 @@ export type AdminDashboardStats = AdminNavCounts & {
   }[];
 };
 
-/** Deduped per request so AdminShell + dashboard don't hit Supabase twice. */
+/** Deduped per request for AdminShell navigation counters */
 export const loadAdminNavCounts = cache(async (): Promise<AdminNavCounts> => {
-  let pendingMatchesCount: number | null = null;
-  let pendingHandoffsCount: number | null = null;
-
   try {
     const token = await getAccessToken();
     const [matches, handoffs] = await Promise.all([
       matchingApi.listMatches({ visible_to_employer: false }, { token }),
       handoffsApi.listHandoffs("pending", { token }),
     ]);
-    if (matches) {
-      pendingMatchesCount = matches.filter(
-        (m) => m.visible_to_employer === false && m.match_score >= MIN_MATCH_SCORE && m.status !== "rejected",
-      ).length;
-    }
-    if (handoffs) {
-      pendingHandoffsCount = handoffs.length;
-    }
-  } catch {
-    // Fall back to Supabase
-  }
 
-  if (pendingMatchesCount !== null && pendingHandoffsCount !== null) {
+    const pendingMatches = matches
+      ? matches.filter(
+          (m) =>
+            m.visible_to_employer === false &&
+            m.match_score >= MIN_MATCH_SCORE &&
+            m.status !== "rejected",
+        ).length
+      : 0;
+
+    const pendingHandoffs = handoffs ? handoffs.length : 0;
+
     return {
-      pendingMatches: pendingMatchesCount,
-      pendingHandoffs: pendingHandoffsCount,
+      pendingMatches,
+      pendingHandoffs,
     };
-  }
-
-  const supabase = await getAdminClient();
-  if (!supabase) {
-    return {
-      pendingMatches: pendingMatchesCount ?? 0,
-      pendingHandoffs: pendingHandoffsCount ?? 0,
-    };
-  }
-
-  const [{ count: pendingMatches }, { count: pendingHandoffs }] = await Promise.all([
-    supabase
-      .from("matches")
-      .select("id", { count: "exact", head: true })
-      .eq("visible_to_employer", false)
-      .gte("match_score", MIN_MATCH_SCORE)
-      .neq("status", "rejected"),
-    supabase
-      .from("handoff_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-  ]);
-
-  return {
-    pendingMatches: pendingMatchesCount ?? pendingMatches ?? 0,
-    pendingHandoffs: pendingHandoffsCount ?? pendingHandoffs ?? 0,
-  };
-});
-
-export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
-  const supabase = await getAdminClient();
-  const weekStart = startOfWeekIso();
-
-  if (!supabase) {
+  } catch (err) {
+    console.error("Failed to load admin nav counts:", err);
     return {
       pendingMatches: 0,
       pendingHandoffs: 0,
-      newCandidatesThisWeek: 0,
-      newEmployersThisWeek: 0,
-      activeJobsWithNoMatches: 0,
-      incompleteProfiles: 0,
-      candidateInterested: 0,
-      pendingMatchPreviews: [],
-      candidateInterestPreviews: [],
-      pendingHandoffPreviews: [],
-      unmatchedJobPreviews: [],
-      incompleteProfilePreviews: [],
     };
   }
+});
 
-  const [
-    navCounts,
-    { count: newCandidatesThisWeek },
-    { count: newEmployersThisWeek },
-    { data: pendingMatches },
-    { count: candidateInterested },
-    { data: interestedMatches },
-    { data: pendingHandoffs },
-    { data: activeJobs },
-    { data: incompleteCandidates },
-    { count: incompleteProfiles },
-  ] = await Promise.all([
-    loadAdminNavCounts(),
-    supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "candidate")
-      .gte("created_at", weekStart),
-    supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "employer")
-      .gte("created_at", weekStart),
-    supabase
-      .from("matches")
-      .select(
-        `
-        id,
-        match_score,
-        status,
-        jobs ( title, companies ( name ) ),
-        candidate_profiles ( profiles ( full_name ) )
-      `,
-      )
-      .eq("visible_to_employer", false)
-      .gte("match_score", MIN_MATCH_SCORE)
-      .neq("status", "rejected")
-      .order("match_score", { ascending: false })
-      .limit(5),
-    supabase
-      .from("matches")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "candidate_interested"),
-    supabase
-      .from("matches")
-      .select(
-        `
-        id,
-        match_score,
-        jobs ( title, companies ( name ) ),
-        candidate_profiles ( profiles ( full_name ) )
-      `,
-      )
-      .eq("status", "candidate_interested")
-      .order("updated_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("handoff_requests")
-      .select(
-        `
-        id,
-        matches (
-          jobs ( title, companies ( name ) ),
-          candidate_profiles ( profiles ( full_name ) )
-        )
-      `,
-      )
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("jobs")
-      .select("id, title, created_at, companies ( name ), matches ( id )")
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(100),
-    supabase
-      .from("candidate_profiles")
-      .select("id, created_at, profiles!inner ( full_name, email, role )")
-      .eq("profiles.role", "candidate")
-      .eq("profile_complete", false)
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("candidate_profiles")
-      .select("id, profiles!inner(role)", { count: "exact", head: true })
-      .eq("profiles.role", "candidate")
-      .eq("profile_complete", false),
-  ]);
-
-  const unmatchedJobs = ((activeJobs as any[]) ?? []).filter((job: any) => {
-    const matches = job.matches;
-    if (!matches) return true;
-    return Array.isArray(matches) ? matches.length === 0 : false;
-  });
-
-  function mapMatchPreview(match: {
-    id: string;
-    match_score: number;
-    status?: string;
-    jobs: unknown;
-    candidate_profiles: unknown;
-  }) {
-    const jobRaw = match.jobs;
-    const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
-    const companyRaw = job?.companies;
-    const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
-    const candidateRaw = match.candidate_profiles;
-    const candidate = Array.isArray(candidateRaw) ? candidateRaw[0] : candidateRaw;
-    const profileRaw = candidate?.profiles;
-    const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
-
-    return {
-      id: match.id,
-      matchScore: match.match_score,
-      status: match.status ?? "suggested",
-      candidateName: profile?.full_name ?? "Candidate",
-      jobTitle: job?.title ?? "Role",
-      companyName: company?.name ?? "Company",
-    };
+export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
+  try {
+    const token = await getAccessToken();
+    const djangoStats = await adminApi.getDashboardStats({ token });
+    if (djangoStats) {
+      return djangoStats;
+    }
+  } catch (err) {
+    console.error("Failed to load admin dashboard stats:", err);
   }
 
   return {
-    ...navCounts,
-    newCandidatesThisWeek: newCandidatesThisWeek ?? 0,
-    newEmployersThisWeek: newEmployersThisWeek ?? 0,
-    activeJobsWithNoMatches: unmatchedJobs.length,
-    incompleteProfiles: incompleteProfiles ?? 0,
-    candidateInterested: candidateInterested ?? 0,
-    pendingMatchPreviews: ((pendingMatches as any[]) ?? []).map(mapMatchPreview),
-    candidateInterestPreviews: ((interestedMatches as any[]) ?? []).map((match: any) => {
-      const preview = mapMatchPreview(match);
-      return {
-        id: preview.id,
-        matchScore: preview.matchScore,
-        candidateName: preview.candidateName,
-        jobTitle: preview.jobTitle,
-        companyName: preview.companyName,
-      };
-    }),
-    pendingHandoffPreviews: ((pendingHandoffs as any[]) ?? []).map((handoff: any) => {
-      const matchRaw = handoff.matches;
-      const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
-      const jobRaw = match?.jobs;
-      const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
-      const companyRaw = job?.companies;
-      const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
-      const candidateRaw = match?.candidate_profiles;
-      const candidate = Array.isArray(candidateRaw) ? candidateRaw[0] : candidateRaw;
-      const profileRaw = candidate?.profiles;
-      const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
-
-      return {
-        id: handoff.id,
-        candidateName: profile?.full_name ?? "Candidate",
-        jobTitle: job?.title ?? "Role",
-        companyName: company?.name ?? "Company",
-      };
-    }),
-    unmatchedJobPreviews: (unmatchedJobs.slice(0, 5) as any[]).map((job: any) => {
-      const companyRaw = job.companies;
-      const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
-
-      return {
-        id: job.id,
-        title: job.title,
-        companyName: company?.name ?? "Company",
-        postedAt: job.created_at,
-      };
-    }),
-    incompleteProfilePreviews: ((incompleteCandidates as any[]) ?? []).map((row: any) => {
-      const profileRaw = row.profiles;
-      const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
-
-      return {
-        id: row.id,
-        name: profile?.full_name ?? "Candidate",
-        email: profile?.email ?? "",
-        signedUpAt: row.created_at,
-      };
-    }),
+    pendingMatches: 0,
+    pendingHandoffs: 0,
+    newCandidatesThisWeek: 0,
+    newEmployersThisWeek: 0,
+    activeJobsWithNoMatches: 0,
+    incompleteProfiles: 0,
+    candidateInterested: 0,
+    pendingMatchPreviews: [],
+    candidateInterestPreviews: [],
+    pendingHandoffPreviews: [],
+    unmatchedJobPreviews: [],
+    incompleteProfilePreviews: [],
   };
 }

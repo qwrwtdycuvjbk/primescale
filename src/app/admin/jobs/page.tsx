@@ -8,36 +8,10 @@ import {
   type AdminJobRow,
 } from "@/components/admin/JobRegistryTable";
 import { appMainClass } from "@/components/site/layout";
-import { requireAdmin } from "@/lib/auth";
-import { getAdminClient } from "@/lib/supabase/admin";
-import type { Company, Job, Profile } from "@/lib/types";
+import { requireAdmin, getAccessToken } from "@/lib/auth";
+import { jobsApi } from "@/lib/api";
 
 const PAGE_SIZE = 100;
-
-type RawJobRow = Pick<
-  Job,
-  | "id"
-  | "company_id"
-  | "posted_by"
-  | "title"
-  | "role_type"
-  | "experience_level"
-  | "tech_stack"
-  | "salary_range"
-  | "work_type"
-  | "status"
-  | "expires_at"
-  | "created_at"
-  | "updated_at"
-> & {
-  companies: Pick<Company, "name" | "website"> | Pick<Company, "name" | "website">[] | null;
-  profiles: Pick<Profile, "full_name" | "email" | "phone"> | Pick<Profile, "full_name" | "email" | "phone">[] | null;
-};
-
-function unwrapRelation<T>(value: T | T[] | null | undefined): T | null {
-  if (!value) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
 
 export default async function AdminJobsPage({
   searchParams,
@@ -51,117 +25,56 @@ export default async function AdminJobsPage({
 }) {
   const filters = await searchParams;
   const { profile } = await requireAdmin();
-  const supabase = await getAdminClient();
+  const token = await getAccessToken();
 
-  let query = supabase
-    .from("jobs")
-    .select(
-      `
-      id,
-      company_id,
-      posted_by,
-      title,
-      role_type,
-      experience_level,
-      tech_stack,
-      salary_range,
-      work_type,
-      status,
-      expires_at,
-      created_at,
-      updated_at,
-      companies ( name, website ),
-      profiles:posted_by ( full_name, email, phone )
-    `,
-    )
-    .order("created_at", { ascending: false })
-    .limit(PAGE_SIZE);
+  let jobs: AdminJobRow[] = [];
+  let totalCount = 0;
+  let activeCount = 0;
+  let draftCount = 0;
 
-  if (filters.status && filters.status !== "all") {
-    query = query.eq("status", filters.status);
-  }
+  try {
+    const djangoJobs = await jobsApi.listJobs(
+      {
+        q: filters.q,
+        status: filters.status,
+        experience_level: filters.experience,
+        role_type: filters.role_type,
+      },
+      { token },
+    );
 
-  if (filters.experience && filters.experience !== "all") {
-    query = query.eq("experience_level", filters.experience);
-  }
+    if (Array.isArray(djangoJobs)) {
+      totalCount = djangoJobs.length;
+      activeCount = djangoJobs.filter((j) => j.status === "active").length;
+      draftCount = djangoJobs.filter((j) => j.status === "draft").length;
 
-  if (filters.role_type && filters.role_type !== "all") {
-    query = query.eq("role_type", filters.role_type);
-  }
-
-  if (filters.q?.trim()) {
-    query = query.ilike("title", `%${filters.q.trim()}%`);
-  }
-
-  const [
-    { data: rawJobs },
-    { count: totalCount },
-    { count: activeCount },
-    { count: draftCount },
-  ] = await Promise.all([
-    query,
-    supabase.from("jobs").select("id", { count: "exact", head: true }),
-    supabase
-      .from("jobs")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "active"),
-    supabase
-      .from("jobs")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "draft"),
-  ]);
-
-  let jobs: AdminJobRow[] = ((rawJobs as any[]) ?? []).map((row: any) => {
-    const job = row as RawJobRow;
-    return {
-      ...job,
-      companies: unwrapRelation(job.companies),
-      profiles: unwrapRelation(job.profiles),
-      matchCount: 0,
-      releasedMatchCount: 0,
-    };
-  });
-
-  // Company / poster search on the already-fetched page (title is DB-filtered above).
-  if (filters.q?.trim()) {
-    const term = filters.q.trim().toLowerCase();
-    const titleOnly = jobs.filter((job) => job.title.toLowerCase().includes(term));
-    if (titleOnly.length === 0) {
-      jobs = jobs.filter((job) => {
-        const company = job.companies?.name?.toLowerCase() ?? "";
-        const email = job.profiles?.email?.toLowerCase() ?? "";
-        return company.includes(term) || email.includes(term);
-      });
+      jobs = djangoJobs.slice(0, PAGE_SIZE).map((j: any) => ({
+        id: j.id,
+        company_id: j.company_id || j.company || "",
+        posted_by: j.posted_by || "",
+        title: j.title,
+        role_type: j.role_type,
+        experience_level: j.experience_level,
+        tech_stack: j.tech_stack || [],
+        salary_range: j.salary_range || "",
+        work_type: j.work_type || "remote",
+        status: j.status,
+        expires_at: j.expires_at || null,
+        created_at: j.created_at || "",
+        updated_at: j.updated_at || "",
+        companies: j.companies || j.company_details || (j.company ? { name: j.company } : null),
+        profiles: {
+          full_name: j.posted_by_full_name || "",
+          email: j.posted_by_email || "",
+          phone: undefined,
+        },
+        matchCount: 0,
+        releasedMatchCount: 0,
+      }));
     }
+  } catch (err) {
+    console.error("Failed to load jobs from Django:", err);
   }
-
-  const jobIds = jobs.map((job) => job.id);
-  const matchCountByJob = new Map<string, number>();
-  const releasedCountByJob = new Map<string, number>();
-
-  if (jobIds.length) {
-    const { data: matches } = await supabase
-      .from("matches")
-      .select("job_id, visible_to_employer")
-      .in("job_id", jobIds);
-
-    for (const row of matches ?? []) {
-      matchCountByJob.set(row.job_id, (matchCountByJob.get(row.job_id) ?? 0) + 1);
-
-      if (row.visible_to_employer) {
-        releasedCountByJob.set(
-          row.job_id,
-          (releasedCountByJob.get(row.job_id) ?? 0) + 1,
-        );
-      }
-    }
-  }
-
-  jobs = jobs.map((job) => ({
-    ...job,
-    matchCount: matchCountByJob.get(job.id) ?? 0,
-    releasedMatchCount: releasedCountByJob.get(job.id) ?? 0,
-  }));
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/jobs">

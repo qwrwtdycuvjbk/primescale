@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
-import { createClient } from "@/lib/supabase/server";
+import { clearDjangoAuthCookies } from "@/lib/auth-actions";
 import { redirect } from "next/navigation";
 
 const candidateLinks = [
@@ -19,12 +19,9 @@ export async function CandidateShell({
   name: string;
   activePath: string;
 }) {
-  const supabase = await createClient();
-
   async function signOut() {
     "use server";
-    const client = await createClient();
-    await client.auth.signOut();
+    await clearDjangoAuthCookies();
     redirect("/");
   }
 

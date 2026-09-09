@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     CompanyDetailView,
+    CompanyListView,
     CompanyLogoUploadView,
     CompanyMembersView,
     CompanyMeView,
@@ -9,6 +10,7 @@ from .views import (
 app_name = "companies"
 
 urlpatterns = [
+    path("", CompanyListView.as_view(), name="company_list"),
     path("me/", CompanyMeView.as_view(), name="company_me"),
     path("me/logo/", CompanyLogoUploadView.as_view(), name="company_me_logo"),
     path("<uuid:pk>/", CompanyDetailView.as_view(), name="company_detail"),

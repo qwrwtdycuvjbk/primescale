@@ -152,4 +152,90 @@ export const candidatesApi = {
       options,
     );
   },
+
+  /**
+   * Admin: List candidates with relational filtering and search
+   */
+  async listAdminCandidates(
+    params?: {
+      q?: string;
+      complete?: string;
+      availability?: string;
+      experience?: string;
+      work_auth?: string;
+      matching?: string;
+      resume?: string;
+      source?: string;
+      limit?: number;
+      offset?: number;
+    },
+    options?: RequestOptions,
+  ): Promise<{
+    candidates: any[];
+    totalCount: number;
+    completeCount: number;
+    activeCount: number;
+    count: number;
+  }> {
+    return djangoApi.get("/api/v1/admin/candidates/", {
+      ...options,
+      params,
+    });
+  },
+
+  /**
+   * Admin: Create a candidate account and profile
+   */
+  async createAdminCandidate(
+    data: any,
+    options?: RequestOptions,
+  ): Promise<{
+    ok: boolean;
+    candidateProfileId: string;
+    userId: string;
+    matchesCreated: number;
+  }> {
+    return djangoApi.post("/api/v1/admin/candidates/", data, options);
+  },
+
+  /**
+   * Admin: Bulk import candidates
+   */
+  async importAdminCandidates(
+    payload: FormData | { rows: any[] },
+    options?: RequestOptions,
+  ): Promise<{
+    ok: boolean;
+    totalRows: number;
+    created: number;
+    failed: number;
+    totalMatches: number;
+    results: any[];
+  }> {
+    return djangoApi.post("/api/v1/admin/candidates/import/", payload, options);
+  },
+
+  /**
+   * Admin: Get presigned resume download URL for candidate ID
+   */
+  async getAdminCandidateResume(
+    candidateId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; downloadUrl: string; resumePath: string }> {
+    return djangoApi.get(`/api/v1/candidates/${candidateId}/resume/`, options);
+  },
+
+  /**
+   * Admin: Upload resume for candidate ID
+   */
+  async uploadAdminCandidateResume(
+    candidateId: string,
+    file: File,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; downloadUrl: string; resumePath: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return djangoApi.post(`/api/v1/candidates/${candidateId}/resume/`, formData, options);
+  },
 };
+

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { candidatesApi } from "@/lib/api";
 
@@ -31,7 +30,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Attempt Django REST API upload
   try {
     const res = await candidatesApi.uploadResume(file, { token });
     if (res && res.downloadUrl) {
@@ -41,31 +39,11 @@ export async function POST(request: Request) {
         path: res.resumePath,
       });
     }
-  } catch (apiErr) {
-    // Fall back to Supabase Storage during progressive migration phase
+    return NextResponse.json({ error: "Failed to upload resume" }, { status: 500 });
+  } catch (apiErr: any) {
+    return NextResponse.json(
+      { error: apiErr?.message || apiErr?.error || "Failed to upload resume" },
+      { status: apiErr?.status || 500 },
+    );
   }
-
-  const supabase = await createClient();
-
-  const ext = file.name.split(".").pop() ?? "pdf";
-  const path = `${user.id}/resume-${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("resumes")
-    .upload(path, file, { upsert: true });
-
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("resumes").getPublicUrl(path);
-
-  return NextResponse.json({
-    ok: true,
-    url: publicUrl,
-    path,
-  });
 }
-

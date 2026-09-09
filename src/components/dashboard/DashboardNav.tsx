@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { clearDjangoAuthCookies } from "@/lib/auth-actions";
 import { redirect } from "next/navigation";
 
 export async function DashboardNav({
@@ -9,12 +9,9 @@ export async function DashboardNav({
   role: "employer" | "candidate";
   name: string;
 }) {
-  const supabase = await createClient();
-
   async function signOut() {
     "use server";
-    const client = await createClient();
-    await client.auth.signOut();
+    await clearDjangoAuthCookies();
     redirect("/");
   }
 

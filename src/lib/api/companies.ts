@@ -16,6 +16,8 @@ export interface DjangoCompany {
   logo_url?: string | null;
   country?: string;
   domain_verified?: boolean;
+  badge_remote_first?: boolean;
+  badge_visa_sponsor?: boolean;
   profile_complete?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -104,6 +106,15 @@ export const companiesApi = {
   },
 
   /**
+   * List all companies (for dropdowns and listings)
+   */
+  async listCompanies(
+    options?: RequestOptions,
+  ): Promise<DjangoCompany[]> {
+    return djangoApi.get<DjangoCompany[]>("/api/v1/companies/", options);
+  },
+
+  /**
    * Get company members
    */
   async getCompanyMembers(
@@ -125,4 +136,5 @@ export const companiesApi = {
     );
   },
 };
+
 

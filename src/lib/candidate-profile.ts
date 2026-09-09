@@ -1,7 +1,7 @@
 import type { CandidateProfileInput } from "@/lib/types";
 
 export function mapCandidateRowToInput(
-  row: Record<string, unknown>,
+  row: any,
   profilePhone?: string,
 ): Partial<CandidateProfileInput> {
   return {

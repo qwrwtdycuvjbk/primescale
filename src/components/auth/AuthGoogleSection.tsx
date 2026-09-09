@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { ErrorBanner } from "@/components/site/form";
-import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/lib/types";
 
 export function AuthGoogleSection({
@@ -20,57 +19,28 @@ export function AuthGoogleSection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function getOAuthRedirectUrl() {
-    const destination = encodeURIComponent(
-      mode === "signup" ? "/auth/redirect" : (next ?? "/auth/redirect"),
-    );
-    return `${window.location.origin}/auth/callback?next=${destination}&role=${role}`;
-  }
-
   async function handleGoogleSignIn() {
     setLoading(true);
     setError("");
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
       setLoading(false);
-      setError("Sign-in is not configured. Missing Supabase environment variables.");
+      setError("Google sign-in is not enabled. Please sign in with email and password.");
       return;
     }
 
     try {
-      const supabase = createClient();
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: getOAuthRedirectUrl(),
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      });
-
-      if (oauthError) {
-        setError(oauthError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (data?.url) {
-        window.location.assign(data.url);
-        return;
-      }
-
-      setError(
-        "Could not start Google sign-in. Enable Google in Supabase → Authentication → Providers.",
+      const destination = encodeURIComponent(
+        mode === "signup" ? "/auth/redirect" : (next ?? "/auth/redirect"),
       );
+      const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback?next=${destination}&role=${role}`);
+      const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&prompt=select_account`;
+      window.location.assign(googleOAuthUrl);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Google sign-in failed. Try again.",
       );
-    } finally {
       setLoading(false);
     }
   }

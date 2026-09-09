@@ -5,7 +5,6 @@ import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
-import { createClient } from "@/lib/supabase/server";
 import { companiesApi, jobsApi } from "@/lib/api";
 import type { Job } from "@/lib/types";
 import { redirect } from "next/navigation";
@@ -17,42 +16,22 @@ export default async function EmployerJobsPage() {
   let company = null;
   try {
     company = await companiesApi.getMyCompany({ token });
-  } catch {
-    // Fall back to Supabase
-  }
-
-  const supabase = await createClient();
-
-  if (!company) {
-    const { data: sbCompany } = await supabase
-      .from("companies")
-      .select("*")
-      .eq("owner_id", profile.id)
-      .maybeSingle();
-    company = sbCompany;
+  } catch (err) {
+    console.error("Failed to load company from Django:", err);
   }
 
   if (!company || !isCompanyProfileComplete(company)) {
     redirect("/employer/onboarding");
   }
 
-  let jobs: Job[] | null = null;
+  let jobs: Job[] = [];
   try {
     const djangoJobs = await jobsApi.getMyJobs({ token });
     if (djangoJobs) {
       jobs = djangoJobs as unknown as Job[];
     }
-  } catch {
-    // Fall back to Supabase
-  }
-
-  if (!jobs) {
-    const { data: sbJobs } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("company_id", company.id)
-      .order("created_at", { ascending: false });
-    jobs = sbJobs;
+  } catch (err) {
+    console.error("Failed to load employer jobs from Django:", err);
   }
 
   return (
@@ -76,7 +55,7 @@ export default async function EmployerJobsPage() {
         </div>
 
         <div className="mt-10 space-y-4">
-          {jobs?.length ? (
+          {jobs.length ? (
             jobs.map((job) => <JobCard key={job.id} job={job} />)
           ) : (
             <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">

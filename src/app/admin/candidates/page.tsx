@@ -7,8 +7,8 @@ import {
   CandidateRegistryTable,
   type AdminCandidateRow,
 } from "@/components/admin/CandidateRegistryTable";
-import { requireAdmin } from "@/lib/auth";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin, getAccessToken } from "@/lib/auth";
+import { candidatesApi } from "@/lib/api";
 
 const PAGE_SIZE = 100;
 
@@ -30,101 +30,36 @@ export default async function AdminCandidatesPage({
 }) {
   const filters = await searchParams;
   const { profile } = await requireAdmin();
-  const supabase = await getAdminClient();
+  const token = await getAccessToken();
 
-  let query = supabase
-    .from("candidate_profiles")
-    .select(
-      `
-      id,
-      user_id,
-      headline,
-      phone,
-      current_title,
-      years_experience,
-      experience_level,
-      work_authorization,
-      us_state,
-      availability_status,
-      profile_completeness,
-      open_to_matching,
-      profile_complete,
-      resume_url,
-      github_url,
-      linkedin_url,
-      source,
-      created_at,
-      updated_at,
-      profiles!inner ( full_name, email, phone, created_at, role )
-    `,
-    )
-    .eq("profiles.role", "candidate")
-    .order("created_at", { ascending: false })
-    .limit(PAGE_SIZE);
+  let candidates: AdminCandidateRow[] = [];
+  let totalCount = 0;
+  let completeCount = 0;
+  let activeCount = 0;
 
-  if (filters.complete === "yes") query = query.eq("profile_complete", true);
-  if (filters.complete === "no") query = query.eq("profile_complete", false);
-
-  if (filters.availability && filters.availability !== "all") {
-    query = query.eq("availability_status", filters.availability);
-  }
-
-  if (filters.experience && filters.experience !== "all") {
-    query = query.eq("experience_level", filters.experience);
-  }
-
-  if (filters.work_auth && filters.work_auth !== "all") {
-    query = query.eq("work_authorization", filters.work_auth);
-  }
-
-  if (filters.matching === "yes") query = query.eq("open_to_matching", true);
-  if (filters.matching === "no") query = query.eq("open_to_matching", false);
-
-  if (filters.resume === "yes") query = query.not("resume_url", "is", null);
-  if (filters.resume === "no") query = query.is("resume_url", null);
-
-  if (filters.source && filters.source !== "all") {
-    query = query.eq("source", filters.source);
-  }
-
-  const [
-    { data: rawCandidates },
-    { count: totalCount },
-    { count: completeCount },
-    { count: activeCount },
-  ] = await Promise.all([
-    query,
-    supabase
-      .from("candidate_profiles")
-      .select("id, profiles!inner(role)", { count: "exact", head: true })
-      .eq("profiles.role", "candidate"),
-    supabase
-      .from("candidate_profiles")
-      .select("id, profiles!inner(role)", { count: "exact", head: true })
-      .eq("profiles.role", "candidate")
-      .eq("profile_complete", true),
-    supabase
-      .from("candidate_profiles")
-      .select("id, profiles!inner(role)", { count: "exact", head: true })
-      .eq("profiles.role", "candidate")
-      .eq("availability_status", "actively_looking"),
-  ]);
-
-  let candidates = ((rawCandidates as any[]) ?? []).map((row: any) => {
-    const profiles = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-    return {
-      ...row,
-      profiles,
-    } as AdminCandidateRow;
-  });
-
-  if (filters.q?.trim()) {
-    const term = filters.q.trim().toLowerCase();
-    candidates = candidates.filter((candidate) => {
-      const name = candidate.profiles.full_name?.toLowerCase() ?? "";
-      const email = candidate.profiles.email?.toLowerCase() ?? "";
-      return name.includes(term) || email.includes(term);
-    });
+  try {
+    const djangoRes = await candidatesApi.listAdminCandidates(
+      {
+        q: filters.q,
+        complete: filters.complete,
+        availability: filters.availability,
+        experience: filters.experience,
+        work_auth: filters.work_auth,
+        matching: filters.matching,
+        resume: filters.resume,
+        source: filters.source,
+        limit: PAGE_SIZE,
+      },
+      { token },
+    );
+    if (djangoRes && Array.isArray(djangoRes.candidates)) {
+      candidates = djangoRes.candidates as AdminCandidateRow[];
+      totalCount = djangoRes.totalCount ?? djangoRes.count;
+      completeCount = djangoRes.completeCount ?? 0;
+      activeCount = djangoRes.activeCount ?? 0;
+    }
+  } catch (err) {
+    console.error("Failed to load candidates from Django:", err);
   }
 
   return (

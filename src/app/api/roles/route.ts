@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { jobLeadsApi } from "@/lib/api";
 import type { RoleSubmission, RoleSubmissionInput } from "@/lib/types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -82,53 +82,44 @@ export async function POST(request: Request) {
     }
 
     const submission = buildSubmission(body as RoleSubmissionInput);
-    const supabase = getSupabase();
 
-    if (!supabase) {
-      if (process.env.VERCEL) {
-        console.error("Supabase env vars missing on Vercel");
+    // 1. Django REST Framework primary path
+    try {
+      const djangoRes = await jobLeadsApi.submitRole({
+        company_name: submission.companyName,
+        contact_name: submission.contactName,
+        email: submission.email,
+        phone: submission.phone,
+        job_title: submission.jobTitle,
+        role_type: submission.roleType,
+        experience_level: submission.experienceLevel,
+        tech_stack: submission.techStack,
+        salary_range: submission.salaryRange || null,
+        description: submission.description,
+        notes: submission.notes || null,
+        submission_type: submission.submissionType,
+      });
+
+      if (djangoRes && djangoRes.success) {
+        return NextResponse.json({ success: true, id: djangoRes.id });
+      }
+    } catch (err: any) {
+      if (err?.status === 400) {
         return NextResponse.json(
-          { error: "Server configuration error. Please try again later." },
-          { status: 503 },
+          { error: err?.message || err?.error || "Invalid role submission data" },
+          { status: 400 },
         );
       }
-
-      await saveToFile(submission);
-      return NextResponse.json({ success: true, id: submission.id });
+      console.warn("Django role-submissions API unavailable, falling back to local file storage:", err?.message);
     }
 
-    const row: Record<string, string | null> = {
-      company_name: submission.companyName,
-      contact_name: submission.contactName,
-      email: submission.email,
-      phone: submission.phone,
-      job_title: submission.jobTitle,
-      role_type: submission.roleType,
-      experience_level: submission.experienceLevel,
-      tech_stack: submission.techStack,
-      salary_range: submission.salaryRange ?? null,
-      description: submission.description,
-      notes: submission.notes ?? null,
-      submission_type: submission.submissionType,
-    };
-
-    const { error: dbError } = await supabase
-      .from("role_submissions")
-      .insert(row);
-
-    if (dbError) {
-      console.error("Supabase insert error:", dbError);
-      return NextResponse.json(
-        { error: "Failed to save role submission" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
+    // 2. Safe local file fallback (when offline / local dev test)
+    await saveToFile(submission);
+    return NextResponse.json({ success: true, id: submission.id });
+  } catch (error: any) {
     console.error("Role submission error:", error);
     return NextResponse.json(
-      { error: "Failed to save role submission" },
+      { error: error?.message || "Failed to save role submission" },
       { status: 500 },
     );
   }

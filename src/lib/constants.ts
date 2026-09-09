@@ -97,3 +97,6 @@ export const US_STATES = [
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
   "DC", "Remote (US)",
 ] as const;
+
+export const MIN_MATCH_SCORE = 85;
+

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth";
 import { searchRemoteTechJobs } from "@/lib/openweb-ninja";
+import { jobLeadsApi } from "@/lib/api";
 
 async function assertAdmin() {
   const { user, profile } = await getSessionProfile();
@@ -24,6 +25,22 @@ export async function GET(request: Request) {
     | "all";
   const country = searchParams.get("country") ?? "worldwide";
   const pages = Number(searchParams.get("pages") ?? "1");
+
+  // Attempt Django REST API first for saved/stored job leads if any
+  try {
+    const djangoLeads = await jobLeadsApi.listLeads({ query, country });
+    if (djangoLeads && djangoLeads.ok && djangoLeads.count > 0) {
+      return NextResponse.json({
+        ok: true,
+        count: djangoLeads.count,
+        queriesUsed: query ? [query] : [],
+        countriesUsed: country ? [country] : [],
+        leads: djangoLeads.leads,
+      });
+    }
+  } catch {
+    // Fall back to live search
+  }
 
   const result = await searchRemoteTechJobs({
     query,

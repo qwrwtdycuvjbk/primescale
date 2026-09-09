@@ -2,15 +2,14 @@ import { RecruiterMatchReviewCard } from "@/components/admin/RecruiterMatchRevie
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireAdmin, getAccessToken } from "@/lib/auth";
-import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
-import { getAdminClient } from "@/lib/supabase/admin";
+import { MIN_MATCH_SCORE } from "@/lib/constants";
 import { matchingApi } from "@/lib/api";
 
 export default async function AdminMatchesPage() {
   const { profile } = await requireAdmin();
   const token = await getAccessToken();
 
-  let pendingMatches: any[] | null = null;
+  let pendingMatches: any[] = [];
   let pendingCount = 0;
 
   try {
@@ -22,51 +21,8 @@ export default async function AdminMatchesPage() {
       pendingMatches = filtered.slice(0, 50);
       pendingCount = filtered.length;
     }
-  } catch {
-    // Fall back to Supabase
-  }
-
-  if (!pendingMatches) {
-    const supabase = await getAdminClient();
-    const [{ data: sbPendingMatches }, { count: sbPendingCount }] = await Promise.all([
-      supabase
-        .from("matches")
-        .select(
-          `
-        id,
-        candidate_profile_id,
-        job_id,
-        match_score,
-        match_reason,
-        status,
-        created_at,
-        updated_at,
-        jobs (
-          title,
-          companies ( name )
-        ),
-        candidate_profiles (
-          headline,
-          skills,
-          profiles ( full_name, email )
-        )
-      `,
-        )
-        .eq("visible_to_employer", false)
-        .gte("match_score", MIN_MATCH_SCORE)
-        .neq("status", "rejected")
-        .order("match_score", { ascending: false })
-        .limit(50),
-      supabase
-        .from("matches")
-        .select("id", { count: "exact", head: true })
-        .eq("visible_to_employer", false)
-        .gte("match_score", MIN_MATCH_SCORE)
-        .neq("status", "rejected"),
-    ]);
-
-    pendingMatches = sbPendingMatches;
-    pendingCount = sbPendingCount ?? 0;
+  } catch (err) {
+    console.error("Failed to load matches from Django:", err);
   }
 
   return (
@@ -87,7 +43,7 @@ export default async function AdminMatchesPage() {
 
         <div className="mt-8 space-y-4">
           {pendingMatches?.length ? (
-            ((pendingMatches as any[]) ?? []).map((row: any) => {
+            pendingMatches.map((row: any) => {
               const jobRaw = row.jobs;
               const job = Array.isArray(jobRaw) ? jobRaw[0] : jobRaw;
               const companyRaw = job?.companies;

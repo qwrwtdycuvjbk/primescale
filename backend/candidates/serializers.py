@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from accounts.models import User
 from accounts.serializers import UserSerializer
 from .models import CandidateProfile
 from .utils import calculate_profile_completeness, is_candidate_profile_complete, parse_skills_list
@@ -245,3 +246,101 @@ class PublicTalentCardSerializer(serializers.ModelSerializer):
         if min_sal:
             return f"{fmt(min_sal)}+"
         return f"Up to {fmt(max_sal)}"
+
+
+class AdminCandidateProfileUserNestedSerializer(serializers.ModelSerializer):
+    """
+    Nested user profile representation matching profiles!inner in CandidateRegistryTable.
+    """
+    class Meta:
+        model = User
+        fields = ("full_name", "email", "phone", "created_at", "role")
+
+
+class AdminCandidateListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Admin Candidate Registry table.
+    Includes nested profiles dictionary for full drop-in compatibility with Next.js AdminCandidateRow.
+    """
+    profiles = AdminCandidateProfileUserNestedSerializer(source="user", read_only=True)
+    user_id = serializers.UUIDField(source="user.id", read_only=True)
+
+    class Meta:
+        model = CandidateProfile
+        fields = (
+            "id",
+            "user_id",
+            "headline",
+            "phone",
+            "current_title",
+            "years_experience",
+            "experience_level",
+            "work_authorization",
+            "us_state",
+            "availability_status",
+            "profile_completeness",
+            "open_to_matching",
+            "profile_complete",
+            "resume_url",
+            "github_url",
+            "linkedin_url",
+            "source",
+            "created_at",
+            "updated_at",
+            "profiles",
+        )
+
+
+class AdminCreateCandidateSerializer(serializers.Serializer):
+    """
+    Serializer for single admin candidate creation.
+    Creates User (with unusable password) + CandidateProfile atomically.
+    """
+    full_name = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    fullName = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    email = serializers.EmailField(max_length=255)
+    phone = serializers.CharField(max_length=50, required=False, allow_null=True, allow_blank=True, default=None)
+    headline = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    current_title = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    currentTitle = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    years_experience = serializers.IntegerField(required=False, allow_null=True, min_value=0, default=None)
+    yearsExperience = serializers.IntegerField(required=False, allow_null=True, min_value=0, default=None)
+    skills = serializers.JSONField(required=False, default=list)
+    role_categories = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    roleCategories = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    experience_level = serializers.CharField(max_length=50, required=False, default="mid")
+    experienceLevel = serializers.CharField(max_length=50, required=False, default="mid")
+    salary_min = serializers.IntegerField(required=False, allow_null=True, min_value=0, default=None)
+    salaryMin = serializers.IntegerField(required=False, allow_null=True, min_value=0, default=None)
+    salary_max = serializers.IntegerField(required=False, allow_null=True, min_value=0, default=None)
+    salaryMax = serializers.IntegerField(required=False, allow_null=True, min_value=0, default=None)
+    work_authorization = serializers.CharField(max_length=50, required=False, default="international_remote")
+    workAuthorization = serializers.CharField(max_length=50, required=False, default="international_remote")
+    us_state = serializers.CharField(max_length=100, required=False, allow_blank=True, default="Remote")
+    usState = serializers.CharField(max_length=100, required=False, allow_blank=True, default="Remote")
+    location = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    preferred_work_type = serializers.CharField(max_length=50, required=False, default="remote")
+    preferredWorkType = serializers.CharField(max_length=50, required=False, default="remote")
+    availability_status = serializers.CharField(max_length=50, required=False, default="actively_looking")
+    availabilityStatus = serializers.CharField(max_length=50, required=False, default="actively_looking")
+    privacy_visibility = serializers.CharField(max_length=50, required=False, default="employers_only")
+    privacyVisibility = serializers.CharField(max_length=50, required=False, default="employers_only")
+    bio = serializers.CharField(required=False, allow_blank=True, default="")
+    github_url = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    githubUrl = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    portfolio_url = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    portfolioUrl = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    linkedin_url = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    linkedinUrl = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    resume_url = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    resumeUrl = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    source = serializers.CharField(max_length=50, required=False, default="people_prime")
+
+    def validate_email(self, value):
+        normalized = value.strip().lower()
+        if not normalized or "@" not in normalized:
+            raise serializers.ValidationError("A valid email is required.")
+        if User.objects.filter(email=normalized).exists():
+            raise serializers.ValidationError(f"An account with this email already exists.")
+        return normalized
+

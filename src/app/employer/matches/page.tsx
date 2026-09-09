@@ -7,7 +7,6 @@ import { EmployerShell } from "@/components/employer/EmployerShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
-import { createClient } from "@/lib/supabase/server";
 import { companiesApi, jobsApi, matchingApi } from "@/lib/api";
 import type { MatchStatus } from "@/lib/types";
 import { redirect } from "next/navigation";
@@ -32,45 +31,25 @@ export default async function EmployerMatchesPage({
   let company = null;
   try {
     company = await companiesApi.getMyCompany({ token });
-  } catch {
-    // Fall back to Supabase
-  }
-
-  const supabase = await createClient();
-
-  if (!company) {
-    const { data: sbCompany } = await supabase
-      .from("companies")
-      .select("*")
-      .eq("owner_id", profile.id)
-      .maybeSingle();
-    company = sbCompany;
+  } catch (err) {
+    console.error("Failed to load company from Django:", err);
   }
 
   if (!company || !isCompanyProfileComplete(company)) {
     redirect("/employer/onboarding");
   }
 
-  let jobs: Array<{ id: string; title: string }> | null = null;
+  let jobs: Array<{ id: string; title: string }> = [];
   try {
     const djangoJobs = await jobsApi.getMyJobs({ token });
     if (djangoJobs) {
       jobs = djangoJobs.map((j) => ({ id: j.id, title: j.title }));
     }
-  } catch {
-    // Fall back to Supabase
+  } catch (err) {
+    console.error("Failed to load employer jobs from Django:", err);
   }
 
-  if (!jobs) {
-    const { data: sbJobs } = await supabase
-      .from("jobs")
-      .select("id, title")
-      .eq("company_id", company.id)
-      .order("created_at", { ascending: false });
-    jobs = sbJobs;
-  }
-
-  let matches: any[] | null = null;
+  let matches: any[] = [];
   let totalCount = 0;
   let shortlistedCount = 0;
   let interestedCount = 0;
@@ -91,61 +70,8 @@ export default async function EmployerMatchesPage({
       }
       matches = filtered;
     }
-  } catch {
-    // Fall back to Supabase
-  }
-
-  if (!matches) {
-    let matchesQuery = supabase
-      .from("matches")
-      .select(
-        `
-        *,
-        jobs!inner ( id, title, posted_by ),
-        candidate_profiles (
-          id, headline, skills, experience_level, current_title, years_experience,
-          work_authorization, us_state, remote_preference, linkedin_url, github_url,
-          profiles ( full_name, email )
-        )
-      `,
-      )
-      .eq("jobs.posted_by", profile.id)
-      .eq("visible_to_employer", true)
-      .order("match_score", { ascending: false });
-
-    if (status && status !== "all" && matchStatuses.includes(status as MatchStatus)) {
-      matchesQuery = matchesQuery.eq("status", status);
-    }
-
-    if (job && job !== "all") {
-      matchesQuery = matchesQuery.eq("job_id", job);
-    }
-
-    const { data: sbMatches } = await matchesQuery;
-    matches = sbMatches;
-
-    const { count: sbTotalCount } = await supabase
-      .from("matches")
-      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-      .eq("jobs.posted_by", profile.id)
-      .eq("visible_to_employer", true);
-    totalCount = sbTotalCount ?? 0;
-
-    const { count: sbShortlistedCount } = await supabase
-      .from("matches")
-      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-      .eq("jobs.posted_by", profile.id)
-      .eq("visible_to_employer", true)
-      .eq("status", "employer_shortlisted");
-    shortlistedCount = sbShortlistedCount ?? 0;
-
-    const { count: sbInterestedCount } = await supabase
-      .from("matches")
-      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-      .eq("jobs.posted_by", profile.id)
-      .eq("visible_to_employer", true)
-      .eq("status", "candidate_interested");
-    interestedCount = sbInterestedCount ?? 0;
+  } catch (err) {
+    console.error("Failed to load employer matches from Django:", err);
   }
 
   return (
@@ -187,13 +113,13 @@ export default async function EmployerMatchesPage({
 
         <div className="mt-8">
           <Suspense fallback={<div className="h-20" />}>
-            <EmployerMatchesFilters jobs={jobs ?? []} />
+            <EmployerMatchesFilters jobs={jobs} />
           </Suspense>
         </div>
 
         <div className="mt-8 space-y-4">
-          {matches?.length ? (
-            ((matches as any[]) ?? []).map((match: any) => <EmployerMatchCard key={match.id} match={match} />)
+          {matches.length ? (
+            matches.map((match: any) => <EmployerMatchCard key={match.id} match={match} />)
           ) : (
             <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
               <p className="text-lg font-medium">No matches in this view</p>

@@ -11,7 +11,6 @@ import {
   isRoleCategory,
 } from "@/lib/matching-seats";
 import type { CandidateProfileInput } from "@/lib/types";
-import { createClient } from "@/lib/supabase/server";
 import { candidatesApi } from "@/lib/api";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -28,21 +27,11 @@ export default async function CandidateOnboardingPage() {
   let existing = null;
   try {
     existing = await candidatesApi.getMyProfile({ token });
-  } catch {
-    // Fall back to Supabase
+  } catch (err) {
+    console.error("Failed to load candidate profile from Django:", err);
   }
 
-  if (!existing) {
-    const supabase = await createClient();
-    const { data: sbExisting } = await supabase
-      .from("candidate_profiles")
-      .select("*")
-      .eq("user_id", profile.id)
-      .maybeSingle();
-    existing = sbExisting;
-  }
-
-  if (isCandidateProfileComplete(existing)) {
+  if (existing && isCandidateProfileComplete(existing)) {
     redirect("/candidate");
   }
 
