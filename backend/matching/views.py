@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -53,7 +54,7 @@ class MatchListView(APIView):
             queryset = Match.objects.select_related(
                 "job", "candidate_profile", "candidate_profile__user"
             ).filter(
-                job__posted_by=user,
+                Q(job__posted_by=user) | Q(job__company__owner=user),
                 visible_to_employer=True,
             )
             if status_param and status_param != "all":
@@ -125,7 +126,24 @@ class MatchDetailView(APIView):
         if match.status in [Match.Status.MUTUAL_FIT, Match.Status.REJECTED]:
             return Response({"error": "Match is already closed."}, status=status.HTTP_400_BAD_REQUEST)
 
+        user = request.user
+        is_admin = user.role == User.Role.ADMIN or user.is_staff or user.is_superuser
+        is_candidate_owner = match.candidate_profile.user == user
+        is_employer_owner = match.job.posted_by == user or match.job.company.owner == user
+
         requested_status = serializer.validated_data["status"]
+        if not is_admin:
+            if is_candidate_owner and requested_status not in [Match.Status.CANDIDATE_INTERESTED, Match.Status.REJECTED]:
+                return Response(
+                    {"error": "Candidate can only express interest or reject."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if is_employer_owner and requested_status not in [Match.Status.EMPLOYER_SHORTLISTED, Match.Status.REJECTED]:
+                return Response(
+                    {"error": "Employer can only shortlist or reject."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         previous_status = match.status
         final_status = resolve_match_status(previous_status, requested_status)
 

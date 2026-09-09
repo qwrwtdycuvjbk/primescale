@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionProfile } from "@/lib/auth";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { HandoffStatus } from "@/lib/types";
 import { handoffsApi } from "@/lib/api";
@@ -28,6 +28,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const token = await getAccessToken();
   const { id } = await params;
   const { status, notes } = (await request.json()) as {
     status?: HandoffStatus;
@@ -40,10 +41,14 @@ export async function PATCH(
 
   // Attempt Django REST API handoff update
   try {
-    const res = await handoffsApi.updateHandoff(id, {
-      status,
-      notes,
-    });
+    const res = await handoffsApi.updateHandoff(
+      id,
+      {
+        status,
+        notes,
+      },
+      { token },
+    );
     if (res && res.ok) {
       return NextResponse.json({ ok: true });
     }

@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { handoffsApi, matchingApi } from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
 
 export function startOfWeekIso(): string {
   const now = new Date();
@@ -60,9 +62,40 @@ export type AdminDashboardStats = AdminNavCounts & {
 
 /** Deduped per request so AdminShell + dashboard don't hit Supabase twice. */
 export const loadAdminNavCounts = cache(async (): Promise<AdminNavCounts> => {
+  let pendingMatchesCount: number | null = null;
+  let pendingHandoffsCount: number | null = null;
+
+  try {
+    const token = await getAccessToken();
+    const [matches, handoffs] = await Promise.all([
+      matchingApi.listMatches({ visible_to_employer: false }, { token }),
+      handoffsApi.listHandoffs("pending", { token }),
+    ]);
+    if (matches) {
+      pendingMatchesCount = matches.filter(
+        (m) => m.visible_to_employer === false && m.match_score >= MIN_MATCH_SCORE && m.status !== "rejected",
+      ).length;
+    }
+    if (handoffs) {
+      pendingHandoffsCount = handoffs.length;
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (pendingMatchesCount !== null && pendingHandoffsCount !== null) {
+    return {
+      pendingMatches: pendingMatchesCount,
+      pendingHandoffs: pendingHandoffsCount,
+    };
+  }
+
   const supabase = await getAdminClient();
   if (!supabase) {
-    return { pendingMatches: 0, pendingHandoffs: 0 };
+    return {
+      pendingMatches: pendingMatchesCount ?? 0,
+      pendingHandoffs: pendingHandoffsCount ?? 0,
+    };
   }
 
   const [{ count: pendingMatches }, { count: pendingHandoffs }] = await Promise.all([
@@ -79,8 +112,8 @@ export const loadAdminNavCounts = cache(async (): Promise<AdminNavCounts> => {
   ]);
 
   return {
-    pendingMatches: pendingMatches ?? 0,
-    pendingHandoffs: pendingHandoffs ?? 0,
+    pendingMatches: pendingMatchesCount ?? pendingMatches ?? 0,
+    pendingHandoffs: pendingHandoffsCount ?? pendingHandoffs ?? 0,
   };
 });
 

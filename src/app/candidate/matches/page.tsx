@@ -1,37 +1,63 @@
 import { CandidateMatchCard, EmptyMatches } from "@/components/candidate/CandidateMatchCard";
 import { CandidateShell } from "@/components/candidate/CandidateShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireRole } from "@/lib/auth";
+import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
 import { createClient } from "@/lib/supabase/server";
+import { candidatesApi, matchingApi } from "@/lib/api";
 import { redirect } from "next/navigation";
 
 export default async function CandidateMatchesPage() {
   const { profile } = await requireRole("candidate");
+  const token = await getAccessToken();
+
+  let candidateProfile = null;
+  try {
+    candidateProfile = await candidatesApi.getMyProfile({ token });
+  } catch {
+    // Fall back to Supabase
+  }
+
   const supabase = await createClient();
 
-  const { data: candidateProfile } = await supabase
-    .from("candidate_profiles")
-    .select("profile_complete, resume_url")
-    .eq("user_id", profile.id)
-    .maybeSingle();
+  if (!candidateProfile) {
+    const { data: sbCandidateProfile } = await supabase
+      .from("candidate_profiles")
+      .select("profile_complete, resume_url")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    candidateProfile = sbCandidateProfile;
+  }
 
   if (!isCandidateProfileComplete(candidateProfile)) {
     redirect("/candidate/onboarding");
   }
 
-  const { data: matches } = await supabase
-    .from("matches")
-    .select(
-      `
-      *,
-      jobs (
-        id, title, description, tech_stack, salary_range, experience_level, role_type,
-        companies ( name )
+  let matches: any[] | null = null;
+  try {
+    const djangoMatches = await matchingApi.listMatches({}, { token });
+    if (djangoMatches) {
+      matches = djangoMatches;
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!matches) {
+    const { data: sbMatches } = await supabase
+      .from("matches")
+      .select(
+        `
+        *,
+        jobs (
+          id, title, description, tech_stack, salary_range, experience_level, role_type,
+          companies ( name )
+        )
+      `,
       )
-    `,
-    )
-    .order("match_score", { ascending: false });
+      .order("match_score", { ascending: false });
+    matches = sbMatches;
+  }
 
   return (
     <CandidateShell name={profile.full_name} activePath="/candidate/matches">

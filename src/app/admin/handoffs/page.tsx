@@ -3,8 +3,9 @@ import { HandoffCard } from "@/components/admin/HandoffCard";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { AdminHandoffFilters } from "@/components/admin/AdminHandoffFilters";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, getAccessToken } from "@/lib/auth";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { handoffsApi } from "@/lib/api";
 import type { HandoffRequest, HandoffStatus, Profile } from "@/lib/types";
 
 const handoffStatuses: HandoffStatus[] = [
@@ -21,126 +22,147 @@ export default async function AdminHandoffsPage({
 }) {
   const { status } = await searchParams;
   const { profile } = await requireAdmin();
-  const supabase = await getAdminClient();
+  const token = await getAccessToken();
 
-  let query = supabase
-    .from("handoff_requests")
-    .select(
-      `
-      id,
-      match_id,
-      status,
-      notes,
-      created_at,
-      updated_at,
-      matches (
-        id,
-        candidate_profile_id,
-        job_id,
-        match_score,
-        match_reason,
-        status,
-        created_at,
-        updated_at,
-        jobs (
-          title,
-          salary_range,
-          posted_by,
-          companies ( name )
-        ),
-        candidate_profiles (
-          id,
-          headline,
-          skills,
-          linkedin_url,
-          github_url,
-          resume_url,
-          profiles ( full_name, email, phone )
-        )
-      )
-    `,
-    )
-    .order("created_at", { ascending: false })
-    .limit(50);
+  let handoffs: any[] | null = null;
+  let pendingCount = 0;
 
-  if (status && status !== "all" && handoffStatuses.includes(status as HandoffStatus)) {
-    query = query.eq("status", status);
+  try {
+    const allHandoffs = await handoffsApi.listHandoffs(undefined, { token });
+    if (allHandoffs) {
+      pendingCount = allHandoffs.filter((h) => h.status === "pending").length;
+      let filtered = allHandoffs;
+      if (status && status !== "all" && handoffStatuses.includes(status as HandoffStatus)) {
+        filtered = filtered.filter((h) => h.status === status);
+      }
+      handoffs = filtered;
+    }
+  } catch {
+    // Fall back to Supabase
   }
 
-  const { data: rawHandoffs } = await query;
-
-  const employerIds = [
-    ...new Set(
-      ((rawHandoffs as any[]) ?? [])
-        .map((handoff: any) => {
-          const matchRaw = handoff.matches;
-          const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
-          const jobs = match?.jobs as { posted_by?: string } | { posted_by?: string }[] | undefined;
-          const job = Array.isArray(jobs) ? jobs[0] : jobs;
-          return job?.posted_by;
-        })
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
-
-  const [{ data: employers }, { count: pendingCount }] = await Promise.all([
-    employerIds.length
-      ? supabase
-          .from("profiles")
-          .select("id, full_name, email, phone")
-          .in("id", employerIds)
-      : Promise.resolve({
-          data: [] as Pick<Profile, "id" | "full_name" | "email" | "phone">[],
-        }),
-    supabase
+  if (!handoffs) {
+    const supabase = await getAdminClient();
+    let query = supabase
       .from("handoff_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-  ]);
+      .select(
+        `
+        id,
+        match_id,
+        status,
+        notes,
+        created_at,
+        updated_at,
+        matches (
+          id,
+          candidate_profile_id,
+          job_id,
+          match_score,
+          match_reason,
+          status,
+          created_at,
+          updated_at,
+          jobs (
+            title,
+            salary_range,
+            posted_by,
+            companies ( name )
+          ),
+          candidate_profiles (
+            id,
+            headline,
+            skills,
+            linkedin_url,
+            github_url,
+            resume_url,
+            profiles ( full_name, email, phone )
+          )
+        )
+      `,
+      )
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  const employerById = new Map(((employers as any[]) ?? []).map((row: any) => [row.id, row]));
+    if (status && status !== "all" && handoffStatuses.includes(status as HandoffStatus)) {
+      query = query.eq("status", status);
+    }
 
-  const handoffs = ((rawHandoffs as any[]) ?? []).map((handoff: any) => {
-    const matchRaw = handoff.matches;
-    const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
-    const jobsRaw = match?.jobs;
-    const job = Array.isArray(jobsRaw) ? jobsRaw[0] : jobsRaw;
-    const employer = job?.posted_by
-      ? employerById.get(job.posted_by)
-      : undefined;
+    const { data: rawHandoffs } = await query;
 
-    return {
-      ...handoff,
-      matches: match
-        ? {
-            ...match,
-            jobs: job
-              ? {
-                  ...job,
-                  companies: Array.isArray(job.companies)
-                    ? job.companies[0]
-                    : job.companies,
-                }
-              : undefined,
-            candidate_profiles: (() => {
-              const candidateRaw = match.candidate_profiles;
-              const candidate = Array.isArray(candidateRaw)
-                ? candidateRaw[0]
-                : candidateRaw;
-              if (!candidate) return undefined;
-              const profileRaw = candidate.profiles;
-              return {
-                ...candidate,
-                profiles: Array.isArray(profileRaw) ? profileRaw[0] : profileRaw,
-              };
-            })(),
-          }
-        : undefined,
-      employer,
-    } as unknown as HandoffRequest & {
-      employer?: Pick<Profile, "full_name" | "email" | "phone">;
-    };
-  });
+    const employerIds = [
+      ...new Set(
+        ((rawHandoffs as any[]) ?? [])
+          .map((handoff: any) => {
+            const matchRaw = handoff.matches;
+            const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
+            const jobs = match?.jobs as { posted_by?: string } | { posted_by?: string }[] | undefined;
+            const job = Array.isArray(jobs) ? jobs[0] : jobs;
+            return job?.posted_by;
+          })
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    const [{ data: employers }, { count: sbPendingCount }] = await Promise.all([
+      employerIds.length
+        ? supabase
+            .from("profiles")
+            .select("id, full_name, email, phone")
+            .in("id", employerIds)
+        : Promise.resolve({
+            data: [] as Pick<Profile, "id" | "full_name" | "email" | "phone">[],
+          }),
+      supabase
+        .from("handoff_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
+
+    pendingCount = sbPendingCount ?? 0;
+    const employerById = new Map(((employers as any[]) ?? []).map((row: any) => [row.id, row]));
+
+    handoffs = ((rawHandoffs as any[]) ?? []).map((handoff: any) => {
+      const matchRaw = handoff.matches;
+      const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
+      const jobsRaw = match?.jobs;
+      const job = Array.isArray(jobsRaw) ? jobsRaw[0] : jobsRaw;
+      const employer = job?.posted_by
+        ? employerById.get(job.posted_by)
+        : undefined;
+
+      return {
+        ...handoff,
+        matches: match
+          ? {
+              ...match,
+              jobs: job
+                ? {
+                    ...job,
+                    companies: Array.isArray(job.companies)
+                      ? job.companies[0]
+                      : job.companies,
+                  }
+                : undefined,
+              candidate_profiles: (() => {
+                const candidateRaw = match.candidate_profiles;
+                const candidate = Array.isArray(candidateRaw)
+                  ? candidateRaw[0]
+                  : candidateRaw;
+                if (!candidate) return undefined;
+                const profileRaw = candidate.profiles;
+                return {
+                  ...candidate,
+                  profiles: Array.isArray(profileRaw) ? profileRaw[0] : profileRaw,
+                };
+              })(),
+            }
+          : undefined,
+        employer,
+      } as unknown as HandoffRequest & {
+        employer?: Pick<Profile, "full_name" | "email" | "phone">;
+      };
+    });
+  }
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/handoffs">

@@ -7,4 +7,5 @@ export * from "./jobs";
 export * from "./companies";
 export * from "./candidates";
 export * from "./matching";
+export * from "./handoffs";
 export * from "./auth";

@@ -8,6 +8,7 @@ export interface DjangoMatch {
   id: string;
   candidate_profile_id?: string;
   job_id?: string;
+  job_title?: string;
   match_score: number;
   skill_score?: number;
   experience_score?: number;
@@ -20,6 +21,7 @@ export interface DjangoMatch {
     | "mutual_fit"
     | "rejected";
   visible_to_employer: boolean;
+  recruiter_notified_at?: string | null;
   created_at?: string;
   updated_at?: string;
   job?: {
@@ -30,17 +32,55 @@ export interface DjangoMatch {
     salary_range?: string;
     experience_level?: string;
     role_type?: string;
+    work_type?: string;
+    company_name?: string;
+    company_logo_url?: string;
+    companies?: {
+      name?: string;
+      logo_url?: string;
+    };
     company?: {
       id?: string;
       name: string;
       logo_url?: string;
     };
   };
+  jobs?: {
+    id: string;
+    title: string;
+    description?: string;
+    tech_stack?: string[];
+    salary_range?: string;
+    experience_level?: string;
+    role_type?: string;
+    work_type?: string;
+    company_name?: string;
+    company_logo_url?: string;
+    companies?: {
+      name?: string;
+      logo_url?: string;
+    };
+  };
   candidate_profile?: {
     id: string;
+    full_name?: string;
+    email?: string;
     headline?: string;
+    current_title?: string;
+    years_experience?: number;
     skills?: string[];
     experience_level?: string;
+    work_authorization?: string;
+    us_state?: string;
+    remote_preference?: string;
+    linkedin_url?: string;
+    github_url?: string;
+    portfolio_url?: string;
+    resume_url?: string;
+    profiles?: {
+      full_name?: string;
+      email?: string;
+    };
     user?: {
       id?: string;
       full_name: string;
@@ -48,16 +88,27 @@ export interface DjangoMatch {
       phone?: string;
     };
   };
-}
-
-export interface DjangoHandoff {
-  id: string;
-  match: DjangoMatch;
-  status: "pending" | "contacted" | "intro_made" | "closed";
-  notes?: string | null;
-  notified_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  candidate_profiles?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    headline?: string;
+    current_title?: string;
+    years_experience?: number;
+    skills?: string[];
+    experience_level?: string;
+    work_authorization?: string;
+    us_state?: string;
+    remote_preference?: string;
+    linkedin_url?: string;
+    github_url?: string;
+    portfolio_url?: string;
+    resume_url?: string;
+    profiles?: {
+      full_name?: string;
+      email?: string;
+    };
+  };
 }
 
 export interface MatchFilterParams {
@@ -115,36 +166,5 @@ export const matchingApi = {
   },
 };
 
-export const handoffsApi = {
-  /**
-   * Admin-only queue of mutual fit handoffs
-   */
-  async listHandoffs(status?: string, options?: RequestOptions): Promise<DjangoHandoff[]> {
-    return djangoApi.get<DjangoHandoff[]>("/api/v1/handoffs/", {
-      ...options,
-      params: status ? { status } : undefined,
-    });
-  },
-
-  /**
-   * Admin-only get single handoff
-   */
-  async getHandoff(id: string, options?: RequestOptions): Promise<DjangoHandoff> {
-    return djangoApi.get<DjangoHandoff>(`/api/v1/handoffs/${id}/`, options);
-  },
-
-  /**
-   * Admin-only update handoff status & notes
-   */
-  async updateHandoff(
-    id: string,
-    data: { status?: "pending" | "contacted" | "intro_made" | "closed"; notes?: string },
-    options?: RequestOptions,
-  ): Promise<{ ok: boolean; handoff: DjangoHandoff }> {
-    return djangoApi.patch<{ ok: boolean; handoff: DjangoHandoff }>(
-      `/api/v1/handoffs/${id}/`,
-      data,
-      options,
-    );
-  },
-};
+export type { DjangoHandoff } from "./handoffs";
+export { handoffsApi } from "./handoffs";

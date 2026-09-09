@@ -6,7 +6,7 @@ import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
 import { createClient } from "@/lib/supabase/server";
-import { candidatesApi } from "@/lib/api";
+import { candidatesApi, matchingApi } from "@/lib/api";
 import { redirect } from "next/navigation";
 
 export default async function CandidateDashboardPage() {
@@ -35,26 +35,45 @@ export default async function CandidateDashboardPage() {
     redirect("/candidate/onboarding");
   }
 
-  const { data: matches } = await supabase
-    .from("matches")
-    .select(
-      `
-      *,
-      jobs (
-        id, title, description, tech_stack, salary_range, experience_level, role_type,
-        companies ( name )
+  let matches: any[] | null = null;
+  let matchCount = 0;
+  let interestedCount = 0;
+
+  try {
+    const djangoMatches = await matchingApi.listMatches({}, { token });
+    if (djangoMatches) {
+      matchCount = djangoMatches.length;
+      interestedCount = djangoMatches.filter((m) => m.status === "candidate_interested").length;
+      matches = djangoMatches.slice(0, 3);
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!matches) {
+    const { data: sbMatches } = await supabase
+      .from("matches")
+      .select(
+        `
+        *,
+        jobs (
+          id, title, description, tech_stack, salary_range, experience_level, role_type,
+          companies ( name )
+        )
+      `,
       )
-    `,
-    )
-    .order("match_score", { ascending: false })
-    .limit(3);
+      .order("match_score", { ascending: false })
+      .limit(3);
+    matches = sbMatches;
 
-  const { count: matchCount } = await supabase
-    .from("matches")
-    .select("*", { count: "exact", head: true });
+    const { count: sbMatchCount } = await supabase
+      .from("matches")
+      .select("*", { count: "exact", head: true });
+    matchCount = sbMatchCount ?? 0;
 
-  const interestedCount =
-    ((matches as any[]) ?? []).filter((m: any) => m.status === "candidate_interested").length ?? 0;
+    interestedCount =
+      ((matches as any[]) ?? []).filter((m: any) => m.status === "candidate_interested").length ?? 0;
+  }
 
   return (
     <CandidateShell name={profile.full_name} activePath="/candidate">

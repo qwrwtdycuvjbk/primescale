@@ -249,3 +249,60 @@ class MatchApiAndRunnerTests(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_candidate_isolation_and_unauthorized_patch(self):
+        candidate2_user = User.objects.create_user(
+            email="candidate2@test.com", password="Password123!", role=User.Role.CANDIDATE, full_name="Other Candidate"
+        )
+        match = Match.objects.create(
+            candidate_profile=self.candidate_profile,
+            job=self.job,
+            match_score=95,
+            status=Match.Status.SUGGESTED,
+            visible_to_employer=True,
+        )
+
+        # Candidate 2 cannot access Candidate 1's match
+        self._auth(candidate2_user)
+        res = self.client.get(f"/api/v1/matches/{match.id}/")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        res = self.client.patch(
+            f"/api/v1/matches/{match.id}/",
+            {"status": "candidate_interested"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_candidate_cannot_shortlist_or_modify_scores(self):
+        match = Match.objects.create(
+            candidate_profile=self.candidate_profile,
+            job=self.job,
+            match_score=95,
+            status=Match.Status.SUGGESTED,
+            visible_to_employer=True,
+        )
+
+        self._auth(self.candidate_user)
+        # Candidate tries to shortlist themselves -> 403
+        res = self.client.patch(
+            f"/api/v1/matches/{match.id}/",
+            {"status": "employer_shortlisted"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_duplicate_match_prevention(self):
+        Match.objects.create(
+            candidate_profile=self.candidate_profile,
+            job=self.job,
+            match_score=95,
+            status=Match.Status.SUGGESTED,
+        )
+        with self.assertRaises(Exception):
+            Match.objects.create(
+                candidate_profile=self.candidate_profile,
+                job=self.job,
+                match_score=90,
+                status=Match.Status.SUGGESTED,
+            )

@@ -99,15 +99,64 @@ class HandoffApiAndServiceTests(TestCase):
         self.assertEqual(handoff.status, "contacted")
         self.assertEqual(handoff.notes, "Reached out to Alice and Bob on Slack.")
 
-    def test_candidate_and_employer_forbidden(self):
+    def test_role_based_access_and_isolation(self):
         handoff = create_mutual_fit_handoff(str(self.match.id))
 
-        # Candidate cannot access handoff queue
+        candidate2_user = User.objects.create_user(
+            email="candidate2@test.com", password="Password123!", role=User.Role.CANDIDATE, full_name="Candidate 2"
+        )
+        employer2_user = User.objects.create_user(
+            email="employer2@test.com", password="Password123!", role=User.Role.EMPLOYER, full_name="Employer 2"
+        )
+
+        # Candidate 1 can see their own handoff
         self._auth(self.candidate_user)
         res = self.client.get("/api/v1/handoffs/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+
+        res = self.client.get(f"/api/v1/handoffs/{handoff.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Candidate 1 cannot modify handoff status (Admin only)
+        res = self.client.patch(
+            f"/api/v1/handoffs/{handoff.id}/",
+            {"status": "closed"},
+            format="json",
+        )
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Employer cannot access handoff queue
+        # Employer 1 can see their own job's handoff
         self._auth(self.employer_user)
         res = self.client.get("/api/v1/handoffs/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+
+        res = self.client.get(f"/api/v1/handoffs/{handoff.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Employer 1 cannot modify handoff status (Admin only)
+        res = self.client.patch(
+            f"/api/v1/handoffs/{handoff.id}/",
+            {"status": "closed"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Candidate 2 receives 0 handoffs and 403 on Candidate 1 handoff
+        self._auth(candidate2_user)
+        res = self.client.get("/api/v1/handoffs/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 0)
+
+        res = self.client.get(f"/api/v1/handoffs/{handoff.id}/")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Employer 2 receives 0 handoffs and 403 on Employer 1 handoff
+        self._auth(employer2_user)
+        res = self.client.get("/api/v1/handoffs/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 0)
+
+        res = self.client.get(f"/api/v1/handoffs/{handoff.id}/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)

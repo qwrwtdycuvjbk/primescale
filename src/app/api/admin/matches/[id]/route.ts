@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionProfile } from "@/lib/auth";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase/service";
 import { matchingApi } from "@/lib/api";
 
@@ -18,6 +18,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const token = await getAccessToken();
   const { id } = await params;
   const { action } = (await request.json()) as {
     action: "approve" | "reject";
@@ -29,7 +30,7 @@ export async function PATCH(
 
   // Attempt Django REST API admin match action
   try {
-    const res = await matchingApi.adminMatchAction(id, action);
+    const res = await matchingApi.adminMatchAction(id, action, { token });
     if (res && res.ok) {
       return NextResponse.json({ ok: true });
     }

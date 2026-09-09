@@ -8,7 +8,7 @@ import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
-import { companiesApi, jobsApi } from "@/lib/api";
+import { companiesApi, jobsApi, matchingApi } from "@/lib/api";
 import type { MatchStatus } from "@/lib/types";
 import { redirect } from "next/navigation";
 
@@ -70,52 +70,83 @@ export default async function EmployerMatchesPage({
     jobs = sbJobs;
   }
 
-  let matchesQuery = supabase
-    .from("matches")
-    .select(
-      `
-      *,
-      jobs!inner ( id, title, posted_by ),
-      candidate_profiles (
-        id, headline, skills, experience_level, current_title, years_experience,
-        work_authorization, us_state, remote_preference, linkedin_url, github_url,
-        profiles ( full_name, email )
+  let matches: any[] | null = null;
+  let totalCount = 0;
+  let shortlistedCount = 0;
+  let interestedCount = 0;
+
+  try {
+    const allEmployerMatches = await matchingApi.listMatches({}, { token });
+    if (allEmployerMatches) {
+      totalCount = allEmployerMatches.length;
+      shortlistedCount = allEmployerMatches.filter((m) => m.status === "employer_shortlisted").length;
+      interestedCount = allEmployerMatches.filter((m) => m.status === "candidate_interested").length;
+
+      let filtered = allEmployerMatches;
+      if (status && status !== "all" && matchStatuses.includes(status as MatchStatus)) {
+        filtered = filtered.filter((m) => m.status === status);
+      }
+      if (job && job !== "all") {
+        filtered = filtered.filter((m) => m.job_id === job || m.job?.id === job || m.jobs?.id === job);
+      }
+      matches = filtered;
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!matches) {
+    let matchesQuery = supabase
+      .from("matches")
+      .select(
+        `
+        *,
+        jobs!inner ( id, title, posted_by ),
+        candidate_profiles (
+          id, headline, skills, experience_level, current_title, years_experience,
+          work_authorization, us_state, remote_preference, linkedin_url, github_url,
+          profiles ( full_name, email )
+        )
+      `,
       )
-    `,
-    )
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true)
-    .order("match_score", { ascending: false });
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true)
+      .order("match_score", { ascending: false });
 
-  if (status && status !== "all" && matchStatuses.includes(status as MatchStatus)) {
-    matchesQuery = matchesQuery.eq("status", status);
+    if (status && status !== "all" && matchStatuses.includes(status as MatchStatus)) {
+      matchesQuery = matchesQuery.eq("status", status);
+    }
+
+    if (job && job !== "all") {
+      matchesQuery = matchesQuery.eq("job_id", job);
+    }
+
+    const { data: sbMatches } = await matchesQuery;
+    matches = sbMatches;
+
+    const { count: sbTotalCount } = await supabase
+      .from("matches")
+      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true);
+    totalCount = sbTotalCount ?? 0;
+
+    const { count: sbShortlistedCount } = await supabase
+      .from("matches")
+      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true)
+      .eq("status", "employer_shortlisted");
+    shortlistedCount = sbShortlistedCount ?? 0;
+
+    const { count: sbInterestedCount } = await supabase
+      .from("matches")
+      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true)
+      .eq("status", "candidate_interested");
+    interestedCount = sbInterestedCount ?? 0;
   }
-
-  if (job && job !== "all") {
-    matchesQuery = matchesQuery.eq("job_id", job);
-  }
-
-  const { data: matches } = await matchesQuery;
-
-  const { count: totalCount } = await supabase
-    .from("matches")
-    .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true);
-
-  const { count: shortlistedCount } = await supabase
-    .from("matches")
-    .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true)
-    .eq("status", "employer_shortlisted");
-
-  const { count: interestedCount } = await supabase
-    .from("matches")
-    .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true)
-    .eq("status", "candidate_interested");
 
   return (
     <EmployerShell name={profile.full_name} activePath="/employer/matches">

@@ -9,7 +9,7 @@ import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCompanyProfileComplete } from "@/lib/employer";
 import { createClient } from "@/lib/supabase/server";
-import { companiesApi, jobsApi } from "@/lib/api";
+import { companiesApi, jobsApi, matchingApi } from "@/lib/api";
 import type { Job } from "@/lib/types";
 import { redirect } from "next/navigation";
 
@@ -71,35 +71,55 @@ export default async function EmployerDashboardPage() {
     jobCount = sbJobCount ?? 0;
   }
 
-  const { data: matches } = await supabase
-    .from("matches")
-    .select(
-      `
-      *,
-      jobs!inner ( id, title, posted_by ),
-      candidate_profiles (
-        id, headline, skills, experience_level,
-        profiles ( full_name, email )
+  let matches: any[] | null = null;
+  let matchCount = 0;
+  let shortlistedCount = 0;
+
+  try {
+    const allEmployerMatches = await matchingApi.listMatches({}, { token });
+    if (allEmployerMatches) {
+      matchCount = allEmployerMatches.length;
+      shortlistedCount = allEmployerMatches.filter((m) => m.status === "employer_shortlisted").length;
+      matches = allEmployerMatches.slice(0, 3);
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!matches) {
+    const { data: sbMatches } = await supabase
+      .from("matches")
+      .select(
+        `
+        *,
+        jobs!inner ( id, title, posted_by ),
+        candidate_profiles (
+          id, headline, skills, experience_level,
+          profiles ( full_name, email )
+        )
+      `,
       )
-    `,
-    )
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true)
-    .order("match_score", { ascending: false })
-    .limit(3);
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true)
+      .order("match_score", { ascending: false })
+      .limit(3);
+    matches = sbMatches;
 
-  const { count: matchCount } = await supabase
-    .from("matches")
-    .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true);
+    const { count: sbMatchCount } = await supabase
+      .from("matches")
+      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true);
+    matchCount = sbMatchCount ?? 0;
 
-  const { count: shortlistedCount } = await supabase
-    .from("matches")
-    .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
-    .eq("jobs.posted_by", profile.id)
-    .eq("visible_to_employer", true)
-    .eq("status", "employer_shortlisted");
+    const { count: sbShortlistedCount } = await supabase
+      .from("matches")
+      .select("*, jobs!inner(posted_by)", { count: "exact", head: true })
+      .eq("jobs.posted_by", profile.id)
+      .eq("visible_to_employer", true)
+      .eq("status", "employer_shortlisted");
+    shortlistedCount = sbShortlistedCount ?? 0;
+  }
 
   const activeJobs =
     jobs?.filter((j) => j.status === "active").length ?? 0;

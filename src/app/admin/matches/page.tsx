@@ -1,50 +1,73 @@
 import { RecruiterMatchReviewCard } from "@/components/admin/RecruiterMatchReviewCard";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, getAccessToken } from "@/lib/auth";
 import { MIN_MATCH_SCORE } from "@/lib/recruiter-alert";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { matchingApi } from "@/lib/api";
 
 export default async function AdminMatchesPage() {
   const { profile } = await requireAdmin();
-  const supabase = await getAdminClient();
+  const token = await getAccessToken();
 
-  const [{ data: pendingMatches }, { count: pendingCount }] = await Promise.all([
-    supabase
-      .from("matches")
-      .select(
-        `
-      id,
-      candidate_profile_id,
-      job_id,
-      match_score,
-      match_reason,
-      status,
-      created_at,
-      updated_at,
-      jobs (
-        title,
-        companies ( name )
-      ),
-      candidate_profiles (
-        headline,
-        skills,
-        profiles ( full_name, email )
-      )
-    `,
-      )
-      .eq("visible_to_employer", false)
-      .gte("match_score", MIN_MATCH_SCORE)
-      .neq("status", "rejected")
-      .order("match_score", { ascending: false })
-      .limit(50),
-    supabase
-      .from("matches")
-      .select("id", { count: "exact", head: true })
-      .eq("visible_to_employer", false)
-      .gte("match_score", MIN_MATCH_SCORE)
-      .neq("status", "rejected"),
-  ]);
+  let pendingMatches: any[] | null = null;
+  let pendingCount = 0;
+
+  try {
+    const adminMatches = await matchingApi.listMatches({ visible_to_employer: false }, { token });
+    if (adminMatches) {
+      const filtered = adminMatches.filter(
+        (m) => m.visible_to_employer === false && m.match_score >= MIN_MATCH_SCORE && m.status !== "rejected",
+      );
+      pendingMatches = filtered.slice(0, 50);
+      pendingCount = filtered.length;
+    }
+  } catch {
+    // Fall back to Supabase
+  }
+
+  if (!pendingMatches) {
+    const supabase = await getAdminClient();
+    const [{ data: sbPendingMatches }, { count: sbPendingCount }] = await Promise.all([
+      supabase
+        .from("matches")
+        .select(
+          `
+        id,
+        candidate_profile_id,
+        job_id,
+        match_score,
+        match_reason,
+        status,
+        created_at,
+        updated_at,
+        jobs (
+          title,
+          companies ( name )
+        ),
+        candidate_profiles (
+          headline,
+          skills,
+          profiles ( full_name, email )
+        )
+      `,
+        )
+        .eq("visible_to_employer", false)
+        .gte("match_score", MIN_MATCH_SCORE)
+        .neq("status", "rejected")
+        .order("match_score", { ascending: false })
+        .limit(50),
+      supabase
+        .from("matches")
+        .select("id", { count: "exact", head: true })
+        .eq("visible_to_employer", false)
+        .gte("match_score", MIN_MATCH_SCORE)
+        .neq("status", "rejected"),
+    ]);
+
+    pendingMatches = sbPendingMatches;
+    pendingCount = sbPendingCount ?? 0;
+  }
 
   return (
     <AdminShell name={profile.full_name} activePath="/admin/matches">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createMutualFitHandoff, resolveMatchStatus } from "@/lib/handoff";
 import { notifyRecruitersCandidateInterested } from "@/lib/recruiter-alert";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import type { MatchStatus } from "@/lib/types";
 import { matchingApi } from "@/lib/api";
 
@@ -12,10 +13,8 @@ const allowedStatuses: MatchStatus[] = [
 ];
 
 export async function PATCH(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getSessionProfile();
+  const token = await getAccessToken();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,6 +34,7 @@ export async function PATCH(request: Request) {
     const res = await matchingApi.updateMatchStatus(
       matchId,
       status as "candidate_interested" | "employer_shortlisted" | "rejected",
+      { token },
     );
     if (res && res.ok) {
       return NextResponse.json({ ok: true, status: res.status });
@@ -42,6 +42,8 @@ export async function PATCH(request: Request) {
   } catch (apiErr) {
     // Fall back to Supabase database during progressive migration phase
   }
+
+  const supabase = await createClient();
 
   const { data: current, error: readError } = await supabase
     .from("matches")
