@@ -1,14 +1,6 @@
 import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
-import Link from "next/link";
-import { ArrowUpRight, Mail, Phone } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 import { appContainerClass } from "@/components/site/layout";
-
-const productLinks = [
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "The difference", href: "/#the-difference" },
-  { label: "For employers", href: "/#for-employers" },
-  { label: "For candidates", href: "/#for-candidates" },
-];
 
 const companyLinks = [
   {
@@ -55,35 +47,7 @@ export function SiteFooter() {
   return (
     <footer id="contact" className="noise relative overflow-hidden bg-ink text-ink-foreground">
       <div className={`relative pt-14 ${appContainerClass}`}>
-        <div className="flex flex-col gap-6 border-b border-white/10 pb-12 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
-              Ready when you are
-            </p>
-            <h2 className="display-headline mt-4 max-w-xl text-balance text-3xl sm:text-5xl">
-              Post free. Get a shortlist.{" "}
-              <span className="italic text-primary">Try before you hire.</span>
-            </h2>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/auth/employer/signup"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-            >
-              Post a role
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/auth/candidate/signup"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-3.5 text-sm font-semibold transition-colors hover:bg-white/5"
-            >
-              Get matched
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-10 py-12 lg:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="grid gap-10 py-12 lg:grid-cols-[1.4fr_1fr]">
           <div>
             <PeopleRemotelyLogo />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
@@ -117,24 +81,6 @@ export function SiteFooter() {
                   >
                     <c.icon className="h-4 w-4 text-primary" />
                     {c.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
-              Platform
-            </h4>
-            <ul className="mt-5 flex flex-col gap-3">
-              {productLinks.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-ink-foreground/90 transition-colors hover:text-primary"
-                  >
-                    {link.label}
                   </a>
                 </li>
               ))}

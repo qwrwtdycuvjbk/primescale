@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "companies",
     "candidates",
     "jobs",
+    "external_jobs",
     "matching",
     "handoffs",
     "applications",
@@ -174,7 +175,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
-CELERY_IMPORTS = ["matching.tasks", "accounts.tasks"]
+CELERY_IMPORTS = ["matching.tasks", "accounts.tasks", "external_jobs.tasks"]
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "True").lower() == "true"
 CELERY_TASK_EAGER_PROPAGATES = True
 
@@ -206,6 +207,17 @@ PEOPLE_PRIME_HANDOFF_EMAIL = os.getenv("PEOPLE_PRIME_HANDOFF_EMAIL", "remote@peo
 
 # OpenWeb Ninja Settings
 OPENWEB_NINJA_API_KEY = os.getenv("OPENWEB_NINJA_API_KEY", "")
+
+# External Job Provider API Configuration Placeholders (Optional for Phase 1)
+ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
+ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
+JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "")
+USAJOBS_API_KEY = os.getenv("USAJOBS_API_KEY", "")
+USAJOBS_USER_AGENT = os.getenv("USAJOBS_USER_AGENT", "")
+REMOTIVE_ENABLED = os.getenv("REMOTIVE_ENABLED", "False").lower() in ("true", "1")
+GREENHOUSE_ENABLED = os.getenv("GREENHOUSE_ENABLED", "False").lower() in ("true", "1")
+LEVER_ENABLED = os.getenv("LEVER_ENABLED", "False").lower() in ("true", "1")
+ASHBY_ENABLED = os.getenv("ASHBY_ENABLED", "False").lower() in ("true", "1")
 
 # Internationalization
 LANGUAGE_CODE = "en-us"

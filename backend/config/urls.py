@@ -14,6 +14,7 @@ api_v1_patterns = [
     path("companies/", include("companies.urls", namespace="companies")),
     path("candidates/", include("candidates.urls", namespace="candidates")),
     path("jobs/", include("jobs.urls", namespace="jobs")),
+    path("external-jobs/", include("external_jobs.urls", namespace="external_jobs")),
     path("matches/", include("matching.urls", namespace="matching")),
     path("handoffs/", include("handoffs.urls", namespace="handoffs")),
     path("applications/", include("applications.urls", namespace="applications")),

@@ -53,15 +53,15 @@ export function AuthForm({
     if (!showSignOut) return null;
 
     return (
-      <form action={signOutAuth} className="mt-3">
-        <input type="hidden" name="role" value={role} />
+      <div className="mt-3">
         <button
           type="submit"
+          formAction={signOutAuth}
           className="w-full text-center text-xs font-medium text-foreground underline-offset-2 hover:underline sm:text-sm"
         >
           Sign out and try again
         </button>
-      </form>
+      </div>
     );
   }
 

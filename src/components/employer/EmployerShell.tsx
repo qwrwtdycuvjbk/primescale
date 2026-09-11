@@ -23,7 +23,7 @@ export async function EmployerShell({
   async function signOut() {
     "use server";
     await clearDjangoAuthCookies();
-    redirect("/");
+    redirect("/auth/login");
   }
 
   return (

@@ -48,6 +48,13 @@ export default async function CandidateOnboardingPage() {
           : fromRow.roleCategories ?? [],
   };
 
+  async function signOut() {
+    "use server";
+    const { clearDjangoAuthCookies } = await import("@/lib/auth-actions");
+    await clearDjangoAuthCookies();
+    redirect("/auth/login");
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background">
@@ -55,7 +62,17 @@ export default async function CandidateOnboardingPage() {
           <Link href="/">
             <PeopleRemotelyLogo variant="dark" />
           </Link>
-          <p className="text-base text-muted-foreground">5-step onboarding</p>
+          <div className="flex items-center gap-6">
+            <p className="text-sm text-muted-foreground hidden sm:block">5-step onboarding</p>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
