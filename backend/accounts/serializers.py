@@ -269,9 +269,16 @@ class GoogleOAuthSerializer(serializers.Serializer):
         if user:
             # Existing migrated user or existing Django user:
             # Link Google identity without modifying original UUID.
+            update_fields = []
             if not user.email_verified:
                 user.email_verified = True
-                user.save(update_fields=["email_verified", "updated_at"])
+                update_fields.append("email_verified")
+            if not user.full_name and full_name:
+                user.full_name = full_name
+                update_fields.append("full_name")
+            if update_fields:
+                update_fields.append("updated_at")
+                user.save(update_fields=update_fields)
             return user, False
 
         # New user via Google OAuth

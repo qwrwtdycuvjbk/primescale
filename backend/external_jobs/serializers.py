@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from external_jobs.models import ExternalJob, ExternalJobSource
+from external_jobs.utils import classify_job_department
 
 
 class ExternalJobSourceSerializer(serializers.ModelSerializer):
@@ -16,6 +17,7 @@ class ExternalJobSourceSerializer(serializers.ModelSerializer):
 
 class ExternalJobSerializer(serializers.ModelSerializer):
     source_attribution = ExternalJobSourceSerializer(source="source", read_only=True)
+    department = serializers.SerializerMethodField()
 
     class Meta:
         model = ExternalJob
@@ -32,6 +34,7 @@ class ExternalJobSerializer(serializers.ModelSerializer):
             "city",
             "remote_type",
             "employment_type",
+            "department",
             "salary_min",
             "salary_max",
             "salary_currency",
@@ -46,3 +49,10 @@ class ExternalJobSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
         ]
+
+    def get_department(self, obj) -> str:
+        return classify_job_department(
+            title=obj.title,
+            tech_stack=obj.tech_stack,
+            description=obj.description,
+        )

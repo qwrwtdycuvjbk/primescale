@@ -31,11 +31,18 @@ export function AuthGoogleSection({
     }
 
     try {
-      const destination = encodeURIComponent(
-        mode === "signup" ? "/auth/redirect" : (next ?? "/auth/redirect"),
+      const destination =
+        mode === "signup" ? "/auth/redirect" : (next ?? "/auth/redirect");
+      const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback`);
+      const state = encodeURIComponent(
+        JSON.stringify({
+          next: destination,
+          role,
+        }),
       );
-      const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback?next=${destination}&role=${role}`);
-      const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&prompt=select_account`;
+      const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+        googleClientId,
+      )}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&state=${state}&prompt=select_account`;
       window.location.assign(googleOAuthUrl);
     } catch (err) {
       setError(

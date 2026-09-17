@@ -39,17 +39,30 @@ class ExternalJobListAPIView(generics.ListAPIView):
 
         params = self.request.query_params
 
-        # Country Filter (Defaults to US if requested or unspecified in common searches)
+        # Country Filter
         country = params.get("country")
         if country:
             queryset = queryset.filter(country__iexact=country)
 
-        # Remote Filter (Conservative: remote=true strictly filters for remote_type='REMOTE')
-        remote_param = params.get("remote", "").lower()
-        if remote_param in ("true", "1", "yes"):
-            queryset = queryset.filter(remote_type=ExternalJob.RemoteType.REMOTE)
-        elif remote_param in ("false", "0", "no"):
-            queryset = queryset.exclude(remote_type=ExternalJob.RemoteType.REMOTE)
+        exclude_country = params.get("exclude_country")
+        if exclude_country:
+            queryset = queryset.exclude(country__iexact=exclude_country)
+
+        # Remote Type Filter (e.g. remote_type=REMOTE,HYBRID or remote_type=REMOTE)
+        remote_type_param = params.get("remote_type") or params.get("remote_types")
+        if remote_type_param:
+            remote_types = [
+                t.strip().upper() for t in remote_type_param.split(",") if t.strip()
+            ]
+            if remote_types:
+                queryset = queryset.filter(remote_type__in=remote_types)
+        else:
+            # Remote Filter (Conservative: remote=true strictly filters for remote_type='REMOTE')
+            remote_param = params.get("remote", "").lower()
+            if remote_param in ("true", "1", "yes"):
+                queryset = queryset.filter(remote_type=ExternalJob.RemoteType.REMOTE)
+            elif remote_param in ("false", "0", "no"):
+                queryset = queryset.exclude(remote_type=ExternalJob.RemoteType.REMOTE)
 
         # Source Filter (provider_code or source_name)
         source = params.get("source")
@@ -62,6 +75,15 @@ class ExternalJobListAPIView(generics.ListAPIView):
         technology = params.get("technology")
         if technology:
             queryset = queryset.filter(tech_stack__icontains=technology)
+
+        # Department Filter
+        department = params.get("department")
+        if department:
+            from external_jobs.utils import get_department_q_filter
+
+            dept_q = get_department_q_filter(department)
+            if dept_q:
+                queryset = queryset.filter(dept_q)
 
         # Employment Type Filter
         employment_type = params.get("employment_type")

@@ -7,7 +7,9 @@ import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
 
 const navLinks = [
-  { label: "US Remote Jobs", href: "/#external-jobs" },
+  { label: "Jobs by Technology", href: "/#departments" },
+  { label: "Remote Jobs within US", href: "/#external-jobs" },
+  { label: "Remote / Hybrid", href: "/#remote-hybrid-jobs" },
 ];
 
 export function SiteHeader() {

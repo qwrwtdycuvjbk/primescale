@@ -3,6 +3,8 @@ from celery import shared_task
 from django.utils import timezone
 from external_jobs.models import ExternalJob, ExternalJobSource
 from external_jobs.providers.people_prime import sync_people_prime_jobs
+from external_jobs.providers.adzuna import sync_adzuna_jobs
+from external_jobs.providers.himalayas import sync_himalayas_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,24 @@ def sync_people_prime_jobs_task():
     """
     logger.info("Executing People Prime ATS synchronization task...")
     return sync_people_prime_jobs()
+
+
+@shared_task(name="external_jobs.tasks.sync_adzuna_jobs_task")
+def sync_adzuna_jobs_task():
+    """
+    Celery task to synchronize public jobs from Adzuna API.
+    """
+    logger.info("Executing Adzuna synchronization task...")
+    return sync_adzuna_jobs()
+
+
+@shared_task(name="external_jobs.tasks.sync_himalayas_jobs_task")
+def sync_himalayas_jobs_task(max_pages: int | None = None):
+    """
+    Celery task to synchronize public remote jobs from Himalayas Remote Jobs API.
+    """
+    logger.info("Executing Himalayas synchronization task...")
+    return sync_himalayas_jobs(max_pages=max_pages)
 
 
 @shared_task(bind=True, name="external_jobs.tasks.sync_external_jobs_task")
@@ -32,6 +52,12 @@ def sync_external_jobs_task(self, provider_code: str | None = None):
         if source.provider_code == "people_prime":
             logger.info("Dispatching People Prime sync...")
             results[source.provider_code] = sync_people_prime_jobs()
+        elif source.provider_code == "adzuna":
+            logger.info("Dispatching Adzuna sync...")
+            results[source.provider_code] = sync_adzuna_jobs()
+        elif source.provider_code == "himalayas":
+            logger.info("Dispatching Himalayas sync...")
+            results[source.provider_code] = sync_himalayas_jobs()
         else:
             logger.info(f"Skipping placeholder provider: {source.name} ({source.provider_code})")
             results[source.provider_code] = {

@@ -25,6 +25,7 @@ export interface ExternalJob {
   city?: string | null;
   remote_type: "REMOTE" | "HYBRID" | "ONSITE" | "UNKNOWN";
   employment_type?: string | null;
+  department?: string | null;
   salary_min?: number | null;
   salary_max?: number | null;
   salary_currency: string;
@@ -46,7 +47,11 @@ export interface ExternalJobFilterParams {
   search?: string;
   source?: string;
   remote?: boolean | string;
+  remote_type?: string;
+  remote_types?: string;
   country?: string;
+  exclude_country?: string;
+  department?: string;
   technology?: string;
   employment_type?: string;
 }

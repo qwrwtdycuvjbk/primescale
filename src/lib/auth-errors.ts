@@ -4,6 +4,9 @@ export const authErrorMessages: Record<string, string> = {
   profile_missing: "We could not set up your account profile.",
   missing_code:
     "OAuth provider did not return an authorization code. Please try again.",
+  oauth_cancelled: "Google sign-in was cancelled.",
+  oauth_failed: "Google sign-in could not be completed. Please try again or use email and password.",
+  oauth_misconfigured: "Google sign-in is currently unavailable. Please sign in with email and password.",
   validation: "Check the form and try again.",
   login_failed: "Could not sign you in.",
   signup_failed: "Could not create your account.",

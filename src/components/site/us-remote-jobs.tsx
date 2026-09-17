@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useTransition } from "react";
-import { ExternalLink, Search, Globe, Building2, MapPin, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Search, Globe, Sparkles, ChevronRight } from "lucide-react";
 import { externalJobsApi, ExternalJob } from "@/lib/api";
+import { ExternalJobCard } from "@/components/site/external-job-card";
 
 export function USRemoteJobs() {
   const [jobs, setJobs] = useState<ExternalJob[]>([]);
@@ -17,7 +19,7 @@ export function USRemoteJobs() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string | boolean> = {};
+      const params: Record<string, string | boolean | number> = {};
       if (search && search.trim()) {
         params.search = search.trim();
       }
@@ -25,17 +27,13 @@ export function USRemoteJobs() {
         params.technology = tech;
       }
 
-      // First try fetching US Remote jobs
-      let res = await externalJobsApi.listExternalJobs({
+      // Fetch verified US external jobs with REMOTE or HYBRID work modes
+      const res = await externalJobsApi.listExternalJobs({
         ...params,
         country: "US",
-        remote: "true",
+        remote_type: "REMOTE,HYBRID",
+        page_size: 100,
       });
-
-      // If no US Remote jobs are found, fallback to all active aggregated jobs
-      if (!res?.results || res.results.length === 0) {
-        res = await externalJobsApi.listExternalJobs(params);
-      }
 
       setJobs(res?.results || []);
       setTotalCount(res?.count || 0);
@@ -69,6 +67,9 @@ export function USRemoteJobs() {
     { label: "AI / ML", value: "ai" },
   ];
 
+  const displayedJobs = jobs.slice(0, 9);
+  const hasMoreJobs = jobs.length > 9 || totalCount > 9;
+
   return (
     <section id="external-jobs" className="border-t border-border bg-card/50 py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -80,7 +81,7 @@ export function USRemoteJobs() {
               <span>Aggregated Job Index</span>
             </div>
             <h2 className="display-headline mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              US Remote Jobs
+              Remote Jobs within US
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Explore verified remote technology opportunities aggregated from official job feeds across the United States.
@@ -115,10 +116,11 @@ export function USRemoteJobs() {
             <button
               key={cat.value}
               onClick={() => setSelectedTech(cat.value)}
-              className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${selectedTech === cat.value
+              className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                selectedTech === cat.value
                   ? "bg-foreground text-background"
                   : "border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground"
-                }`}
+              }`}
             >
               {cat.label}
             </button>
@@ -181,80 +183,30 @@ export function USRemoteJobs() {
           </div>
         )}
 
-        {/* Results Grid */}
+        {/* Results Grid - Initial 9 Maximum */}
         {!loading && !error && jobs.length > 0 && (
           <>
             <div className="mt-4 text-xs text-muted-foreground font-mono">
-              Showing {jobs.length} of {totalCount} verified external listings
+              Showing {displayedJobs.length} of {totalCount || jobs.length} verified external listings
             </div>
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {jobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="flex flex-col justify-between rounded-3xl border border-border bg-card p-6 transition-transform hover:-translate-y-0.5 hover:shadow-sm"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 max-w-[180px] sm:max-w-[200px]">
-                        <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate whitespace-nowrap">
-                            {job.location || `${job.country} · ${job.remote_type}`}
-                          </span>
-                        </span>
-                      </div>
-
-                      {/* Source Provider Attribution Badge */}
-                      <span className="shrink-0 rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        Source: {job.source_attribution?.attribution_name || job.source_name}
-                      </span>
-                    </div>
-
-                    <h3 className="mt-4 text-lg font-semibold line-clamp-2 leading-snug">
-                      {job.title}
-                    </h3>
-
-                    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                      <Building2 className="h-3.5 w-3.5" />
-                      <span>{job.company_name}</span>
-                    </div>
-
-                    {job.description && (
-                      <p className="mt-4 text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                        {job.description}
-                      </p>
-                    )}
-
-                    {/* Tech Stack Pills */}
-                    {job.tech_stack && job.tech_stack.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-1.5">
-                        {job.tech_stack.slice(0, 4).map((tech) => (
-                          <span
-                            key={tech}
-                            className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-mono text-muted-foreground"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Primary CTA Button: Open Original External Job URL in New Tab */}
-                  <div className="mt-6 border-t border-border pt-4">
-                    <a
-                      href={job.original_job_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <span>View Job on {job.source_attribution?.attribution_name || job.source_name}</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
-                </div>
+              {displayedJobs.map((job) => (
+                <ExternalJobCard key={job.id} job={job} />
               ))}
             </div>
+
+            {/* View More Navigates to Dedicated Page */}
+            {hasMoreJobs && (
+              <div className="mt-10 flex justify-center">
+                <Link
+                  href="/jobs/us-remote"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background px-8 py-3 text-sm font-semibold text-foreground shadow-sm transition-all hover:bg-muted hover:text-foreground active:scale-[0.98]"
+                >
+                  <span>View More</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
           </>
         )}
       </div>

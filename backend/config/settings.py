@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file if present
 load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
@@ -163,7 +164,10 @@ SIMPLE_JWT = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001",
+    ).split(",")
     if origin.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
@@ -208,9 +212,19 @@ PEOPLE_PRIME_HANDOFF_EMAIL = os.getenv("PEOPLE_PRIME_HANDOFF_EMAIL", "remote@peo
 # OpenWeb Ninja Settings
 OPENWEB_NINJA_API_KEY = os.getenv("OPENWEB_NINJA_API_KEY", "")
 
-# External Job Provider API Configuration Placeholders (Optional for Phase 1)
+# External Job Provider API Configuration
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
+ADZUNA_COUNTRY = os.getenv("ADZUNA_COUNTRY", "us")
+ADZUNA_SEARCH_WHAT = os.getenv(
+    "ADZUNA_SEARCH_WHAT",
+    "software developer|software engineer|python developer|django developer|react developer|javascript developer|full stack developer|backend developer|frontend developer",
+)
+ADZUNA_MAX_PAGES = int(os.getenv("ADZUNA_MAX_PAGES", "3"))
+ADZUNA_RESULTS_PER_PAGE = int(os.getenv("ADZUNA_RESULTS_PER_PAGE", "20"))
+HIMALAYAS_API_URL = os.getenv("HIMALAYAS_API_URL", "https://himalayas.app/jobs/api")
+HIMALAYAS_MAX_PAGES = int(os.getenv("HIMALAYAS_MAX_PAGES", "10")) if os.getenv("HIMALAYAS_MAX_PAGES") else None
+HIMALAYAS_PAGE_SIZE = int(os.getenv("HIMALAYAS_PAGE_SIZE", "20"))
 JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "")
 USAJOBS_API_KEY = os.getenv("USAJOBS_API_KEY", "")
 USAJOBS_USER_AGENT = os.getenv("USAJOBS_USER_AGENT", "")

@@ -328,3 +328,82 @@ class ObjectLevelPermissionTests(TestCase):
 
         # Admin accessing object -> True
         self.assertTrue(permission.has_object_permission(MockRequest(admin), None, obj))
+
+
+class GoogleOAuthApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.existing_candidate = User.objects.create_user(
+            email="existing.candidate@example.com",
+            password="StrongPassword123!",
+            full_name="Existing Candidate",
+            role=User.Role.CANDIDATE,
+            email_verified=False,
+        )
+
+    def test_google_oauth_new_candidate(self):
+        payload = {
+            "email": "new.google.user@example.com",
+            "full_name": "New Google User",
+            "role": "candidate",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(res.data["created"])
+        self.assertEqual(res.data["user"]["email"], "new.google.user@example.com")
+        self.assertEqual(res.data["user"]["role"], "candidate")
+        self.assertIn("access", res.data)
+        self.assertIn("refresh", res.data)
+        self.assertIn("access_token", res.cookies)
+
+        created_user = User.objects.get(email="new.google.user@example.com")
+        self.assertTrue(created_user.email_verified)
+        self.assertFalse(created_user.has_usable_password())
+
+    def test_google_oauth_new_employer(self):
+        payload = {
+            "email": "new.employer@example.com",
+            "full_name": "New Employer",
+            "role": "employer",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(res.data["created"])
+        self.assertEqual(res.data["user"]["role"], "employer")
+
+    def test_google_oauth_existing_user_linking(self):
+        initial_id = self.existing_candidate.id
+        initial_count = User.objects.count()
+
+        payload = {
+            "email": "existing.candidate@example.com",
+            "full_name": "Existing Candidate",
+            "role": "candidate",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(res.data["created"])
+        self.assertEqual(res.data["user"]["id"], str(initial_id))
+        self.assertEqual(User.objects.count(), initial_count)
+
+        self.existing_candidate.refresh_from_db()
+        self.assertTrue(self.existing_candidate.email_verified)
+        self.assertTrue(self.existing_candidate.has_usable_password())
+
+    def test_google_oauth_invalid_email(self):
+        payload = {
+            "email": "not-an-email",
+            "role": "candidate",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", res.data)
+
+    def test_google_oauth_invalid_role(self):
+        payload = {
+            "email": "test@example.com",
+            "role": "admin",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
