@@ -3,12 +3,15 @@
 import React from "react";
 import { ExternalLink, Building2, MapPin } from "lucide-react";
 import { ExternalJob } from "@/lib/api";
+import { stripHtml } from "@/lib/utils";
 
 interface ExternalJobCardProps {
   job: ExternalJob;
 }
 
 export function ExternalJobCard({ job }: ExternalJobCardProps) {
+  const cleanDescription = stripHtml(job.description);
+
   return (
     <div className="flex flex-col justify-between rounded-3xl border border-border bg-card p-6 transition-transform hover:-translate-y-0.5 hover:shadow-sm">
       <div>
@@ -49,9 +52,9 @@ export function ExternalJobCard({ job }: ExternalJobCardProps) {
           )}
         </div>
 
-        {job.description && (
+        {cleanDescription && (
           <p className="mt-4 text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-            {job.description}
+            {cleanDescription}
           </p>
         )}
 

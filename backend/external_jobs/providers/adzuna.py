@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from external_jobs.models import ExternalJobSource, ExternalJob
-from external_jobs.utils import classify_remote_type, generate_dedup_hash
+from external_jobs.utils import classify_remote_type, generate_dedup_hash, clean_html_text
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,8 @@ DEFAULT_RESULTS_PER_PAGE = 20
 
 
 def clean_html(raw_text: str | None) -> str:
-    """Strip basic HTML tags often returned in Adzuna snippets."""
-    if not raw_text:
-        return ""
-    return re.sub(r"<[^>]+>", "", raw_text).strip()
+    """Strip basic HTML tags and unescape entities often returned in Adzuna snippets."""
+    return clean_html_text(raw_text)
 
 
 def parse_salary(val) -> Decimal | None:

@@ -1,6 +1,24 @@
 import hashlib
+import html
 import re
 from external_jobs.models import ExternalJob
+
+
+def clean_html_text(raw_text: str | None) -> str:
+    """
+    Strips HTML tags, decodes HTML entities, and normalizes whitespaces for job descriptions.
+    """
+    if not raw_text:
+        return ""
+    text = html.unescape(raw_text)
+    text = re.sub(r"<style[^>]*>[\s\S]*?</style>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<script[^>]*>[\s\S]*?</script>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<br\s*/?>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"</p\s*>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"</li>\s*>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
 def classify_remote_type(

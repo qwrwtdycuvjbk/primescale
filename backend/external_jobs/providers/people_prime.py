@@ -2,7 +2,7 @@ import logging
 import requests
 from django.utils import timezone
 from external_jobs.models import ExternalJobSource, ExternalJob
-from external_jobs.utils import classify_remote_type, generate_dedup_hash
+from external_jobs.utils import classify_remote_type, generate_dedup_hash, clean_html_text
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ def sync_people_prime_jobs():
                 successfully_processed_ext_ids.add(ext_id)
 
                 title = (item.get("position") or "Position Unspecified").strip()
-                description = (item.get("description") or "").strip()
+                description = clean_html_text(item.get("description") or "")
                 city = item.get("city")
                 state = item.get("state")
                 location = item.get("location")
