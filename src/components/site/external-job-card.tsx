@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { ExternalLink, Building2, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Building2, MapPin } from "lucide-react";
 import { ExternalJob } from "@/lib/api";
 import { stripHtml } from "@/lib/utils";
 
@@ -37,7 +38,12 @@ export function ExternalJobCard({ job }: ExternalJobCardProps) {
         </div>
 
         <h3 className="mt-4 text-lg font-semibold line-clamp-2 leading-snug">
-          {job.title}
+          <Link
+            href={`/jobs/external/${job.id}`}
+            className="hover:text-primary transition-colors"
+          >
+            {job.title}
+          </Link>
         </h3>
 
         <div className="mt-2 flex items-center justify-between gap-2">
@@ -73,17 +79,15 @@ export function ExternalJobCard({ job }: ExternalJobCardProps) {
         )}
       </div>
 
-      {/* Primary CTA Button: Open Original External Job URL in New Tab */}
+      {/* Primary CTA Button: Navigate to Internal External Job Details Page */}
       <div className="mt-6 border-t border-border pt-4">
-        <a
-          href={job.original_job_url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={`/jobs/external/${job.id}`}
           className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <span>View Job on {job.source_attribution?.attribution_name || job.source_name}</span>
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
+          <span>View Job Details</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from external_jobs.models import ExternalJob, ExternalJobSource
-from external_jobs.utils import classify_job_department
+from external_jobs.utils import classify_job_department, html_to_plain_text
 
 
 class ExternalJobSourceSerializer(serializers.ModelSerializer):
@@ -18,6 +18,8 @@ class ExternalJobSourceSerializer(serializers.ModelSerializer):
 class ExternalJobSerializer(serializers.ModelSerializer):
     source_attribution = ExternalJobSourceSerializer(source="source", read_only=True)
     department = serializers.SerializerMethodField()
+    company_logo = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
 
     class Meta:
         model = ExternalJob
@@ -27,6 +29,7 @@ class ExternalJobSerializer(serializers.ModelSerializer):
             "title",
             "company_name",
             "company_website",
+            "company_logo",
             "description",
             "location",
             "country",
@@ -56,3 +59,16 @@ class ExternalJobSerializer(serializers.ModelSerializer):
             tech_stack=obj.tech_stack,
             description=obj.description,
         )
+
+    def get_description(self, obj) -> str:
+        return html_to_plain_text(obj.description)
+
+    def get_company_logo(self, obj) -> str | None:
+        if not isinstance(obj.raw_metadata, dict):
+            return None
+        logo = obj.raw_metadata.get("company_logo") or obj.raw_metadata.get("company_logo_url")
+        if isinstance(logo, str):
+            logo_str = logo.strip()
+            if logo_str.startswith("http://") or logo_str.startswith("https://"):
+                return logo_str
+        return None

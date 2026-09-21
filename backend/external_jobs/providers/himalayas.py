@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from external_jobs.models import ExternalJobSource, ExternalJob
-from external_jobs.utils import generate_dedup_hash, clean_html_text
+from external_jobs.utils import generate_dedup_hash, clean_html_text, html_to_plain_text
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +260,7 @@ def sync_himalayas_jobs(
                 raw_desc = (
                     item.get("description") or item.get("excerpt") or ""
                 ).strip()
-                description = clean_html_text(raw_desc)
+                description = html_to_plain_text(raw_desc)
 
                 location_restrictions = item.get("locationRestrictions") or []
                 country, location_str = extract_himalayas_country(location_restrictions)

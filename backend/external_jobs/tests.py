@@ -8,7 +8,12 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from external_jobs.models import ExternalJob, ExternalJobSource
-from external_jobs.utils import classify_remote_type, generate_dedup_hash
+from external_jobs.utils import (
+    classify_remote_type,
+    generate_dedup_hash,
+    clean_html_text,
+    html_to_plain_text,
+)
 from external_jobs.providers.people_prime import (
     sync_people_prime_jobs,
     extract_country,
@@ -1674,4 +1679,285 @@ class HimalayasSyncTests(TestCase):
         stale_job.refresh_from_db()
         self.assertFalse(stale_job.is_active)
         self.assertEqual(stale_job.status, ExternalJob.Status.INACTIVE)
+
+
+class ExternalJobDetailAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.source = ExternalJobSource.objects.create(
+            name="Himalayas",
+            provider_code="himalayas",
+            attribution_name="Himalayas",
+            attribution_url="https://himalayas.app",
+        )
+        self.active_job = ExternalJob.objects.create(
+            source=self.source,
+            external_job_id="job-active-123",
+            title="Senior Backend Engineer",
+            company_name="Acme Corp",
+            company_website="https://acme.com",
+            description="Complete full description for the job posting.",
+            location="San Francisco, CA",
+            country="US",
+            state="CA",
+            city="San Francisco",
+            remote_type=ExternalJob.RemoteType.REMOTE,
+            employment_type="Full-time",
+            salary_min=120000,
+            salary_max=160000,
+            salary_currency="USD",
+            tech_stack=["Python", "Django", "PostgreSQL"],
+            original_job_url="https://himalayas.app/jobs/acme/senior-backend-engineer",
+            source_job_url="https://himalayas.app/jobs/acme/senior-backend-engineer",
+            source_name="Himalayas",
+            is_active=True,
+            status=ExternalJob.Status.ACTIVE,
+            dedup_hash="abc123deduphash",
+            raw_metadata={
+                "company_logo": "https://assets.himalayas.app/acme_logo.png",
+                "secret_provider_key": "PRIVATE_SECRET_DO_NOT_EXPOSE",
+                "internal_sync_id": 9999,
+            },
+        )
+        self.inactive_job = ExternalJob.objects.create(
+            source=self.source,
+            external_job_id="job-inactive-456",
+            title="Inactive Job",
+            company_name="Old Co",
+            description="Inactive description",
+            original_job_url="https://himalayas.app/jobs/old",
+            source_name="Himalayas",
+            is_active=False,
+            status=ExternalJob.Status.INACTIVE,
+        )
+
+    def test_active_job_detail_returns_200_and_public_fields(self):
+        url = f"/api/v1/external-jobs/{self.active_job.id}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["id"], str(self.active_job.id))
+        self.assertEqual(data["title"], "Senior Backend Engineer")
+        self.assertEqual(data["company_name"], "Acme Corp")
+        self.assertEqual(data["company_website"], "https://acme.com")
+        self.assertEqual(data["description"], "Complete full description for the job posting.")
+        self.assertEqual(data["location"], "San Francisco, CA")
+        self.assertEqual(data["country"], "US")
+        self.assertEqual(data["remote_type"], "REMOTE")
+        self.assertEqual(data["employment_type"], "Full-time")
+        self.assertEqual(data["department"], "Software Engineering")
+        self.assertEqual(float(data["salary_min"]), 120000.0)
+        self.assertEqual(float(data["salary_max"]), 160000.0)
+        self.assertEqual(data["salary_currency"], "USD")
+        self.assertEqual(data["tech_stack"], ["Python", "Django", "PostgreSQL"])
+        self.assertEqual(data["original_job_url"], "https://himalayas.app/jobs/acme/senior-backend-engineer")
+        self.assertEqual(data["source_name"], "Himalayas")
+        self.assertIsNotNone(data["source_attribution"])
+        self.assertEqual(data["source_attribution"]["attribution_name"], "Himalayas")
+        self.assertEqual(data["source_attribution"]["attribution_url"], "https://himalayas.app")
+
+    def test_company_logo_extraction(self):
+        url = f"/api/v1/external-jobs/{self.active_job.id}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["company_logo"], "https://assets.himalayas.app/acme_logo.png")
+
+    def test_company_logo_invalid_or_missing_returns_null(self):
+        no_logo_job = ExternalJob.objects.create(
+            source=self.source,
+            external_job_id="job-nologo",
+            title="Frontend Dev",
+            company_name="NoLogo Co",
+            description="Desc",
+            original_job_url="https://himalayas.app/jobs/nologo",
+            source_name="Himalayas",
+            is_active=True,
+            status=ExternalJob.Status.ACTIVE,
+            raw_metadata={"company_logo": "not-a-valid-url"},
+        )
+        url = f"/api/v1/external-jobs/{no_logo_job.id}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.json()["company_logo"])
+
+    def test_raw_metadata_and_internal_fields_not_exposed(self):
+        url = f"/api/v1/external-jobs/{self.active_job.id}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+
+        # Critical security assertions
+        self.assertNotIn("raw_metadata", data)
+        self.assertNotIn("dedup_hash", data)
+        self.assertNotIn("secret_provider_key", data)
+        self.assertNotIn("internal_sync_id", data)
+
+    def test_inactive_job_returns_404(self):
+        url = f"/api/v1/external-jobs/{self.inactive_job.id}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_nonexistent_uuid_returns_404(self):
+        import uuid
+        random_uuid = uuid.uuid4()
+        url = f"/api/v1/external-jobs/{random_uuid}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_list_endpoint_still_functional(self):
+        url = "/api/v1/external-jobs/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("results", data)
+        self.assertIn("count", data)
+        # Verify inactive job is not in list results
+        result_ids = [r["id"] for r in data["results"]]
+        self.assertIn(str(self.active_job.id), result_ids)
+        self.assertNotIn(str(self.inactive_job.id), result_ids)
+
+
+class HimalayasDescriptionNormalizationTests(TestCase):
+    def test_01_plain_text_remains_plain_text(self):
+        input_text = "Python developer with Django experience."
+        self.assertEqual(html_to_plain_text(input_text), "Python developer with Django experience.")
+
+    def test_02_paragraph_html_converted(self):
+        raw_html = "<p>Paragraph one.</p><p>Paragraph two.</p>"
+        result = html_to_plain_text(raw_html)
+        self.assertEqual(result, "Paragraph one.\n\nParagraph two.")
+
+    def test_03_headings_converted(self):
+        raw_html = "<h3>Requirements</h3>"
+        self.assertEqual(html_to_plain_text(raw_html), "Requirements")
+
+    def test_04_unordered_lists_converted(self):
+        raw_html = "<ul><li>Python</li><li>Django</li></ul>"
+        result = html_to_plain_text(raw_html)
+        self.assertIn("• Python", result)
+        self.assertIn("• Django", result)
+        self.assertNotIn("<ul>", result)
+        self.assertNotIn("<li>", result)
+
+    def test_05_ordered_lists_converted(self):
+        raw_html = "<ol><li>First step</li><li>Second step</li></ol>"
+        result = html_to_plain_text(raw_html)
+        self.assertIn("1. First step", result)
+        self.assertIn("2. Second step", result)
+        self.assertNotIn("<ol>", result)
+        self.assertNotIn("<li>", result)
+
+    def test_06_inline_formatting_tags_removed_text_retained(self):
+        raw_html = "<strong>Strong</strong> and <b>Bold</b> and <em>Emphasized</em> and <i>Italic</i>."
+        result = html_to_plain_text(raw_html)
+        self.assertEqual(result, "Strong and Bold and Emphasized and Italic.")
+        self.assertNotIn("<strong>", result)
+        self.assertNotIn("<b>", result)
+        self.assertNotIn("<em>", result)
+        self.assertNotIn("<i>", result)
+
+    def test_07_br_tag_becomes_line_break(self):
+        raw_html = "Line one<br>Line two<br/>Line three<br />Line four"
+        result = html_to_plain_text(raw_html)
+        self.assertEqual(result, "Line one\nLine two\nLine three\nLine four")
+        self.assertNotIn("<br", result)
+
+    def test_08_html_entities_decoded(self):
+        raw_html = "Join &amp; grow &quot;today&quot; &apos;fast&apos; &nbsp; &mdash; 100&percnt; remote!"
+        result = html_to_plain_text(raw_html)
+        self.assertEqual(result, 'Join & grow "today" \'fast\' — 100% remote!')
+
+    def test_09_links_preserve_visible_text(self):
+        raw_html = '<a href="https://himalayas.app/companies/guidehealth">Guidehealth</a>'
+        result = html_to_plain_text(raw_html)
+        self.assertEqual(result, "Guidehealth")
+        self.assertNotIn("<a", result)
+        self.assertNotIn("href", result)
+
+    def test_10_empty_description_remains_empty(self):
+        self.assertEqual(html_to_plain_text(""), "")
+        self.assertEqual(html_to_plain_text(None), "")
+        self.assertEqual(html_to_plain_text("   "), "")
+
+    def test_11_description_containing_no_html_not_damaged(self):
+        clean_text = "We are seeking a senior engineer to lead our distributed team.\n\nKey skills: Python, Django, PostgreSQL."
+        self.assertEqual(html_to_plain_text(clean_text), clean_text)
+
+    def test_12_realistic_himalayas_description_converted(self):
+        raw_html = """
+        <p>Introduction text here.</p>
+        <h3>What you'll be doing</h3>
+        <ul>
+            <li><strong>Requirement one</strong>: Build scalable APIs with <a href="https://python.org">Python</a>.</li>
+            <li>Requirement two<br>Additional sub-detail.</li>
+            <li>Requirement three</li>
+        </ul>
+        """
+        result = html_to_plain_text(raw_html)
+        self.assertIn("Introduction text here.", result)
+        self.assertIn("What you'll be doing", result)
+        self.assertIn("• Requirement one: Build scalable APIs with Python.", result)
+        self.assertIn("• Requirement two\nAdditional sub-detail.", result)
+        self.assertIn("• Requirement three", result)
+
+    def test_13_final_normalized_description_contains_no_html_tags(self):
+        raw_html = """
+        <div>
+            <h1>Main Title</h1>
+            <h2>Sub Heading</h2>
+            <h3>Section</h3>
+            <p>A paragraph with <strong>bold</strong>, <em>italic</em>, and <a href="https://example.com">a link</a>.<br/></p>
+            <ul>
+                <li>Bullet item</li>
+            </ul>
+            <ol>
+                <li>Numbered item</li>
+            </ol>
+        </div>
+        """
+        result = html_to_plain_text(raw_html)
+        forbidden_tag_prefixes = [
+            "<p", "</p", "<div", "</div", "<h1", "<h2", "<h3", "<h4", "<h5", "<h6",
+            "<ul", "</ul", "<ol", "</ol", "<li", "</li", "<a", "</a", "<strong", "</strong",
+            "<em", "</em", "<b", "</b", "<i", "</i", "<br", "<hr", "<span", "</span"
+        ]
+        for tag in forbidden_tag_prefixes:
+            self.assertNotIn(tag, result.lower())
+
+    @patch("requests.Session.get")
+    def test_himalayas_sync_stores_normalized_plain_text_description(self, mock_get):
+        from external_jobs.providers.himalayas import sync_himalayas_jobs, get_or_create_himalayas_source
+
+        source = get_or_create_himalayas_source()
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
+            "jobs": [
+                {
+                    "title": "Fullstack Developer",
+                    "companyName": "TechCo",
+                    "guid": "himalayas-clean-desc-job",
+                    "applicationLink": "https://himalayas.app/jobs/techco/fullstack",
+                    "description": "<div><p>We are looking for a developer.</p><ul><li>React</li><li>Django</li></ul></div>",
+                }
+            ],
+            "nextCursor": None,
+        }
+        mock_get.return_value = mock_response
+
+        result = sync_himalayas_jobs()
+        self.assertTrue(result["success"])
+
+        job = ExternalJob.objects.get(external_job_id="himalayas-clean-desc-job", source=source)
+        self.assertNotIn("<div>", job.description)
+        self.assertNotIn("<p>", job.description)
+        self.assertNotIn("<ul>", job.description)
+        self.assertNotIn("<li>", job.description)
+        self.assertIn("We are looking for a developer.", job.description)
+        self.assertIn("• React", job.description)
+        self.assertIn("• Django", job.description)
+
+
 

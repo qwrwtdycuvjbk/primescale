@@ -21,6 +21,118 @@ def clean_html_text(raw_text: str | None) -> str:
     return text
 
 
+from html.parser import HTMLParser
+
+
+class HTMLToPlainTextParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.result = []
+        self.list_stack = []
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag in ("script", "style"):
+            pass
+        elif tag in ("p", "div", "section", "article", "header", "footer"):
+            self.result.append("\n\n")
+        elif tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            self.result.append("\n\n")
+        elif tag in ("br", "hr"):
+            self.result.append("\n")
+        elif tag == "ul":
+            self.list_stack.append(["ul", 0])
+            self.result.append("\n")
+        elif tag == "ol":
+            self.list_stack.append(["ol", 1])
+            self.result.append("\n")
+        elif tag == "li":
+            if self.list_stack:
+                list_type, val = self.list_stack[-1]
+                if list_type == "ol":
+                    self.result.append(f"\n{val}. ")
+                    self.list_stack[-1][1] = val + 1
+                else:
+                    self.result.append("\n• ")
+            else:
+                self.result.append("\n• ")
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in ("p", "div", "section", "article", "header", "footer"):
+            self.result.append("\n\n")
+        elif tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            self.result.append("\n\n")
+        elif tag in ("ul", "ol"):
+            if self.list_stack:
+                self.list_stack.pop()
+            self.result.append("\n\n")
+        elif tag == "li":
+            self.result.append("\n")
+
+    def handle_data(self, data):
+        self.result.append(data)
+
+    def get_text(self):
+        raw = "".join(self.result)
+        lines = []
+        for line in raw.split("\n"):
+            cleaned_line = re.sub(r"[ \t]+", " ", line).strip()
+            if cleaned_line:
+                lines.append(cleaned_line)
+            elif lines and lines[-1] != "":
+                lines.append("")
+        return "\n".join(lines).strip()
+
+
+def html_to_plain_text(raw_html: str | None) -> str:
+    """
+    Converts HTML-formatted text into clean, readable plain text.
+    Removes HTML tags, decodes HTML entities, preserves paragraphs, headings,
+    unordered/ordered lists, and normalizes whitespace without altering content or wording.
+    """
+    if not raw_html or not isinstance(raw_html, str):
+        return ""
+    text = raw_html.strip()
+    if not text:
+        return ""
+
+    # Decode escaped HTML if present (e.g. &lt;p&gt;...&lt;/p&gt;)
+    if "&lt;" in text and "&gt;" in text:
+        text = html.unescape(text)
+
+    # Strip script and style blocks
+    text = re.sub(r"<style[^>]*>[\s\S]*?</style>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<script[^>]*>[\s\S]*?</script>", "", text, flags=re.IGNORECASE)
+
+    # If no HTML tags exist at all, unescape entities, normalize non-breaking spaces, and return cleanly
+    if not re.search(r"<[^>]+>", text):
+        cleaned = html.unescape(text).replace("\xa0", " ")
+        return re.sub(r"[ \t]+", " ", cleaned).strip()
+
+    parser = HTMLToPlainTextParser()
+    try:
+        parser.feed(text)
+        parser.close()
+        out = parser.get_text()
+    except Exception:
+        out = re.sub(r"<[^>]+>", "", text)
+        out = html.unescape(out).strip()
+
+    # Ensure no leftover HTML tags or entities remain
+    out = re.sub(r"<[^>]+>", "", out)
+    out = html.unescape(out).replace("\xa0", " ")
+
+    lines = []
+    for line in out.split("\n"):
+        cleaned_line = re.sub(r"[ \t\xa0]+", " ", line).strip()
+        if cleaned_line:
+            lines.append(cleaned_line)
+        elif lines and lines[-1] != "":
+            lines.append("")
+    return "\n".join(lines).strip()
+
+
 def classify_remote_type(
     location_str: str | None = None, raw_remote_str: str | None = None
 ) -> str:

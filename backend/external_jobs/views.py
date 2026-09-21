@@ -103,3 +103,16 @@ class ExternalJobListAPIView(generics.ListAPIView):
                 )
 
         return queryset.select_related("source").order_by("-posted_at", "-created_at")
+
+
+class ExternalJobDetailAPIView(generics.RetrieveAPIView):
+    """
+    Public Endpoint: GET /api/v1/external-jobs/<uuid:pk>/
+    Returns complete public details for a single active ExternalJob.
+    """
+
+    serializer_class = ExternalJobSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = ExternalJob.objects.filter(
+        is_active=True, status=ExternalJob.Status.ACTIVE
+    ).select_related("source")

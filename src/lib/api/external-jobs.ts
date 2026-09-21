@@ -18,6 +18,7 @@ export interface ExternalJob {
   title: string;
   company_name: string;
   company_website?: string | null;
+  company_logo?: string | null;
   description: string;
   location?: string | null;
   country: string;
@@ -76,5 +77,15 @@ export const externalJobsApi = {
       ...options,
       params: params as Record<string, string | number | boolean | undefined>,
     });
+  },
+
+  /**
+   * Fetch single active external job details by UUID
+   */
+  async getExternalJob(
+    id: string,
+    options?: RequestOptions,
+  ): Promise<ExternalJob> {
+    return djangoApi.get<ExternalJob>(`/api/v1/external-jobs/${id}/`, options);
   },
 };
