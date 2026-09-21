@@ -149,6 +149,9 @@ export async function submitAuth(formData: FormData) {
         if (loginRes.user.role === "admin") {
           redirect("/admin");
         }
+        if (loginRes.user.role === "candidate") {
+          redirect("/candidate");
+        }
         redirect(next === "/auth/redirect" ? "/auth/redirect" : next);
       }
     } catch (djangoLoginErr: unknown) {

@@ -12,6 +12,12 @@ const RemoteHybridJobs = dynamic(() =>
 const DepartmentJobs = dynamic(() =>
   import("@/components/site/department-jobs").then((mod) => mod.DepartmentJobs),
 );
+const ApplicationProcess = dynamic(() =>
+  import("@/components/site/application-process").then((mod) => mod.ApplicationProcess),
+);
+const DashboardWorkflow = dynamic(() =>
+  import("@/components/site/dashboard-workflow").then((mod) => mod.DashboardWorkflow),
+);
 const SiteFooter = dynamic(() =>
   import("@/components/site/site-footer").then((mod) => mod.SiteFooter),
 );
@@ -36,6 +42,10 @@ export default function Home() {
       <div className="border-y border-border bg-primary py-3 text-primary-foreground">
         <Marquee items={marqueeItems} duration={36} />
       </div>
+
+      <ApplicationProcess />
+
+      <DashboardWorkflow />
 
       <DepartmentJobs />
 

@@ -33,16 +33,5 @@ export default async function AuthRedirectPage() {
   }
 
   // Candidate
-  let candidateProfile = null;
-  try {
-    candidateProfile = await candidatesApi.getMyProfile({ token });
-  } catch {
-    // Candidate profile not found or network error
-  }
-
-  if (!candidateProfile || !isCandidateProfileComplete(candidateProfile)) {
-    redirect("/candidate/onboarding");
-  }
-
   redirect("/candidate");
 }

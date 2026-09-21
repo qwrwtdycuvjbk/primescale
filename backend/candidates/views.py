@@ -251,12 +251,7 @@ class CandidateResumeView(APIView):
         )
 
     def post(self, request):
-        profile = CandidateProfile.objects.filter(user=request.user).first()
-        if not profile:
-            return Response(
-                {"error": "Candidate profile not found. Please complete profile first."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        profile, _ = CandidateProfile.objects.get_or_create(user=request.user)
 
         file_obj = request.FILES.get("file")
         if not file_obj:

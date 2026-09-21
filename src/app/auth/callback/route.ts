@@ -228,9 +228,11 @@ export async function GET(request: NextRequest) {
     const destination =
       authRes.user?.role === "admin"
         ? "/admin"
-        : safeNext === "/auth/redirect"
-          ? "/auth/redirect"
-          : safeNext;
+        : authRes.user?.role === "candidate"
+          ? "/candidate"
+          : safeNext === "/auth/redirect"
+            ? "/auth/redirect"
+            : safeNext;
 
     const response = NextResponse.redirect(new URL(destination, origin));
     const isSecure = process.env.NODE_ENV === "production";

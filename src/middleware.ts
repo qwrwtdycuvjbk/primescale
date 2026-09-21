@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedPrefixes = ["/employer", "/candidate", "/admin"];
+const protectedPrefixes = ["/employer", "/candidate", "/admin", "/jobs/external"];
 const authExchangePaths = ["/auth/callback", "/auth/confirm"];
 
 export async function middleware(request: NextRequest) {
@@ -42,5 +42,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/auth/:path*", "/admin/:path*", "/candidate/:path*", "/employer/:path*"],
+  matcher: [
+    "/auth/:path*",
+    "/admin/:path*",
+    "/candidate/:path*",
+    "/employer/:path*",
+    "/jobs/external/:path*",
+  ],
 };

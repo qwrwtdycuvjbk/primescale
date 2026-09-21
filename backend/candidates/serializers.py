@@ -118,8 +118,12 @@ class CandidateProfileInputSerializer(serializers.Serializer):
         if isinstance(skills, str):
             skills = parse_skills_list(skills)
 
+        existing_profile = CandidateProfile.objects.filter(user=user).first()
+        resume_url = validated_data.get("resume_url") or (existing_profile.resume_url if existing_profile else None)
+
         completeness_data = dict(validated_data)
         completeness_data["skills"] = skills
+        completeness_data["resume_url"] = resume_url
 
         completeness = calculate_profile_completeness(completeness_data)
         is_complete = is_candidate_profile_complete(completeness_data)
@@ -141,7 +145,7 @@ class CandidateProfileInputSerializer(serializers.Serializer):
                 "us_state": validated_data.get("us_state"),
                 "remote_preference": validated_data.get("remote_preference", "remote"),
                 "preferred_work_type": validated_data.get("preferred_work_type", "remote"),
-                "resume_url": validated_data.get("resume_url"),
+                "resume_url": resume_url,
                 "github_url": validated_data.get("github_url"),
                 "portfolio_url": validated_data.get("portfolio_url"),
                 "linkedin_url": validated_data.get("linkedin_url"),

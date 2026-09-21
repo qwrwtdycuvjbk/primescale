@@ -69,7 +69,8 @@ class MatchListView(APIView):
             queryset = Match.objects.select_related(
                 "job", "job__company"
             ).filter(
-                candidate_profile__user=user
+                candidate_profile__user=user,
+                match_score__gt=60,
             ).order_by("-match_score", "-created_at")
             if status_param and status_param != "all":
                 queryset = queryset.filter(status=status_param)
