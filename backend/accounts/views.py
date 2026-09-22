@@ -3,20 +3,19 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from .cookies import clear_auth_cookies, set_auth_cookies
+from .cookies import set_auth_cookies, clear_auth_cookies
 from .models import User
-from .permissions import IsAdmin, IsCandidate, IsEmployer
+from .permissions import IsCandidate, IsEmployer, IsAdmin
 from .serializers import (
-    GoogleOAuthSerializer,
-    PasswordResetConfirmSerializer,
-    PasswordResetRequestSerializer,
-    ResendVerificationSerializer,
-    TokenLogoutSerializer,
-    UserLoginSerializer,
-    UserRegistrationSerializer,
     UserSerializer,
+    UserRegistrationSerializer,
+    UserLoginSerializer,
+    TokenLogoutSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
     VerifyEmailSerializer,
+    ResendVerificationSerializer,
+    GoogleOAuthSerializer,
 )
 
 
@@ -52,15 +51,24 @@ class UserRegistrationView(APIView):
 class UserLoginView(APIView):
     """
     POST /api/v1/auth/login/
-    Authenticates a user via email and password, returning JWT tokens and profile data.
+    Authenticates a user via email, password, and portal role.
+    Returns JWT tokens and profile data only on successful role verification.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if not serializer.is_valid():
+            error_val = (
+                serializer.errors.get("non_field_errors")
+                or serializer.errors.get("role")
+                or serializer.errors.get("email")
+                or serializer.errors.get("password")
+                or ["Invalid email or password."]
+            )
+            error_msg = error_val[0] if isinstance(error_val, list) else str(error_val)
             return Response(
-                {"error": serializer.errors.get("non_field_errors", ["Invalid email or password."])[0]},
+                {"error": error_msg},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -209,15 +217,19 @@ class ResendVerificationView(APIView):
 class GoogleOAuthView(APIView):
     """
     POST /api/v1/auth/oauth/google/
-    Authenticates via Google OAuth identity.
-    Safely links to existing migrated accounts by email without creating duplicates.
+    Authenticates via Google OAuth identity with strict portal role separation.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = GoogleOAuthSerializer(data=request.data)
         if not serializer.is_valid():
-            error_val = serializer.errors.get('non_field_errors', ['Google authentication failed.'])
+            error_val = (
+                serializer.errors.get('non_field_errors')
+                or serializer.errors.get('role')
+                or serializer.errors.get('email')
+                or ['Google authentication failed.']
+            )
             error_msg = error_val[0] if isinstance(error_val, list) else str(error_val)
             return Response({'error': error_msg}, status=status.HTTP_401_UNAUTHORIZED)
 

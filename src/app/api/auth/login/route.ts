@@ -44,28 +44,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const authRes = await djangoAuth.login({ email, password });
+    const authRes = await djangoAuth.login({ email, password, role });
     if (authRes && authRes.access && authRes.user) {
-      // If logging in via Admin Login form, verify role is strictly admin!
-      if (role === "admin" && authRes.user.role !== "admin") {
-        return NextResponse.redirect(
-          new URL(
-            authFormPath("admin", {
-              ...params,
-              error: "admin_unauthorized",
-              details: "This account does not have administrator access.",
-            }),
-            request.url,
-          ),
-        );
-      }
-
+      // Role is validated on backend before token issuance.
+      // Determine destination strictly by authenticated portal role:
       const destination =
-        authRes.user.role === "admin"
+        role === "admin"
           ? "/admin"
-          : next === "/auth/redirect"
-            ? "/auth/redirect"
-            : next;
+          : role === "candidate"
+            ? (next.startsWith("/candidate") ? next : "/candidate")
+            : (next.startsWith("/employer") ? next : (next === "/auth/redirect" ? "/auth/redirect" : "/employer"));
 
       const response = NextResponse.redirect(new URL(destination, request.url));
 

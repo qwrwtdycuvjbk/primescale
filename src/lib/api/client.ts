@@ -27,6 +27,77 @@ export type RequestOptions = RequestInit & {
 };
 
 /**
+ * Parses DRF / standard HTTP error response bodies into clean human-readable messages.
+ */
+export function extractErrorMessage(data: unknown, status: number): string {
+  if (!data) {
+    return `Request failed with status ${status}`;
+  }
+
+  if (typeof data === "string") {
+    if (data.trim().startsWith("<")) {
+      return `Server error (${status}). Please try again later.`;
+    }
+    return data.trim();
+  }
+
+  if (Array.isArray(data)) {
+    const messages = data
+      .map((item) => (typeof item === "string" ? item : extractErrorMessage(item, status)))
+      .filter(Boolean);
+    return messages.length > 0 ? messages.join(" ") : `Request failed with status ${status}`;
+  }
+
+  if (typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+
+    if (typeof obj.error === "string" && obj.error.trim()) {
+      return obj.error.trim();
+    }
+
+    if (typeof obj.detail === "string" && obj.detail.trim()) {
+      return obj.detail.trim();
+    }
+
+    if (Array.isArray(obj.non_field_errors) && obj.non_field_errors.length > 0) {
+      return obj.non_field_errors.map((v) => (typeof v === "string" ? v : JSON.stringify(v))).join(" ");
+    }
+
+    const fieldErrors: string[] = [];
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === null || value === undefined) continue;
+
+      let msg = "";
+      if (typeof value === "string") {
+        msg = value;
+      } else if (Array.isArray(value)) {
+        msg = value.map((v) => (typeof v === "string" ? v : JSON.stringify(v))).join(" ");
+      } else if (typeof value === "object") {
+        msg = extractErrorMessage(value, status);
+      }
+
+      if (msg) {
+        if (key === "full_name" && msg.toLowerCase().includes("this field is required")) {
+          fieldErrors.push("Full name is required.");
+        } else if (key === "email" && msg.toLowerCase().includes("this field is required")) {
+          fieldErrors.push("Email is required.");
+        } else if (key === "password" && msg.toLowerCase().includes("this field is required")) {
+          fieldErrors.push("Password is required.");
+        } else {
+          fieldErrors.push(msg);
+        }
+      }
+    }
+
+    if (fieldErrors.length > 0) {
+      return fieldErrors.join(" ");
+    }
+  }
+
+  return `Request failed with status ${status}`;
+}
+
+/**
  * Builds full URL with optional query parameters.
  */
 function buildUrl(
@@ -91,13 +162,7 @@ export async function apiRequest<T = unknown>(
   const data = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    const message =
-      typeof data === "object" && data !== null && "error" in data
-        ? String((data as { error: unknown }).error)
-        : typeof data === "object" && data !== null && "detail" in data
-          ? String((data as { detail: unknown }).detail)
-          : `Request failed with status ${response.status}`;
-
+    const message = extractErrorMessage(data, response.status);
     throw new ApiError(response.status, message, data);
   }
 

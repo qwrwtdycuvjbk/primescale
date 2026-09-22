@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import User
@@ -78,43 +79,51 @@ class UserRegistrationSerializer(serializers.Serializer):
             phone = phone.strip()
         role = validated_data.get("role", User.Role.CANDIDATE)
 
-        user = User.objects.create_user(
-            email=email,
-            password=password,
-            full_name=full_name,
-            phone=phone,
-            role=role,
-        )
-        if role == User.Role.CANDIDATE:
-            from candidates.models import CandidateProfile
-            CandidateProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    "profile_completeness": 0,
-                    "profile_complete": False,
-                    "availability_status": "open",
-                    "source": "platform",
-                },
+        with transaction.atomic():
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                full_name=full_name,
+                phone=phone,
+                role=role,
             )
-        # Dispatch email verification
-        token = email_verification_token_generator.make_token(user)
-        uidb64 = encode_uid(user.pk)
-        send_verification_email(user.email, uidb64, token)
+            if role == User.Role.CANDIDATE:
+                from candidates.models import CandidateProfile
+                CandidateProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        "profile_completeness": 0,
+                        "profile_complete": False,
+                        "availability_status": "open",
+                        "source": "platform",
+                    },
+                )
+            # Dispatch email verification
+            token = email_verification_token_generator.make_token(user)
+            uidb64 = encode_uid(user.pk)
+            send_verification_email(user.email, uidb64, token)
 
-        return user
+            return user
 
 
 class UserLoginSerializer(serializers.Serializer):
     """
-    Serializer for authenticating users via email and password.
-    Returns authenticated user object.
+    Serializer for authenticating users via email, password, and portal role.
+    Strictly prevents cross-role authentication (e.g. employer logging into candidate portal).
     """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(
+        choices=[(User.Role.CANDIDATE, "Candidate"), (User.Role.EMPLOYER, "Employer"), (User.Role.ADMIN, "Admin")],
+        required=False,
+        allow_null=True,
+        default=None,
+    )
 
     def validate(self, attrs):
         email = attrs.get("email", "").strip().lower()
         password = attrs.get("password", "")
+        requested_role = attrs.get("role")
 
         if not email or not password:
             raise serializers.ValidationError("Both email and password are required.")
@@ -127,8 +136,25 @@ class UserLoginSerializer(serializers.Serializer):
         if not user.check_password(password):
             raise serializers.ValidationError("Invalid email or password.")
 
+        # 1. Active status check
         if not user.is_active:
             raise serializers.ValidationError("Your access is denied by the Admin.")
+
+        # 2. Strict role-based portal separation
+        if requested_role:
+            if requested_role == User.Role.CANDIDATE:
+                if user.role != User.Role.CANDIDATE:
+                    if user.role == User.Role.EMPLOYER:
+                        raise serializers.ValidationError("This account is registered as an employer. Please use the Employer Login.")
+                    raise serializers.ValidationError("This account is not a candidate account.")
+            elif requested_role == User.Role.EMPLOYER:
+                if user.role != User.Role.EMPLOYER:
+                    if user.role == User.Role.CANDIDATE:
+                        raise serializers.ValidationError("This account is registered as a candidate. Please use the Candidate Login.")
+                    raise serializers.ValidationError("This account is not an employer account.")
+            elif requested_role == User.Role.ADMIN:
+                if not (user.role == User.Role.ADMIN or user.is_staff or user.is_superuser):
+                    raise serializers.ValidationError("This account does not have administrator access.")
 
         attrs["user"] = user
         return attrs
@@ -262,8 +288,8 @@ class ResendVerificationSerializer(serializers.Serializer):
 class GoogleOAuthSerializer(serializers.Serializer):
     """
     Authenticates or links a user via Google OAuth identity.
-    Accepts verified email and name from frontend/Google ID token.
-    Links seamlessly with existing migrated users by email without creating duplicates.
+    Enforces strict portal role separation so Candidate Google logins cannot access
+    Employer accounts and vice-versa.
     """
     email = serializers.EmailField()
     full_name = serializers.CharField(required=False, allow_blank=True, default="")
@@ -275,10 +301,25 @@ class GoogleOAuthSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         email = attrs.get('email', '').strip().lower()
+        requested_role = attrs.get('role', User.Role.CANDIDATE)
+
         if email:
             user = User.objects.filter(email=email).first()
-            if user and not user.is_active:
-                raise serializers.ValidationError('Your access is denied by the Admin.')
+            if user:
+                # 1. Active status check
+                if not user.is_active:
+                    raise serializers.ValidationError('Your access is denied by the Admin.')
+
+                # 2. Strict portal role match
+                if requested_role == User.Role.CANDIDATE and user.role != User.Role.CANDIDATE:
+                    if user.role == User.Role.EMPLOYER:
+                        raise serializers.ValidationError("This account is registered as an employer. Please use the Employer Login.")
+                    raise serializers.ValidationError("This account is not a candidate account.")
+                elif requested_role == User.Role.EMPLOYER and user.role != User.Role.EMPLOYER:
+                    if user.role == User.Role.CANDIDATE:
+                        raise serializers.ValidationError("This account is registered as a candidate. Please use the Candidate Login.")
+                    raise serializers.ValidationError("This account is not an employer account.")
+
         return attrs
 
     def validate_role(self, value):
@@ -291,29 +332,40 @@ class GoogleOAuthSerializer(serializers.Serializer):
         full_name = self.validated_data.get("full_name", "").strip()
         role = self.validated_data.get("role", User.Role.CANDIDATE)
 
-        # Account linking: check if account with this email already exists
-        user = User.objects.filter(email=email).first()
-        if user:
-            # Existing migrated user or existing Django user:
-            # Link Google identity without modifying original UUID.
-            update_fields = []
-            if not user.email_verified:
-                user.email_verified = True
-                update_fields.append("email_verified")
-            if not user.full_name and full_name:
-                user.full_name = full_name
-                update_fields.append("full_name")
-            if update_fields:
-                update_fields.append("updated_at")
-                user.save(update_fields=update_fields)
-            return user, False
+        with transaction.atomic():
+            # Account linking: check if account with this email already exists
+            user = User.objects.filter(email=email).first()
+            if user:
+                # Existing user: Link Google identity without modifying original UUID or role.
+                update_fields = []
+                if not user.email_verified:
+                    user.email_verified = True
+                    update_fields.append("email_verified")
+                if not user.full_name and full_name:
+                    user.full_name = full_name
+                    update_fields.append("full_name")
+                if update_fields:
+                    update_fields.append("updated_at")
+                    user.save(update_fields=update_fields)
+                return user, False
 
-        # New user via Google OAuth
-        user = User.objects.create_user(
-            email=email,
-            password=None,  # Unusable password, authenticated via Google
-            full_name=full_name,
-            role=role,
-            email_verified=True,
-        )
-        return user, True
+            # New user via Google OAuth
+            user = User.objects.create_user(
+                email=email,
+                password=None,  # Unusable password, authenticated via Google
+                full_name=full_name,
+                role=role,
+                email_verified=True,
+            )
+            if role == User.Role.CANDIDATE:
+                from candidates.models import CandidateProfile
+                CandidateProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        "profile_completeness": 0,
+                        "profile_complete": False,
+                        "availability_status": "open",
+                        "source": "platform",
+                    },
+                )
+            return user, True

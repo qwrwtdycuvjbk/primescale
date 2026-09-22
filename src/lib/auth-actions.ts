@@ -20,9 +20,15 @@ function authFormPath(
   return `/auth/${role}/${mode}${query ? `?${query}` : ""}`;
 }
 
-export async function safeAuthNextPath(path: string | null | undefined): Promise<string> {
+export async function safeAuthNextPath(path: string | null | undefined, userRole?: UserRole): Promise<string> {
   if (!path || !path.startsWith("/") || path.startsWith("//")) {
     return "/auth/redirect";
+  }
+  if (userRole === "candidate" && path.startsWith("/employer")) {
+    return "/candidate";
+  }
+  if (userRole === "employer" && path.startsWith("/candidate")) {
+    return "/employer";
   }
   return path;
 }
@@ -88,30 +94,53 @@ export async function submitAuth(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
-  const next = await safeAuthNextPath(formData.get("next") as string | null);
+  const rawNext = formData.get("next") as string | null;
+  const next = await safeAuthNextPath(rawNext, role);
 
   const returnParams: Record<string, string> = {};
   if (email) returnParams.email = email;
   if (next !== "/auth/redirect") returnParams.next = next;
 
-  if (!email || !password) {
+  if (!email) {
     redirect(
       authFormPath(role, mode, {
         ...returnParams,
         error: "validation",
-        details: "Enter your email and password.",
+        details: "Email is required.",
       }),
     );
   }
 
-  if (mode === "signup" && !fullName) {
+  if (!password) {
     redirect(
       authFormPath(role, mode, {
         ...returnParams,
         error: "validation",
-        details: "Enter your full name.",
+        details: "Password is required.",
       }),
     );
+  }
+
+  if (mode === "signup") {
+    if (!fullName) {
+      redirect(
+        authFormPath(role, mode, {
+          ...returnParams,
+          error: "validation",
+          details: "Full name is required.",
+        }),
+      );
+    }
+
+    if (password.length < 8) {
+      redirect(
+        authFormPath(role, mode, {
+          ...returnParams,
+          error: "validation",
+          details: "Password must be at least 8 characters long.",
+        }),
+      );
+    }
   }
 
   let redirectPath: string | null = null;
@@ -160,25 +189,17 @@ export async function submitAuth(formData: FormData) {
   } else {
     // Login
     try {
-      const loginRes = await djangoAuth.login({ email, password });
+      const loginRes = await djangoAuth.login({ email, password, role });
       if (loginRes && loginRes.access && loginRes.user) {
-        if (role === "admin" && loginRes.user.role !== "admin") {
-          redirect(
-            authFormPath("admin", "login", {
-              ...returnParams,
-              error: "admin_unauthorized",
-              details: "This account does not have administrator access.",
-            }),
-          );
-        }
-
         await setDjangoAuthCookies(loginRes.access, loginRes.refresh);
         if (loginRes.user.role === "admin") {
           redirectPath = "/admin";
         } else if (loginRes.user.role === "candidate") {
-          redirectPath = "/candidate";
+          redirectPath = next.startsWith("/candidate") ? next : "/candidate";
+        } else if (loginRes.user.role === "employer") {
+          redirectPath = next.startsWith("/employer") ? next : (next === "/auth/redirect" ? "/auth/redirect" : "/employer");
         } else {
-          redirectPath = next === "/auth/redirect" ? "/auth/redirect" : next;
+          redirectPath = "/auth/redirect";
         }
       } else {
         redirectPath = "/auth/redirect";

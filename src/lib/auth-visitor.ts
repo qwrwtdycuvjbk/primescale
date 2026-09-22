@@ -13,19 +13,17 @@ export async function handleLoggedInAuthPage(
   const { profile } = await getSessionProfile();
 
   if (profile) {
-    if (profile.role === "admin") {
-      redirect("/admin");
-    }
-
-    if (intendedRole === "admin") {
-      // Allow non-admin user to access admin login page to sign in with admin credentials
-      return;
-    }
-
+    // If user's existing session role matches the page role, redirect to appropriate area
     if (profile.role === intendedRole) {
-      redirect("/auth/redirect");
+      if (profile.role === "admin") {
+        redirect("/admin");
+      } else if (profile.role === "employer") {
+        redirect("/employer");
+      } else {
+        redirect("/candidate");
+      }
     }
-
-    redirect(profile.role === "employer" ? "/employer" : "/candidate");
+    // If the active session is for a different role, do NOT redirect to the other portal.
+    // Allow the user to see the login/signup form so they can sign in to the matching portal.
   }
 }

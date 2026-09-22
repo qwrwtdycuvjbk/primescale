@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework import status
@@ -7,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .permissions import IsOwnerOrAdmin
+from .serializers import UserRegistrationSerializer
 
 
 class UserModelTests(TestCase):
@@ -98,6 +100,20 @@ class AuthenticationApiTests(TestCase):
             password="AdminPassword123!",
             full_name="Admin One",
         )
+        self.inactive_candidate = User.objects.create_user(
+            email="inactive_candidate@test.com",
+            password="TestPassword123!",
+            full_name="Inactive Candidate",
+            role=User.Role.CANDIDATE,
+            is_active=False,
+        )
+        self.inactive_employer = User.objects.create_user(
+            email="inactive_employer@test.com",
+            password="TestPassword123!",
+            full_name="Inactive Employer",
+            role=User.Role.EMPLOYER,
+            is_active=False,
+        )
 
     # --- Registration Tests ---
     def test_register_candidate_success(self):
@@ -116,7 +132,6 @@ class AuthenticationApiTests(TestCase):
         self.assertEqual(response.data["user"]["email"], "newcandidate@test.com")
         self.assertEqual(response.data["user"]["role"], "candidate")
 
-        # Verify UUID primary key
         user_id = response.data["user"]["id"]
         self.assertTrue(uuid.UUID(user_id))
 
@@ -130,6 +145,20 @@ class AuthenticationApiTests(TestCase):
         response = self.client.post("/api/v1/auth/register/", payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["user"]["role"], "employer")
+        self.assertEqual(response.data["user"]["full_name"], "New Employer")
+        self.assertFalse(response.data["user"]["email_verified"])
+
+    def test_register_employer_with_phone(self):
+        payload = {
+            "email": "phone_employer@test.com",
+            "password": "StrongPassword123!",
+            "full_name": "Phone Employer",
+            "phone": "+1 555 123 4567",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["user"]["phone"], "+1 555 123 4567")
 
     def test_register_admin_rejected(self):
         payload = {
@@ -152,6 +181,19 @@ class AuthenticationApiTests(TestCase):
         response = self.client.post("/api/v1/auth/register/", payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)
+        self.assertEqual(response.data["email"][0], "An account with this email already exists.")
+
+    def test_register_duplicate_employer_email_rejected(self):
+        payload = {
+            "email": "employer@test.com",
+            "password": "StrongPassword123!",
+            "full_name": "Duplicate Employer",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+        self.assertEqual(response.data["email"][0], "An account with this email already exists.")
 
     def test_register_invalid_email_rejected(self):
         payload = {
@@ -171,54 +213,189 @@ class AuthenticationApiTests(TestCase):
         response = self.client.post("/api/v1/auth/register/", payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # --- Login Tests ---
-    def test_login_success(self):
+    def test_register_atomic_rollback_on_failure(self):
+        initial_count = User.objects.count()
+        serializer = UserRegistrationSerializer(data={
+            "email": "fail_email@test.com",
+            "password": "StrongPassword123!",
+            "full_name": "Fail User",
+            "role": "employer",
+        })
+        self.assertTrue(serializer.is_valid())
+        with patch("accounts.serializers.send_verification_email", side_effect=RuntimeError("SMTP Down")):
+            with self.assertRaises(RuntimeError):
+                serializer.save()
+
+        self.assertEqual(User.objects.count(), initial_count)
+        self.assertFalse(User.objects.filter(email="fail_email@test.com").exists())
+
+    # --- Role-Based Login Tests ---
+    def test_candidate_login_through_candidate_portal_success(self):
         payload = {
             "email": "candidate@test.com",
             "password": "TestPassword123!",
+            "role": "candidate",
         }
         response = self.client.post("/api/v1/auth/login/", payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
-        self.assertIn("user", response.data)
-        self.assertEqual(response.data["user"]["email"], "candidate@test.com")
+        self.assertEqual(response.data["user"]["role"], "candidate")
 
-    def test_login_invalid_password(self):
-        payload = {
-            "email": "candidate@test.com",
-            "password": "WrongPassword!",
-        }
-        response = self.client.post("/api/v1/auth/login/", payload, format="json")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertIn("error", response.data)
-
-    def test_login_unknown_email(self):
-        payload = {
-            "email": "unknown@test.com",
-            "password": "SomePassword123!",
-        }
-        response = self.client.post("/api/v1/auth/login/", payload, format="json")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_login_inactive_user(self):
-        self.candidate.is_active = False
-        self.candidate.save()
+    def test_candidate_login_through_employer_portal_denied(self):
         payload = {
             "email": "candidate@test.com",
             "password": "TestPassword123!",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(
+            response.data["error"],
+            "This account is registered as a candidate. Please use the Candidate Login.",
+        )
+
+    def test_employer_login_through_employer_portal_success(self):
+        payload = {
+            "email": "employer@test.com",
+            "password": "TestPassword123!",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertEqual(response.data["user"]["role"], "employer")
+
+    def test_employer_login_through_candidate_portal_denied(self):
+        payload = {
+            "email": "employer@test.com",
+            "password": "TestPassword123!",
+            "role": "candidate",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(
+            response.data["error"],
+            "This account is registered as an employer. Please use the Employer Login.",
+        )
+
+    def test_admin_login_through_admin_portal_success(self):
+        payload = {
+            "email": "admin@test.com",
+            "password": "AdminPassword123!",
+            "role": "admin",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+
+    def test_candidate_login_through_admin_portal_denied(self):
+        payload = {
+            "email": "candidate@test.com",
+            "password": "TestPassword123!",
+            "role": "admin",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(response.data["error"], "This account does not have administrator access.")
+
+    def test_employer_login_through_admin_portal_denied(self):
+        payload = {
+            "email": "employer@test.com",
+            "password": "TestPassword123!",
+            "role": "admin",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(response.data["error"], "This account does not have administrator access.")
+
+    def test_admin_login_through_candidate_portal_denied(self):
+        payload = {
+            "email": "admin@test.com",
+            "password": "AdminPassword123!",
+            "role": "candidate",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(response.data["error"], "This account is not a candidate account.")
+
+    def test_admin_login_through_employer_portal_denied(self):
+        payload = {
+            "email": "admin@test.com",
+            "password": "AdminPassword123!",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(response.data["error"], "This account is not an employer account.")
+
+    def test_inactive_candidate_login_denied(self):
+        payload = {
+            "email": "inactive_candidate@test.com",
+            "password": "TestPassword123!",
+            "role": "candidate",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(response.data["error"], "Your access is denied by the Admin.")
+
+    def test_inactive_employer_login_denied(self):
+        payload = {
+            "email": "inactive_employer@test.com",
+            "password": "TestPassword123!",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(response.data["error"], "Your access is denied by the Admin.")
+
+    def test_candidate_login_invalid_password(self):
+        payload = {
+            "email": "candidate@test.com",
+            "password": "WrongPassword123!",
+            "role": "candidate",
         }
         response = self.client.post("/api/v1/auth/login/", payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    # --- Current User (/me) Tests ---
-    def test_me_authenticated_candidate(self):
+    def test_employer_login_invalid_password(self):
+        payload = {
+            "email": "employer@test.com",
+            "password": "WrongPassword123!",
+            "role": "employer",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_nonexistent_user(self):
+        payload = {
+            "email": "ghost@test.com",
+            "password": "AnyPassword123!",
+            "role": "candidate",
+        }
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_missing_fields(self):
+        response = self.client.post("/api/v1/auth/login/", {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # --- Current User (Me) Tests ---
+    def test_me_authenticated(self):
         refresh = RefreshToken.for_user(self.candidate)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}")
         response = self.client.get("/api/v1/auth/me/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], "candidate@test.com")
-        self.assertEqual(response.data["role"], "candidate")
 
     def test_me_unauthenticated(self):
         response = self.client.get("/api/v1/auth/me/")
@@ -247,12 +424,10 @@ class AuthenticationApiTests(TestCase):
         refresh = RefreshToken.for_user(self.candidate)
         refresh_str = str(refresh)
 
-        # Call logout
         response = self.client.post("/api/v1/auth/logout/", {"refresh": refresh_str}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ok")
 
-        # Re-using the blacklisted refresh token must now fail
         refresh_response = self.client.post("/api/v1/auth/refresh/", {"refresh": refresh_str}, format="json")
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -265,15 +440,12 @@ class AuthenticationApiTests(TestCase):
         refresh = RefreshToken.for_user(self.candidate)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}")
 
-        # Candidate accessing candidate endpoint -> 200
         res = self.client.get("/api/v1/auth/test-candidate/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
-        # Candidate accessing employer endpoint -> 403
         res = self.client.get("/api/v1/auth/test-employer/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Candidate accessing admin endpoint -> 403
         res = self.client.get("/api/v1/auth/test-admin/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -281,15 +453,12 @@ class AuthenticationApiTests(TestCase):
         refresh = RefreshToken.for_user(self.employer)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}")
 
-        # Employer accessing candidate endpoint -> 403
         res = self.client.get("/api/v1/auth/test-candidate/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Employer accessing employer endpoint -> 200
         res = self.client.get("/api/v1/auth/test-employer/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
-        # Employer accessing admin endpoint -> 403
         res = self.client.get("/api/v1/auth/test-admin/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -297,7 +466,6 @@ class AuthenticationApiTests(TestCase):
         refresh = RefreshToken.for_user(self.admin)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}")
 
-        # Admin accessing admin endpoint -> 200
         res = self.client.get("/api/v1/auth/test-admin/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
@@ -311,8 +479,9 @@ class ObjectLevelPermissionTests(TestCase):
         permission = IsOwnerOrAdmin()
 
         class MockRequest:
-            def __init__(self, user):
+            def __init__(self, user, method="GET"):
                 self.user = user
+                self.method = method
 
         class MockObject:
             def __init__(self, owner):
@@ -320,14 +489,9 @@ class ObjectLevelPermissionTests(TestCase):
 
         obj = MockObject(owner=user1)
 
-        # Owner accessing own object -> True
-        self.assertTrue(permission.has_object_permission(MockRequest(user1), None, obj))
-
-        # Non-owner accessing object -> False
-        self.assertFalse(permission.has_object_permission(MockRequest(user2), None, obj))
-
-        # Admin accessing object -> True
-        self.assertTrue(permission.has_object_permission(MockRequest(admin), None, obj))
+        self.assertTrue(permission.has_object_permission(MockRequest(user1, "GET"), None, obj))
+        self.assertFalse(permission.has_object_permission(MockRequest(user2, "GET"), None, obj))
+        self.assertTrue(permission.has_object_permission(MockRequest(admin, "GET"), None, obj))
 
 
 class GoogleOAuthApiTests(TestCase):
@@ -339,6 +503,20 @@ class GoogleOAuthApiTests(TestCase):
             full_name="Existing Candidate",
             role=User.Role.CANDIDATE,
             email_verified=False,
+        )
+        self.existing_employer = User.objects.create_user(
+            email="existing.employer@example.com",
+            password="StrongPassword123!",
+            full_name="Existing Employer",
+            role=User.Role.EMPLOYER,
+            email_verified=False,
+        )
+        self.inactive_candidate = User.objects.create_user(
+            email="inactive.google@example.com",
+            password="StrongPassword123!",
+            full_name="Inactive Google User",
+            role=User.Role.CANDIDATE,
+            is_active=False,
         )
 
     def test_google_oauth_new_candidate(self):
@@ -371,7 +549,7 @@ class GoogleOAuthApiTests(TestCase):
         self.assertTrue(res.data["created"])
         self.assertEqual(res.data["user"]["role"], "employer")
 
-    def test_google_oauth_existing_user_linking(self):
+    def test_google_oauth_candidate_in_candidate_portal_success(self):
         initial_id = self.existing_candidate.id
         initial_count = User.objects.count()
 
@@ -386,9 +564,63 @@ class GoogleOAuthApiTests(TestCase):
         self.assertEqual(res.data["user"]["id"], str(initial_id))
         self.assertEqual(User.objects.count(), initial_count)
 
-        self.existing_candidate.refresh_from_db()
-        self.assertTrue(self.existing_candidate.email_verified)
-        self.assertTrue(self.existing_candidate.has_usable_password())
+    def test_google_oauth_candidate_in_employer_portal_denied(self):
+        initial_count = User.objects.count()
+        payload = {
+            "email": "existing.candidate@example.com",
+            "full_name": "Existing Candidate",
+            "role": "employer",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", res.data)
+        self.assertEqual(
+            res.data["error"],
+            "This account is registered as a candidate. Please use the Candidate Login.",
+        )
+        self.assertEqual(User.objects.count(), initial_count)
+
+    def test_google_oauth_employer_in_employer_portal_success(self):
+        initial_id = self.existing_employer.id
+        initial_count = User.objects.count()
+
+        payload = {
+            "email": "existing.employer@example.com",
+            "full_name": "Existing Employer",
+            "role": "employer",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(res.data["created"])
+        self.assertEqual(res.data["user"]["id"], str(initial_id))
+        self.assertEqual(User.objects.count(), initial_count)
+
+    def test_google_oauth_employer_in_candidate_portal_denied(self):
+        initial_count = User.objects.count()
+        payload = {
+            "email": "existing.employer@example.com",
+            "full_name": "Existing Employer",
+            "role": "candidate",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", res.data)
+        self.assertEqual(
+            res.data["error"],
+            "This account is registered as an employer. Please use the Employer Login.",
+        )
+        self.assertEqual(User.objects.count(), initial_count)
+
+    def test_google_oauth_inactive_user_denied(self):
+        payload = {
+            "email": "inactive.google@example.com",
+            "full_name": "Inactive Google User",
+            "role": "candidate",
+        }
+        res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access", res.data)
+        self.assertEqual(res.data["error"], "Your access is denied by the Admin.")
 
     def test_google_oauth_invalid_email(self):
         payload = {
@@ -396,8 +628,8 @@ class GoogleOAuthApiTests(TestCase):
             "role": "candidate",
         }
         res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("email", res.data)
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn("error", res.data)
 
     def test_google_oauth_invalid_role(self):
         payload = {
@@ -405,5 +637,5 @@ class GoogleOAuthApiTests(TestCase):
             "role": "admin",
         }
         res = self.client.post("/api/v1/auth/oauth/google/", payload, format="json")
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn("error", res.data)

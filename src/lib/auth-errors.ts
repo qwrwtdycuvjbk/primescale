@@ -7,7 +7,7 @@ export const authErrorMessages: Record<string, string> = {
   oauth_cancelled: "Google sign-in was cancelled.",
   oauth_failed: "Google sign-in could not be completed. Please try again or use email and password.",
   oauth_misconfigured: "Google sign-in is currently unavailable. Please sign in with email and password.",
-  validation: "Check the form and try again.",
+  validation: "Please check the form and try again.",
   login_failed: "Could not sign you in.",
   signup_failed: "Could not create your account.",
   admin_unauthorized: "This account does not have administrator access.",
@@ -17,7 +17,8 @@ export function formatAuthErrorMessage(
   error: string | null | undefined,
   details?: string | null,
 ) {
-  if (!error || !authErrorMessages[error]) return null;
+  if (!error && !details) return null;
+  if (!error && details) return details;
 
   const detailText = details?.toLowerCase() ?? "";
 
@@ -29,12 +30,12 @@ export function formatAuthErrorMessage(
     return "Your access is denied by the Admin.";
   }
 
-  if (error === "login_failed" && detailText.includes("email not confirmed")) {
-    return "Confirm your email first. Check your inbox for the verification link, then log in.";
+  if (detailText.includes("already exists") || detailText.includes("already registered")) {
+    return "An account with this email already exists. Please log in instead, or use a different email.";
   }
 
-  if (error === "signup_failed" && detailText.includes("already registered")) {
-    return "An account with this email already exists. Log in instead, or use a different email.";
+  if (error === "login_failed" && detailText.includes("email not confirmed")) {
+    return "Confirm your email first. Check your inbox for the verification link, then log in.";
   }
 
   if (
@@ -44,9 +45,30 @@ export function formatAuthErrorMessage(
     return "Account setup encountered a database policy error. Please try again or contact support.";
   }
 
-  return details
-    ? `${authErrorMessages[error]} (${details})`
-    : authErrorMessages[error];
+  if (error === "validation") {
+    return details || authErrorMessages.validation;
+  }
+
+  if (error === "signup_failed") {
+    if (details && !detailText.startsWith("request failed") && !detailText.startsWith("server error")) {
+      return details;
+    }
+    return "Could not create your account. Please check your information and try again.";
+  }
+
+  if (error === "login_failed") {
+    if (details && !detailText.startsWith("request failed") && !detailText.startsWith("server error")) {
+      return details;
+    }
+    return "Could not sign you in. Please check your credentials and try again.";
+  }
+
+  if (details && !detailText.startsWith("request failed")) {
+    return details;
+  }
+
+  const defaultMsg = error && authErrorMessages[error] ? authErrorMessages[error] : null;
+  return defaultMsg || "An unexpected error occurred. Please try again.";
 }
 
 export function authLoginPathWithError(

@@ -27,6 +27,7 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string;
   password?: string;
+  role?: Extract<UserRole, "employer" | "candidate" | "admin">;
 }
 
 export interface GoogleOAuthPayload {
@@ -57,7 +58,7 @@ export const djangoAuth = {
   },
 
   /**
-   * Authenticates user via email and password.
+   * Authenticates user via email, password, and portal role.
    * POST /api/v1/auth/login/
    */
   login(payload: LoginPayload, options?: RequestOptions): Promise<AuthResponse> {
@@ -148,7 +149,7 @@ export const djangoAuth = {
   },
 
   /**
-   * Google OAuth login or account linking with existing Django user.
+   * Google OAuth login or account linking with existing Django user with strict portal role.
    * POST /api/v1/auth/oauth/google/
    */
   googleLogin(payload: GoogleOAuthPayload, options?: RequestOptions): Promise<AuthResponse> {
