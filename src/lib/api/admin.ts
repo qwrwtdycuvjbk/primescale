@@ -1,6 +1,6 @@
 /**
  * Admin Dashboard API Module for Django REST Framework.
- * Phase 18 — Admin Dashboard Analytics.
+ * Phase 18 — Admin Dashboard Analytics & Monitoring.
  */
 
 import { djangoApi, RequestOptions } from "./client";
@@ -14,11 +14,14 @@ export interface AdminMatchPreview {
   companyName: string;
 }
 
-export interface AdminHandoffPreview {
+export interface AdminRecentCandidatePreview {
   id: string;
-  candidateName: string;
-  jobTitle: string;
-  companyName: string;
+  name: string;
+  email: string;
+  currentTitle: string;
+  completeness: number;
+  availability: string;
+  createdAt: string;
 }
 
 export interface AdminUnmatchedJobPreview {
@@ -36,16 +39,44 @@ export interface AdminIncompleteProfilePreview {
 }
 
 export interface DjangoAdminDashboardStats {
-  pendingMatches: number;
-  pendingHandoffs: number;
-  newCandidatesThisWeek: number;
-  newEmployersThisWeek: number;
-  activeJobsWithNoMatches: number;
+  // Candidate Stats
+  totalCandidates: number;
+  completedProfiles: number;
   incompleteProfiles: number;
+  candidatesWithResume: number;
+  candidatesWithoutResume: number;
+  candidatesAvailable: number;
+  candidatesOpenToMatching: number;
+  newCandidatesThisWeek: number;
+
+  // Account Stats
+  totalCandidateAccounts: number;
+  totalEmployerAccounts: number;
+  newEmployersThisWeek: number;
+
+  // Job Stats
+  totalInternalJobs: number;
+  activeJobs: number;
+  closedJobs: number;
+  draftJobs: number;
+  totalExternalJobs: number;
+  activeJobsWithNoMatches: number;
+
+  // Application Stats
+  totalApplications: number;
   candidateInterested: number;
+  employerShortlisted: number;
+  mutualFit: number;
+  rejectedApplications: number;
+
+  // Matching Stats
+  totalMatches: number;
+  highConfidenceMatches: number;
+  pendingMatches: number;
+
+  // Previews
   pendingMatchPreviews: AdminMatchPreview[];
-  candidateInterestPreviews: AdminMatchPreview[];
-  pendingHandoffPreviews: AdminHandoffPreview[];
+  recentCandidatePreviews?: AdminRecentCandidatePreview[];
   unmatchedJobPreviews: AdminUnmatchedJobPreview[];
   incompleteProfilePreviews: AdminIncompleteProfilePreview[];
 }

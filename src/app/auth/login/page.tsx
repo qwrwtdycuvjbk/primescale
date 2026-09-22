@@ -52,6 +52,18 @@ export default async function LoginChooserPage({
           </div>
           <ArrowRight className="h-5 w-5 text-muted-foreground" />
         </Link>
+        <Link
+          href="/auth/admin/login"
+          className="flex items-center justify-between rounded-2xl border border-border bg-card px-6 py-5 transition hover:border-foreground/20"
+        >
+          <div>
+            <p className="font-medium text-foreground">I&apos;m an admin</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Admin log in
+            </p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+        </Link>
       </div>
     </AuthShell>
   );

@@ -48,9 +48,34 @@ class IsAdmin(BasePermission):
         )
 
 
+class IsAdminReadOnly(BasePermission):
+    """
+    Allows read-only access (SAFE_METHODS: GET, HEAD, OPTIONS) for Admin users.
+    Enforces a strict Read-Only Platform Monitor role.
+    """
+    message = "Read-only administrator access required."
+
+    def has_permission(self, request, view):
+        is_admin = bool(
+            request.user
+            and request.user.is_authenticated
+            and (
+                request.user.role == User.Role.ADMIN
+                or request.user.is_staff
+                or request.user.is_superuser
+            )
+        )
+        if not is_admin:
+            return False
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            self.message = "Administrative operations are strictly read-only. Data mutations are not permitted."
+            return False
+        return True
+
+
 class IsCandidateOrAdmin(BasePermission):
     """
-    Allows access to candidates or administrative users.
+    Allows access to candidates or administrative users (read-only for admin).
     """
     message = "Candidate or admin privileges required."
 
@@ -88,8 +113,8 @@ class IsEmployerOrAdmin(BasePermission):
 
 class IsOwnerOrAdmin(BasePermission):
     """
-    Object-level permission foundation allowing owners of an object (or admins) to read/write it.
-    Checks obj.owner, obj.user, obj.posted_by, or obj itself if it is the User instance.
+    Object-level permission foundation allowing owners of an object to read/write it.
+    Admins are permitted read-only access.
     """
     message = "You do not have permission to access or modify this object."
 
@@ -97,13 +122,13 @@ class IsOwnerOrAdmin(BasePermission):
         if not (request.user and request.user.is_authenticated):
             return False
 
-        # Admins have full access
+        # If admin, allow only safe read methods
         if (
             request.user.role == User.Role.ADMIN
             or request.user.is_staff
             or request.user.is_superuser
         ):
-            return True
+            return request.method in ("GET", "HEAD", "OPTIONS")
 
         # If obj is User itself
         if isinstance(obj, User):

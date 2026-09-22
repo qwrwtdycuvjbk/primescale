@@ -35,12 +35,86 @@ export interface CompanyInput {
   workEmail?: string;
 }
 
+export interface DjangoEmployerMember {
+  id: string;
+  user_id?: string;
+  email?: string;
+  full_name?: string;
+  role?: string;
+  created_at?: string;
+}
+
+export interface DjangoEmployerProfile {
+  id: string;
+  company?: DjangoCompany;
+  role?: string;
+  full_name?: string;
+  email?: string;
+  company_name?: string;
+  company_website?: string;
+  company_location?: string;
+  company_size?: string;
+  industry?: string;
+  bio?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DjangoAdminEmployer {
+  id: string;
+  name: string;
+  website?: string | null;
+  location?: string | null;
+  industry?: string | null;
+  company_size?: string | null;
+  created_at: string;
+  jobs_count: number;
+  members_count: number;
+  primary_contact_name: string;
+  primary_contact_email: string;
+  primary_contact_active: boolean;
+  is_active: boolean;
+  profile_complete: boolean;
+}
+
+export interface DjangoAdminEmployerDetail extends DjangoAdminEmployer {
+  description?: string | null;
+  logo_url?: string | null;
+  members: Array<{
+    id: string;
+    user_id: string;
+    email: string;
+    full_name: string;
+    role: string;
+    is_active: boolean;
+    created_at: string;
+  }>;
+  jobs: Array<{
+    id: string;
+    title: string;
+    location: string;
+    work_location_type: string;
+    employment_type: string;
+    status: string;
+    created_at: string;
+    applications_count?: number;
+    matches_count?: number;
+  }>;
+}
+
 export const companiesApi = {
   /**
    * Get authenticated employer's company
    */
   async getMyCompany(options?: RequestOptions): Promise<DjangoCompany> {
     return djangoApi.get<DjangoCompany>("/api/v1/companies/me/", options);
+  },
+
+  /**
+   * Alias for getMyCompany / profile
+   */
+  async getMyProfile(options?: RequestOptions): Promise<DjangoEmployerProfile> {
+    return djangoApi.get<DjangoEmployerProfile>("/api/v1/companies/me/", options);
   },
 
   /**
@@ -56,7 +130,6 @@ export const companiesApi = {
     profileComplete: boolean;
     company: DjangoCompany;
   }> {
-    // Map camelCase to snake_case for Django serializer
     const payload = {
       name: data.name,
       website: data.website,
@@ -135,6 +208,38 @@ export const companiesApi = {
       options,
     );
   },
+
+  /**
+   * Admin: List all employers / companies (read-only)
+   */
+  async listAdminEmployers(
+    params?: {
+      q?: string;
+      status?: string;
+      industry?: string;
+      limit?: number;
+      offset?: number;
+    },
+    options?: RequestOptions,
+  ): Promise<{
+    employers: DjangoAdminEmployer[];
+    totalCount: number;
+    activeCount: number;
+    count: number;
+  }> {
+    return djangoApi.get("/api/v1/admin/employers/", {
+      ...options,
+      params,
+    });
+  },
+
+  /**
+   * Admin: Get single employer / company detail by ID (read-only)
+   */
+  async getAdminEmployer(
+    employerId: string,
+    options?: RequestOptions,
+  ): Promise<DjangoAdminEmployerDetail> {
+    return djangoApi.get<DjangoAdminEmployerDetail>(`/api/v1/admin/employers/${employerId}/`, options);
+  },
 };
-
-

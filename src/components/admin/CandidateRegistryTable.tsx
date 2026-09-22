@@ -1,218 +1,255 @@
-import { workAuthLabel } from "@/lib/constants";
-import type { CandidateProfile, Profile } from "@/lib/types";
+"use client";
 
-export type AdminCandidateRow = Pick<
-  CandidateProfile,
-  | "id"
-  | "user_id"
-  | "headline"
-  | "phone"
-  | "current_title"
-  | "years_experience"
-  | "experience_level"
-  | "work_authorization"
-  | "us_state"
-  | "availability_status"
-  | "profile_completeness"
-  | "open_to_matching"
-  | "profile_complete"
-  | "resume_url"
-  | "github_url"
-  | "linkedin_url"
-  | "source"
-  | "created_at"
-  | "updated_at"
-> & {
-  profiles: Pick<Profile, "full_name" | "email" | "phone" | "created_at">;
-};
+import { useState } from "react";
+import Link from "next/link";
+import {
+  Search,
+  Download,
+  ExternalLink,
+  User,
+  Power,
+  CheckCircle2,
+  Trash2,
+} from "lucide-react";
+import { CandidateAccountActionButtons } from "./CandidateAccountActionButtons";
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+export interface CandidateRow {
+  id: string;
+  user_id?: string;
+  user_email?: string;
+  user_full_name?: string;
+  email?: string;
+  full_name?: string;
+  name?: string;
+  headline: string;
+  skills: string[];
+  role_categories: string[];
+  experience_level: string;
+  years_experience?: number | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  work_authorization: string;
+  us_state?: string | null;
+  availability_status: string;
+  profile_completeness: number;
+  open_to_matching: boolean;
+  resume_url?: string | null;
+  source?: string | null;
+  created_at?: string;
+  user_is_active?: boolean;
+  is_active?: boolean;
+  user?: {
+    id?: string;
+    email?: string;
+    full_name?: string;
+    is_active?: boolean;
+  };
+  profiles?: {
+    id?: string;
+    email?: string;
+    full_name?: string;
+    phone?: string;
+    role?: string;
+    is_active?: boolean;
+  };
 }
 
-function availabilityLabel(value?: string | null) {
-  switch (value) {
-    case "actively_looking":
-      return "Actively looking";
-    case "open":
-      return "Open";
-    case "not_looking":
-      return "Not looking";
-    default:
-      return "—";
-  }
+export type AdminCandidateRow = CandidateRow;
+
+interface Props {
+  candidates?: CandidateRow[];
+  initialCandidates?: CandidateRow[];
+  totalCount?: number;
+  activeCount?: number;
 }
 
-function sourceLabel(value?: string | null) {
-  switch (value) {
-    case "people_prime":
-      return "People Prime";
-    case "platform":
-      return "Platform";
-    default:
-      return "Platform";
-  }
-}
-
-function experienceLabel(value?: string | null) {
-  switch (value) {
-    case "junior":
-      return "Junior";
-    case "mid":
-      return "Mid";
-    case "senior":
-      return "Senior";
-    case "lead":
-      return "Lead";
-    default:
-      return "—";
-  }
-}
-
-/** Compact labels so the registry table stays readable. */
-function workAuthShortLabel(value?: string | null) {
-  if (value === "international_remote" || value === "other") {
-    return "Remote outside US";
-  }
-  if (value === "h1b") return "H-1B";
-  return workAuthLabel(value);
-}
-
-export function CandidateRegistryTable({ candidates }: { candidates: AdminCandidateRow[] }) {
-  if (!candidates.length) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
-        <p className="text-lg font-medium">No candidates match these filters</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Try clearing filters or check back when new candidates sign up.
-        </p>
-      </div>
-    );
-  }
+export function CandidateRegistryTable({
+  candidates: propCandidates,
+  initialCandidates,
+}: Props) {
+  const [candidates, setCandidates] = useState<CandidateRow[]>(
+    propCandidates || initialCandidates || []
+  );
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-card">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-border bg-muted/40">
-            <tr>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Candidate</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Source</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Signed up</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Title</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Experience</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Work auth</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Availability</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Profile</th>
-              <th className="px-5 py-4 font-medium text-muted-foreground">Contact</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {candidates.map((candidate) => {
-              const profile = candidate.profiles;
+    <div className="space-y-6">
+      {/* Candidates Table */}
+      <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <tr>
+                <th className="py-4 px-6">Candidate</th>
+                <th className="py-4 px-6">Headline & Skills</th>
+                <th className="py-4 px-6">Status</th>
+                <th className="py-4 px-6">Account Status</th>
+                <th className="py-4 px-6">Source</th>
+                <th className="py-4 px-6">Resume</th>
+                <th className="py-4 px-6 text-right">Account Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {candidates.length > 0 ? (
+                candidates.map((candidate) => {
+                  const isActive =
+                    candidate.user_is_active !== undefined
+                      ? candidate.user_is_active
+                      : candidate.is_active !== undefined
+                        ? candidate.is_active
+                        : (candidate.user?.is_active ?? candidate.profiles?.is_active ?? true);
 
-              return (
-                <tr key={candidate.id} className="align-top">
-                  <td className="px-5 py-4">
-                    <p className="font-medium">{profile.full_name || "Candidate"}</p>
-                    {candidate.headline && (
-                      <p className="mt-1 text-muted-foreground">{candidate.headline}</p>
-                    )}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        candidate.source === "people_prime"
-                          ? "bg-muted text-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {sourceLabel(candidate.source)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap text-muted-foreground">
-                    {formatDate(candidate.created_at)}
-                  </td>
-                  <td className="px-5 py-4">{candidate.current_title ?? "—"}</td>
-                  <td className="px-5 py-4 text-muted-foreground">
-                    {experienceLabel(candidate.experience_level)}
-                    {candidate.years_experience != null && (
-                      <span className="mt-1 block">{candidate.years_experience} yrs</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-muted-foreground">
-                    <span title={workAuthLabel(candidate.work_authorization)}>
-                      {workAuthShortLabel(candidate.work_authorization)}
-                    </span>
-                    {candidate.us_state && (
-                      <span className="mt-1 block">{candidate.us_state}</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-muted-foreground">
-                    {availabilityLabel(candidate.availability_status)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        candidate.profile_complete
-                          ? "bg-muted text-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {candidate.profile_complete
-                        ? `${candidate.profile_completeness ?? 100}%`
-                        : "Incomplete"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <p className="text-muted-foreground">{profile.email}</p>
-                    {(candidate.phone || profile.phone) && (
-                      <p className="mt-1 text-muted-foreground">
-                        {candidate.phone || profile.phone}
-                      </p>
-                    )}
-                    <div className="mt-2 flex flex-wrap gap-3">
-                      {candidate.linkedin_url && (
-                        <a
-                          href={candidate.linkedin_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
+                  const rawName =
+                    candidate.user_full_name ||
+                    candidate.full_name ||
+                    candidate.name ||
+                    candidate.profiles?.full_name ||
+                    candidate.user?.full_name ||
+                    "";
+                  const name = rawName.trim() || "Anonymous Candidate";
+
+                  const rawEmail =
+                    candidate.user_email ||
+                    candidate.email ||
+                    candidate.profiles?.email ||
+                    candidate.user?.email ||
+                    "";
+                  const email = rawEmail.trim() || "No email";
+
+                  const skills = Array.isArray(candidate.skills) ? candidate.skills.slice(0, 4) : [];
+
+                  return (
+                    <tr key={candidate.id} className="transition-colors hover:bg-muted/20">
+                      <td className="py-4 px-6">
+                        <Link
+                          href={`/admin/candidates/${candidate.id}`}
+                          className="group block font-semibold text-foreground hover:text-primary transition-colors"
                         >
-                          LinkedIn
-                        </a>
-                      )}
-                      {candidate.github_url && (
-                        <a
-                          href={candidate.github_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-sm">
+                              {(name !== "Anonymous Candidate" ? name : email).charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {name}
+                              </p>
+                              <p className="text-xs text-muted-foreground font-mono">{email}</p>
+                            </div>
+                          </div>
+                        </Link>
+                      </td>
+
+                      <td className="py-4 px-6 max-w-xs">
+                        <p className="font-medium text-foreground text-xs truncate">
+                          {candidate.headline || "No headline provided"}
+                        </p>
+                        {skills.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {skills.map((skill, i) => (
+                              <span
+                                key={i}
+                                className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                            candidate.availability_status === "actively_looking"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                              : candidate.availability_status === "open"
+                                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                : "bg-muted text-muted-foreground"
+                          }`}
                         >
-                          GitHub
-                        </a>
-                      )}
-                      {candidate.resume_url && (
-                        <a
-                          href={`/api/admin/candidates/${candidate.id}/resume`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
+                          {candidate.availability_status ? candidate.availability_status.replace("_", " ") : "Unknown"}
+                        </span>
+                      </td>
+
+                      {/* Account Status */}
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                            isActive
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                              : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                          }`}
                         >
-                          Resume
-                        </a>
-                      )}
-                    </div>
+                          <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-red-500"}`} />
+                          {isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                          {candidate.source === "people_prime" ? "People Prime" : "Direct"}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {candidate.resume_url ? (
+                          <a
+                            href={`/api/admin/candidates/${candidate.id}/resume`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Resume
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">None</span>
+                        )}
+                      </td>
+
+                      {/* Account Actions */}
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end">
+                          <CandidateAccountActionButtons
+                            candidateId={candidate.id}
+                            candidateName={name}
+                            candidateEmail={email}
+                            isActive={isActive}
+                            compact={true}
+                            onStatusChange={(newStatus) => {
+                              setCandidates((prev) =>
+                                prev.map((c) =>
+                                  c.id === candidate.id
+                                    ? {
+                                        ...c,
+                                        user_is_active: newStatus,
+                                        is_active: newStatus,
+                                        user: c.user ? { ...c.user, is_active: newStatus } : undefined,
+                                        profiles: c.profiles ? { ...c.profiles, is_active: newStatus } : undefined,
+                                      }
+                                    : c
+                                )
+                              );
+                            }}
+                            onDeleted={() => {
+                              setCandidates((prev) => prev.filter((c) => c.id !== candidate.id));
+                            }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground text-sm">
+                    <User className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
+                    No candidates found matching your criteria.
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

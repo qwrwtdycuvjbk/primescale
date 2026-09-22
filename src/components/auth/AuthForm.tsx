@@ -24,6 +24,14 @@ const candidateCopy = {
   emailLabel: "Email",
 };
 
+const adminCopy = {
+  signupTitle: "Admin account",
+  signupSubtitle: "Administrator access.",
+  loginTitle: "Admin Login",
+  loginSubtitle: "Sign in to access the administrator dashboard.",
+  emailLabel: "Admin email",
+};
+
 export function AuthForm({
   mode,
   role,
@@ -35,7 +43,7 @@ export function AuthForm({
   showSignOut,
 }: {
   mode: "login" | "signup";
-  role: Extract<UserRole, "employer" | "candidate">;
+  role: UserRole;
   next?: string | null;
   error?: string | null;
   details?: string | null;
@@ -43,7 +51,12 @@ export function AuthForm({
   email?: string | null;
   showSignOut?: boolean;
 }) {
-  const copy = role === "employer" ? employerCopy : candidateCopy;
+  const copy =
+    role === "employer"
+      ? employerCopy
+      : role === "admin"
+        ? adminCopy
+        : candidateCopy;
   const basePath = `/auth/${role}`;
   const isLogin = mode === "login";
   const compactInputClass = `${fieldInputClass} py-2 text-sm`;
@@ -89,7 +102,11 @@ export function AuthForm({
     return (
       <div className="w-full">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          {role === "employer" ? "For employers" : "For candidates"}
+          {role === "employer"
+            ? "For employers"
+            : role === "admin"
+              ? "People Remotely"
+              : "For candidates"}
         </p>
         <h2 className="display-headline mt-1 text-xl text-foreground sm:text-2xl">
           {copy.loginTitle}
@@ -122,12 +139,14 @@ export function AuthForm({
               <label htmlFor="password" className={fieldLabelClass}>
                 Password
               </label>
-              <Link
-                href={`/auth/password-reset?role=${role}`}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                Forgot password?
-              </Link>
+              {role !== "admin" && (
+                <Link
+                  href={`/auth/password-reset?role=${role}`}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              )}
             </div>
             <PasswordInput id="password" className={compactInputClass} />
           </div>
@@ -139,38 +158,51 @@ export function AuthForm({
             type="submit"
             className="relative z-10 w-full cursor-pointer py-2.5 text-sm"
           >
-            Log in
+            {role === "admin" ? "Admin Log in" : "Log in"}
             <ArrowRight className="h-4 w-4" />
           </PrimaryButton>
         </form>
 
-        <AuthGoogleSection mode={mode} role={role} next={next} compact />
+        {role !== "admin" && (
+          <AuthGoogleSection mode={mode} role={role as "employer" | "candidate"} next={next} compact />
+        )}
 
-        <p className="mt-3 text-center text-xs text-muted-foreground sm:text-sm">
-          New to People Remotely?{" "}
-          <Link
-            href={`${basePath}/signup`}
-            className="font-medium text-foreground hover:text-primary"
-          >
-            Create an account
-          </Link>
-          <span className="mx-1.5 text-border">·</span>
-          {role === "employer" ? (
+        {role === "admin" ? (
+          <p className="mt-4 text-center text-xs text-muted-foreground sm:text-sm">
             <Link
-              href="/auth/candidate/login"
+              href="/auth/login"
+              className="font-medium text-foreground hover:text-primary transition-colors"
+            >
+              Back to login options
+            </Link>
+          </p>
+        ) : (
+          <p className="mt-3 text-center text-xs text-muted-foreground sm:text-sm">
+            New to People Remotely?{" "}
+            <Link
+              href={`${basePath}/signup`}
               className="font-medium text-foreground hover:text-primary"
             >
-              Candidate log in
+              Create an account
             </Link>
-          ) : (
-            <Link
-              href="/auth/employer/login"
-              className="font-medium text-foreground hover:text-primary"
-            >
-              Employer log in
-            </Link>
-          )}
-        </p>
+            <span className="mx-1.5 text-border">•</span>
+            {role === "employer" ? (
+              <Link
+                href="/auth/candidate/login"
+                className="font-medium text-foreground hover:text-primary"
+              >
+                Candidate log in
+              </Link>
+            ) : (
+              <Link
+                href="/auth/employer/login"
+                className="font-medium text-foreground hover:text-primary"
+              >
+                Employer log in
+              </Link>
+            )}
+          </p>
+        )}
       </div>
     );
   }
@@ -178,7 +210,11 @@ export function AuthForm({
   return (
     <div className="w-full">
       <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        {role === "employer" ? "For employers" : "For candidates"}
+        {role === "employer"
+          ? "For employers"
+          : role === "admin"
+            ? "People Remotely"
+            : "For candidates"}
       </p>
       <h2
         className={`display-headline mt-1 text-foreground ${
@@ -277,54 +313,71 @@ export function AuthForm({
           type="submit"
           className={`relative z-10 w-full cursor-pointer ${isLogin ? "py-2.5 text-sm" : ""}`}
         >
-          {mode === "signup" ? "Create account" : "Log in"}
+          {mode === "signup"
+            ? "Create account"
+            : role === "admin"
+              ? "Admin Log in"
+              : "Log in"}
           <ArrowRight className="h-4 w-4" />
         </PrimaryButton>
       </form>
 
-      <AuthGoogleSection mode={mode} role={role} next={next} compact={isLogin} />
+      {role !== "admin" && (
+        <AuthGoogleSection mode={mode} role={role as "employer" | "candidate"} next={next} compact={isLogin} />
+      )}
 
-      <p className={`text-center text-xs text-muted-foreground sm:text-sm ${isLogin ? "mt-3" : "mt-4"}`}>
-        {mode === "signup" ? (
-          <>
-            Already have an account?{" "}
-            <Link
-              href={`${basePath}/login`}
-              className="font-medium text-foreground hover:text-primary"
-            >
-              Log in
-            </Link>
-          </>
-        ) : (
-          <>
-            New to People Remotely?{" "}
-            <Link
-              href={`${basePath}/signup`}
-              className="font-medium text-foreground hover:text-primary"
-            >
-              Create an account
-            </Link>
-            <span className="mx-1.5 text-border">·</span>
-            {role === "employer" ? (
+      {role === "admin" ? (
+        <p className="mt-4 text-center text-xs text-muted-foreground sm:text-sm">
+          <Link
+            href="/auth/login"
+            className="font-medium text-foreground hover:text-primary transition-colors"
+          >
+            Back to login options
+          </Link>
+        </p>
+      ) : (
+        <p className={`text-center text-xs text-muted-foreground sm:text-sm ${isLogin ? "mt-3" : "mt-4"}`}>
+          {mode === "signup" ? (
+            <>
+              Already have an account?{" "}
               <Link
-                href="/auth/candidate/login"
+                href={`${basePath}/login`}
                 className="font-medium text-foreground hover:text-primary"
               >
-                Candidate log in
+                Log in
               </Link>
-            ) : (
+            </>
+          ) : (
+            <>
+              New to People Remotely?{" "}
               <Link
-                href="/auth/employer/login"
+                href={`${basePath}/signup`}
                 className="font-medium text-foreground hover:text-primary"
               >
-                Employer log in
+                Create an account
               </Link>
-            )}
-          </>
-        )}
-      </p>
+              <span className="mx-1.5 text-border">•</span>
+              {role === "employer" ? (
+                <Link
+                  href="/auth/candidate/login"
+                  className="font-medium text-foreground hover:text-primary"
+                >
+                  Candidate log in
+                </Link>
+              ) : (
+                <Link
+                  href="/auth/employer/login"
+                  className="font-medium text-foreground hover:text-primary"
+                >
+                  Employer log in
+                </Link>
+              )}
+            </>
+          )}
+        </p>
+      )}
 
-      {mode === "signup" && (
+      {mode === "signup" && role !== "admin" && (
         <p className="mt-2 text-center text-xs text-muted-foreground sm:text-sm">
           {role === "employer" ? (
             <>

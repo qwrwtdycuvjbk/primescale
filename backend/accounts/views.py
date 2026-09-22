@@ -217,7 +217,9 @@ class GoogleOAuthView(APIView):
     def post(self, request):
         serializer = GoogleOAuthSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            error_val = serializer.errors.get('non_field_errors', ['Google authentication failed.'])
+            error_msg = error_val[0] if isinstance(error_val, list) else str(error_val)
+            return Response({'error': error_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
         user, created = serializer.save()
         refresh = RefreshToken.for_user(user)

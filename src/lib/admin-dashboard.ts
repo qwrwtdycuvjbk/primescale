@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { MIN_MATCH_SCORE } from "@/lib/constants";
-import { adminApi, handoffsApi, matchingApi } from "@/lib/api";
+import { adminApi, matchingApi } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 
 export function startOfWeekIso(): string {
@@ -15,15 +15,44 @@ export function startOfWeekIso(): string {
 
 export type AdminNavCounts = {
   pendingMatches: number;
-  pendingHandoffs: number;
 };
 
 export type AdminDashboardStats = AdminNavCounts & {
-  newCandidatesThisWeek: number;
-  newEmployersThisWeek: number;
-  activeJobsWithNoMatches: number;
+  // Candidate Stats
+  totalCandidates: number;
+  completedProfiles: number;
   incompleteProfiles: number;
+  candidatesWithResume: number;
+  candidatesWithoutResume: number;
+  candidatesAvailable: number;
+  candidatesOpenToMatching: number;
+  newCandidatesThisWeek: number;
+
+  // Account Stats
+  totalCandidateAccounts: number;
+  totalEmployerAccounts: number;
+  newEmployersThisWeek: number;
+
+  // Job Stats
+  totalInternalJobs: number;
+  activeJobs: number;
+  closedJobs: number;
+  draftJobs: number;
+  totalExternalJobs: number;
+  activeJobsWithNoMatches: number;
+
+  // Application Stats
+  totalApplications: number;
   candidateInterested: number;
+  employerShortlisted: number;
+  mutualFit: number;
+  rejectedApplications: number;
+
+  // Matching Stats
+  totalMatches: number;
+  highConfidenceMatches: number;
+
+  // Previews
   pendingMatchPreviews: {
     id: string;
     matchScore: number;
@@ -32,18 +61,14 @@ export type AdminDashboardStats = AdminNavCounts & {
     jobTitle: string;
     companyName: string;
   }[];
-  candidateInterestPreviews: {
+  recentCandidatePreviews?: {
     id: string;
-    matchScore: number;
-    candidateName: string;
-    jobTitle: string;
-    companyName: string;
-  }[];
-  pendingHandoffPreviews: {
-    id: string;
-    candidateName: string;
-    jobTitle: string;
-    companyName: string;
+    name: string;
+    email: string;
+    currentTitle: string;
+    completeness: number;
+    availability: string;
+    createdAt: string;
   }[];
   unmatchedJobPreviews: {
     id: string;
@@ -63,10 +88,7 @@ export type AdminDashboardStats = AdminNavCounts & {
 export const loadAdminNavCounts = cache(async (): Promise<AdminNavCounts> => {
   try {
     const token = await getAccessToken();
-    const [matches, handoffs] = await Promise.all([
-      matchingApi.listMatches({ visible_to_employer: false }, { token }),
-      handoffsApi.listHandoffs("pending", { token }),
-    ]);
+    const matches = await matchingApi.listMatches({ visible_to_employer: false }, { token });
 
     const pendingMatches = matches
       ? matches.filter(
@@ -77,17 +99,13 @@ export const loadAdminNavCounts = cache(async (): Promise<AdminNavCounts> => {
         ).length
       : 0;
 
-    const pendingHandoffs = handoffs ? handoffs.length : 0;
-
     return {
       pendingMatches,
-      pendingHandoffs,
     };
   } catch (err) {
     console.error("Failed to load admin nav counts:", err);
     return {
       pendingMatches: 0,
-      pendingHandoffs: 0,
     };
   }
 });
@@ -97,7 +115,7 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
     const token = await getAccessToken();
     const djangoStats = await adminApi.getDashboardStats({ token });
     if (djangoStats) {
-      return djangoStats;
+      return djangoStats as AdminDashboardStats;
     }
   } catch (err) {
     console.error("Failed to load admin dashboard stats:", err);
@@ -105,15 +123,32 @@ export async function loadAdminDashboardStats(): Promise<AdminDashboardStats> {
 
   return {
     pendingMatches: 0,
-    pendingHandoffs: 0,
-    newCandidatesThisWeek: 0,
-    newEmployersThisWeek: 0,
-    activeJobsWithNoMatches: 0,
+    totalCandidates: 0,
+    completedProfiles: 0,
     incompleteProfiles: 0,
+    candidatesWithResume: 0,
+    candidatesWithoutResume: 0,
+    candidatesAvailable: 0,
+    candidatesOpenToMatching: 0,
+    newCandidatesThisWeek: 0,
+    totalCandidateAccounts: 0,
+    totalEmployerAccounts: 0,
+    newEmployersThisWeek: 0,
+    totalInternalJobs: 0,
+    activeJobs: 0,
+    closedJobs: 0,
+    draftJobs: 0,
+    totalExternalJobs: 0,
+    activeJobsWithNoMatches: 0,
+    totalApplications: 0,
     candidateInterested: 0,
+    employerShortlisted: 0,
+    mutualFit: 0,
+    rejectedApplications: 0,
+    totalMatches: 0,
+    highConfidenceMatches: 0,
     pendingMatchPreviews: [],
-    candidateInterestPreviews: [],
-    pendingHandoffPreviews: [],
+    recentCandidatePreviews: [],
     unmatchedJobPreviews: [],
     incompleteProfilePreviews: [],
   };

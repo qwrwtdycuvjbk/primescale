@@ -6,16 +6,28 @@ from .utils import calculate_profile_completeness, is_candidate_profile_complete
 
 
 class CandidateProfileSerializer(serializers.ModelSerializer):
-    user_email = serializers.EmailField(source="user.email", read_only=True)
-    user_full_name = serializers.CharField(source="user.full_name", read_only=True)
+    user_email = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    user_is_active = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField()
+    user_id = serializers.UUIDField(source="user.id", read_only=True)
 
     class Meta:
         model = CandidateProfile
         fields = (
             "id",
             "user",
+            "user_id",
             "user_email",
             "user_full_name",
+            "user_is_active",
+            "email",
+            "full_name",
+            "name",
+            "is_active",
             "headline",
             "phone",
             "current_title",
@@ -52,6 +64,42 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    def get_user_full_name(self, obj) -> str:
+        user = getattr(obj, "user", None)
+        if not user:
+            return ""
+        name = (getattr(user, "full_name", "") or "").strip()
+        if name:
+            return name
+        first = (getattr(user, "first_name", "") or "").strip()
+        last = (getattr(user, "last_name", "") or "").strip()
+        combined = f"{first} {last}".strip()
+        return combined
+
+    def get_full_name(self, obj) -> str:
+        return self.get_user_full_name(obj)
+
+    def get_name(self, obj) -> str:
+        return self.get_user_full_name(obj)
+
+    def get_user_email(self, obj) -> str:
+        user = getattr(obj, "user", None)
+        if not user:
+            return ""
+        return (getattr(user, "email", "") or "").strip()
+
+    def get_email(self, obj) -> str:
+        return self.get_user_email(obj)
+
+    def get_user_is_active(self, obj) -> bool:
+        user = getattr(obj, "user", None)
+        if not user:
+            return True
+        return bool(getattr(user, "is_active", True))
+
+    def get_is_active(self, obj) -> bool:
+        return self.get_user_is_active(obj)
+
 
 class CandidateProfileInputSerializer(serializers.Serializer):
     headline = serializers.CharField(max_length=255, required=False, allow_blank=True)
@@ -77,11 +125,11 @@ class CandidateProfileInputSerializer(serializers.Serializer):
         required=False,
         default=CandidateProfile.PreferredWorkType.REMOTE,
     )
-    resume_url = serializers.CharField(max_length=500, required=False, allow_blank=True, allow_null=True)
-    github_url = serializers.URLField(max_length=500, required=False, allow_blank=True, allow_null=True)
-    portfolio_url = serializers.URLField(max_length=500, required=False, allow_blank=True, allow_null=True)
-    linkedin_url = serializers.URLField(max_length=500, required=False, allow_blank=True, allow_null=True)
-    bio = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    resume_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    github_url = serializers.URLField(max_length=500, required=False, allow_blank=True)
+    portfolio_url = serializers.URLField(max_length=500, required=False, allow_blank=True)
+    linkedin_url = serializers.URLField(max_length=500, required=False, allow_blank=True)
+    bio = serializers.CharField(required=False, allow_blank=True)
     availability_status = serializers.ChoiceField(
         choices=CandidateProfile.AvailabilityStatus.choices,
         required=False,
@@ -90,79 +138,17 @@ class CandidateProfileInputSerializer(serializers.Serializer):
     privacy_visibility = serializers.ChoiceField(
         choices=CandidateProfile.PrivacyVisibility.choices,
         required=False,
-        default=CandidateProfile.PrivacyVisibility.EMPLOYERS_ONLY,
+        default=CandidateProfile.PrivacyVisibility.PUBLIC,
     )
 
     def validate_skills(self, value):
-        parsed = parse_skills_list(value)
-        return parsed
-
-    def validate(self, attrs):
-        salary_min = attrs.get("salary_min")
-        salary_max = attrs.get("salary_max")
-        if salary_min and salary_max and salary_min > salary_max:
-            raise serializers.ValidationError({"salary_min": "Minimum salary cannot exceed maximum salary."})
-        return attrs
-
-    def save(self, **kwargs):
-        user = self.context["request"].user
-        validated_data = dict(self.validated_data)
-
-        # Phone sync to user if provided
-        phone = validated_data.get("phone")
-        if phone and phone.strip():
-            user.phone = phone.strip()
-            user.save(update_fields=["phone", "updated_at"])
-
-        skills = validated_data.get("skills", [])
-        if isinstance(skills, str):
-            skills = parse_skills_list(skills)
-
-        existing_profile = CandidateProfile.objects.filter(user=user).first()
-        resume_url = validated_data.get("resume_url") or (existing_profile.resume_url if existing_profile else None)
-
-        completeness_data = dict(validated_data)
-        completeness_data["skills"] = skills
-        completeness_data["resume_url"] = resume_url
-
-        completeness = calculate_profile_completeness(completeness_data)
-        is_complete = is_candidate_profile_complete(completeness_data)
-        open_to_matching = validated_data.get("availability_status") != CandidateProfile.AvailabilityStatus.NOT_LOOKING
-
-        profile, _ = CandidateProfile.objects.update_or_create(
-            user=user,
-            defaults={
-                "headline": validated_data.get("headline"),
-                "phone": phone,
-                "current_title": validated_data.get("current_title"),
-                "years_experience": validated_data.get("years_experience"),
-                "skills": skills,
-                "role_categories": validated_data.get("role_categories", []),
-                "experience_level": validated_data.get("experience_level"),
-                "salary_min": validated_data.get("salary_min"),
-                "salary_max": validated_data.get("salary_max"),
-                "work_authorization": validated_data.get("work_authorization"),
-                "us_state": validated_data.get("us_state"),
-                "remote_preference": validated_data.get("remote_preference", "remote"),
-                "preferred_work_type": validated_data.get("preferred_work_type", "remote"),
-                "resume_url": resume_url,
-                "github_url": validated_data.get("github_url"),
-                "portfolio_url": validated_data.get("portfolio_url"),
-                "linkedin_url": validated_data.get("linkedin_url"),
-                "bio": validated_data.get("bio"),
-                "availability_status": validated_data.get("availability_status", "actively_looking"),
-                "privacy_visibility": validated_data.get("privacy_visibility", "employers_only"),
-                "profile_completeness": completeness,
-                "open_to_matching": open_to_matching,
-                "profile_complete": is_complete,
-            },
-        )
-        return profile
+        return parse_skills_list(value)
 
 
-class PublicTalentCardSerializer(serializers.ModelSerializer):
+class PublicTalentShowcaseSerializer(serializers.ModelSerializer):
     """
-    Sanitized anonymized public talent showcase serializer matching src/lib/public-talent.ts.
+    Publicly safe serialized candidate profile for landing page talent showcase.
+    Omits personally identifiable information (email, phone, full real name).
     """
     displayName = serializers.SerializerMethodField()
     initials = serializers.SerializerMethodField()
@@ -252,32 +238,53 @@ class PublicTalentCardSerializer(serializers.ModelSerializer):
         return f"Up to {fmt(max_sal)}"
 
 
+# Alias for backward compatibility
+PublicTalentCardSerializer = PublicTalentShowcaseSerializer
+
+
 class AdminCandidateProfileUserNestedSerializer(serializers.ModelSerializer):
     """
     Nested user profile representation matching profiles!inner in CandidateRegistryTable.
     """
     class Meta:
         model = User
-        fields = ("full_name", "email", "phone", "created_at", "role")
+        fields = ("id", "full_name", "email", "phone", "created_at", "role", "is_active")
 
 
 class AdminCandidateListSerializer(serializers.ModelSerializer):
     """
     Serializer for the Admin Candidate Registry table.
-    Includes nested profiles dictionary for full drop-in compatibility with Next.js AdminCandidateRow.
+    Includes both top-level and nested user identity fields.
     """
     profiles = AdminCandidateProfileUserNestedSerializer(source="user", read_only=True)
+    user = AdminCandidateProfileUserNestedSerializer(read_only=True)
     user_id = serializers.UUIDField(source="user.id", read_only=True)
+    user_email = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    user_is_active = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = CandidateProfile
         fields = (
             "id",
             "user_id",
+            "user_email",
+            "user_full_name",
+            "user_is_active",
+            "email",
+            "full_name",
+            "name",
+            "is_active",
             "headline",
             "phone",
             "current_title",
             "years_experience",
+            "skills",
+            "role_categories",
             "experience_level",
             "work_authorization",
             "us_state",
@@ -292,7 +299,44 @@ class AdminCandidateListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "profiles",
+            "user",
         )
+
+    def get_user_full_name(self, obj) -> str:
+        user = getattr(obj, "user", None)
+        if not user:
+            return ""
+        name = (getattr(user, "full_name", "") or "").strip()
+        if name:
+            return name
+        first = (getattr(user, "first_name", "") or "").strip()
+        last = (getattr(user, "last_name", "") or "").strip()
+        combined = f"{first} {last}".strip()
+        return combined
+
+    def get_full_name(self, obj) -> str:
+        return self.get_user_full_name(obj)
+
+    def get_name(self, obj) -> str:
+        return self.get_user_full_name(obj)
+
+    def get_user_email(self, obj) -> str:
+        user = getattr(obj, "user", None)
+        if not user:
+            return ""
+        return (getattr(user, "email", "") or "").strip()
+
+    def get_email(self, obj) -> str:
+        return self.get_user_email(obj)
+
+    def get_user_is_active(self, obj) -> bool:
+        user = getattr(obj, "user", None)
+        if not user:
+            return True
+        return bool(getattr(user, "is_active", True))
+
+    def get_is_active(self, obj) -> bool:
+        return self.get_user_is_active(obj)
 
 
 class AdminCreateCandidateSerializer(serializers.Serializer):
@@ -347,4 +391,3 @@ class AdminCreateCandidateSerializer(serializers.Serializer):
         if User.objects.filter(email=normalized).exists():
             raise serializers.ValidationError(f"An account with this email already exists.")
         return normalized
-

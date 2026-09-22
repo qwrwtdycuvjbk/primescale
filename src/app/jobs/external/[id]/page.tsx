@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   Sparkles,
   AlertCircle,
-  Globe,
   Tag,
   CheckCircle2,
 } from "lucide-react";
@@ -264,9 +263,21 @@ export default function ExternalJobDetailPage() {
                           </span>
                         )}
                         {/* Source Attribution Badge */}
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                          <span>Source: {attributionName}</span>
-                        </span>
+                        {hasValidAttributionUrl ? (
+                          <a
+                            href={attributionUrl!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted"
+                          >
+                            <span>Source: {attributionName}</span>
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                            <span>Source: {attributionName}</span>
+                          </span>
+                        )}
                       </div>
 
                       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-snug">
@@ -369,29 +380,22 @@ export default function ExternalJobDetailPage() {
                 </div>
               </div>
 
-              {/* Layout Container: Left (Description & Skills) & Right (Sidebar/Summary) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Full Description & Skills */}
-                <div className="lg:col-span-2 space-y-8">
-                  {/* Job Description Card */}
-                  <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 space-y-4 shadow-sm">
-                    <h2 className="text-lg font-bold text-foreground">Job Description</h2>
-                    <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line space-y-4">
-                      {job.description ? (
-                        job.description
-                      ) : (
-                        <p className="italic text-muted-foreground">Job description unavailable.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Skills / Tech Stack Section */}
-                  {job.tech_stack && job.tech_stack.length > 0 && (
-                    <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 space-y-4 shadow-sm">
+              {/* Row 2: Skills & Technologies + Candidate AI Fit */}
+              <div
+                className={`grid grid-cols-1 ${
+                  job.tech_stack && job.tech_stack.length > 0
+                    ? "md:grid-cols-2 gap-6"
+                    : "gap-6"
+                }`}
+              >
+                {/* Skills / Tech Stack Section */}
+                {job.tech_stack && job.tech_stack.length > 0 && (
+                  <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 space-y-4 shadow-sm flex flex-col justify-between">
+                    <div>
                       <h2 className="text-lg font-bold text-foreground">
-                        Skills & Technologies
+                        Skills &amp; Technologies
                       </h2>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2">
                         {job.tech_stack.map((tech) => (
                           <span
                             key={tech}
@@ -403,68 +407,30 @@ export default function ExternalJobDetailPage() {
                         ))}
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* Candidate AI Fit Card */}
+                <div className="rounded-3xl border border-dashed border-border bg-muted/20 p-6 sm:p-8 space-y-3 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <Sparkles className="h-4 w-4 text-primary/70" />
+                    <span>Candidate AI Fit</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    AI profile matching evaluates remote compatibility and role alignment based on verified candidate credentials.
+                  </p>
                 </div>
+              </div>
 
-                {/* Right Column: Source Attribution & Future Match Placeholder */}
-                <div className="space-y-6">
-                  {/* Source Attribution Card */}
-                  <div className="rounded-3xl border border-border bg-card p-6 space-y-4 shadow-sm">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                      <Globe className="h-4 w-4 text-primary" />
-                      <span>Opportunity Source</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      This position is aggregated from{" "}
-                      <span className="font-semibold text-foreground">{attributionName}</span>.
-                      Applications are processed directly by the employer.
-                    </p>
-                    {hasValidAttributionUrl && (
-                      <a
-                        href={attributionUrl!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                      >
-                        <span>Visit {attributionName}</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Future AI Match Area (Architecture Placeholder: clean, inactive, no fake score) */}
-                  <div className="rounded-3xl border border-dashed border-border bg-muted/20 p-6 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                      <Sparkles className="h-4 w-4 text-primary/70" />
-                      <span>Candidate AI Fit</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      AI profile matching evaluates remote compatibility and role alignment based on verified candidate credentials.
-                    </p>
-                  </div>
-
-                  {/* Prominent Bottom Apply Action Card */}
-                  <div className="rounded-3xl border border-border bg-card p-6 space-y-4 shadow-sm text-center">
-                    <h3 className="text-sm font-semibold text-foreground">Ready to Apply?</h3>
-                    <p className="text-xs text-muted-foreground">
-                      You will be redirected to the original application portal on {attributionName}.
-                    </p>
-                    {hasValidApplyUrl ? (
-                      <a
-                        href={job.original_job_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition-opacity"
-                      >
-                        <span>Apply on {attributionName}</span>
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    ) : (
-                      <div className="rounded-full border border-border bg-muted py-2.5 text-xs font-medium text-muted-foreground">
-                        Application link unavailable
-                      </div>
-                    )}
-                  </div>
+              {/* Row 3: Full-Width Job Description (Matches Header Card Width) */}
+              <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 space-y-4 shadow-sm">
+                <h2 className="text-lg font-bold text-foreground">Job Description</h2>
+                <div className="text-sm sm:text-base leading-relaxed text-foreground whitespace-pre-line space-y-4">
+                  {job.description ? (
+                    job.description
+                  ) : (
+                    <p className="italic text-muted-foreground">Job description unavailable.</p>
+                  )}
                 </div>
               </div>
             </div>

@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
   if (isProtected) {
     const loginUrl = request.nextUrl.clone();
     if (pathname.startsWith("/admin")) {
-      loginUrl.pathname = "/auth/employer/login";
+      loginUrl.pathname = "/auth/admin/login";
     } else {
       loginUrl.pathname = pathname.startsWith("/employer")
         ? "/auth/employer/login"

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth";
 import type { UserRole } from "@/lib/types";
 
-type AuthRole = Extract<UserRole, "employer" | "candidate">;
+type AuthRole = UserRole;
 
 export async function handleLoggedInAuthPage(
   intendedRole: AuthRole,
@@ -13,7 +13,16 @@ export async function handleLoggedInAuthPage(
   const { profile } = await getSessionProfile();
 
   if (profile) {
-    if (profile.role === intendedRole || profile.role === "admin") {
+    if (profile.role === "admin") {
+      redirect("/admin");
+    }
+
+    if (intendedRole === "admin") {
+      // Allow non-admin user to access admin login page to sign in with admin credentials
+      return;
+    }
+
+    if (profile.role === intendedRole) {
       redirect("/auth/redirect");
     }
 

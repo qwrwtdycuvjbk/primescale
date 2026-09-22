@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Shield } from "lucide-react";
 import { PeopleRemotelyLogo } from "@/components/PeopleRemotelyLogo";
 import { appContainerClass } from "@/components/site/layout";
 import { loadAdminNavCounts } from "@/lib/admin-dashboard";
@@ -71,25 +72,22 @@ export async function AdminShell({
             <nav className="flex flex-wrap gap-1">
               <NavLink href="/admin" label="Dashboard" activePath={activePath} />
               <NavLink href="/admin/candidates" label="Candidates" activePath={activePath} />
+              <NavLink href="/admin/employers" label="Employers" activePath={activePath} />
               <NavLink href="/admin/jobs" label="Jobs" activePath={activePath} />
-              <NavLink href="/admin/job-leads" label="Job leads" activePath={activePath} />
+              <NavLink href="/admin/applications" label="Applications" activePath={activePath} />
               <NavLink
                 href="/admin/matches"
-                label="Match review"
+                label="Matches"
                 activePath={activePath}
                 badge={counts.pendingMatches}
               />
-              <NavLink
-                href="/admin/handoffs"
-                label="Handoffs"
-                activePath={activePath}
-                badge={counts.pendingHandoffs}
-              />
+              <NavLink href="/admin/job-leads" label="Job leads" activePath={activePath} />
             </nav>
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {name} · People Prime ops
+            <span className="hidden items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+              <Shield className="h-3 w-3 text-primary" />
+              Read-Only Platform Monitor
             </span>
             <form action={signOut}>
               <button

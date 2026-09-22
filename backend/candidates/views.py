@@ -292,7 +292,7 @@ class CandidateResumeView(APIView):
 class AdminCandidateResumeView(APIView):
     """
     GET /api/v1/candidates/<uuid:pk>/resume/ -> Get presigned download URL for a candidate's resume (Admin only)
-    POST /api/v1/candidates/<uuid:pk>/resume/ -> Upload a candidate's resume (Admin only)
+    POST /api/v1/candidates/<uuid:pk>/resume/ -> Disabled for Read-Only Admin
     """
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -325,47 +325,10 @@ class AdminCandidateResumeView(APIView):
         )
 
     def post(self, request, pk):
-        try:
-            profile = CandidateProfile.objects.filter(Q(id=pk) | Q(user_id=pk)).first()
-        except Exception:
-            profile = None
-        if not profile:
-            return Response(
-                {"error": "Candidate profile not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        file_obj = request.FILES.get("file")
-        if not file_obj:
-            return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        from rest_framework.exceptions import ValidationError
-        try:
-            validate_file_upload(
-                file_obj,
-                allowed_types=ALLOWED_RESUME_TYPES,
-                max_size_bytes=settings.MAX_RESUME_SIZE_BYTES,
-            )
-        except ValidationError as e:
-            return Response({"error": str(e.detail[0] if isinstance(e.detail, list) else e.detail)}, status=status.HTTP_400_BAD_REQUEST)
-
-        storage_path = generate_storage_path(str(profile.user_id), file_obj.name)
-        storage = get_private_storage()
-        saved_path = storage.save(storage_path, file_obj)
-
-        profile.resume_url = saved_path
-        profile.save(update_fields=["resume_url", "updated_at"])
-
-        download_url = generate_presigned_download_url(saved_path)
-
         return Response(
-            {
-                "ok": True,
-                "resumePath": saved_path,
-                "downloadUrl": download_url,
-            },
-            status=status.HTTP_200_OK,
+            {"error": "Resume upload is not permitted for Read-Only Administrator role."},
+            status=status.HTTP_403_FORBIDDEN,
         )
-
 
 class AdminCandidateListView(APIView):
     """
@@ -374,6 +337,19 @@ class AdminCandidateListView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
+        unattached = User.objects.filter(role=User.Role.CANDIDATE, candidate_profile__isnull=True)
+        if unattached.exists():
+            for u in unattached:
+                CandidateProfile.objects.get_or_create(
+                    user=u,
+                    defaults={
+                        "profile_completeness": 0,
+                        "profile_complete": False,
+                        "availability_status": "open",
+                        "source": "platform",
+                    },
+                )
+
         queryset = CandidateProfile.objects.select_related("user").filter(user__role=User.Role.CANDIDATE)
 
         # Filters
@@ -454,168 +430,142 @@ class AdminCandidateListView(APIView):
 
 class AdminCandidateCreateView(APIView):
     """
-    POST /api/v1/admin/candidates/ -> Admin creates a single candidate account and profile.
+    POST /api/v1/admin/candidates/create/ -> Admin creates candidate (DISABLED: Read-Only Admin).
     """
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = AdminCreateCandidateSerializer(data=request.data)
-        if not serializer.is_valid():
-            first_err = next(iter(serializer.errors.values()))
-            err_msg = first_err[0] if isinstance(first_err, list) else str(first_err)
-            return Response({"error": err_msg, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        data = serializer.validated_data
-        try:
-            profile, user, matches_created = create_single_admin_candidate(data)
-            return Response(
-                {
-                    "ok": True,
-                    "id": str(profile.id),
-                    "candidate_id": str(profile.id),
-                    "candidateProfileId": str(profile.id),
-                    "userId": str(user.id),
-                    "matchesCreated": matches_created,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        return Response(
+            {"error": "Candidate creation is not permitted for Read-Only Administrator role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 class AdminCandidateBulkImportView(APIView):
     """
-    POST /api/v1/admin/candidates/import/ -> Bulk upload candidates via CSV or pre-parsed JSON rows.
-    Supports both multipart file uploads (.csv) and parsed array payloads.
+    POST /api/v1/admin/candidates/import/ -> Bulk upload candidates (DISABLED: Read-Only Admin).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        return Response(
+            {"error": "Candidate bulk import is not permitted for Read-Only Administrator role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+
+class AdminCandidateActivateView(APIView):
+    """
+    POST /api/v1/admin/candidates/<uuid:pk>/activate/
+    Activates a candidate account. Only accessible by Admins.
     """
     permission_classes = [IsAuthenticated, IsAdmin]
 
-    def post(self, request):
-        file_obj = request.FILES.get("file")
-        rows_data = request.data.get("rows")
-
-        parsed_rows = []
-
-        if file_obj:
-            name = file_obj.name.lower()
-            if not (name.endswith(".csv") or name.endswith(".txt")):
-                return Response(
-                    {"error": "Please upload a CSV file or submit parsed rows."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            try:
-                decoded = file_obj.read().decode("utf-8-sig", errors="ignore")
-                reader = csv.reader(io.StringIO(decoded))
-                grid = list(reader)
-                if len(grid) < 2:
-                    return Response(
-                        {"error": "File must include a header row and at least one candidate."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                # Locate header row containing email and full_name
-                header_idx = -1
-                for idx, row in enumerate(grid):
-                    norm_row = [c.strip().lower().replace(" ", "_") for c in row]
-                    if "email" in norm_row and ("full_name" in norm_row or "fullname" in norm_row or "name" in norm_row):
-                        header_idx = idx
-                        break
-
-                if header_idx == -1:
-                    return Response(
-                        {"error": "Could not find a header row with full_name and email."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                header = [c.strip().lower().replace(" ", "_") for c in grid[header_idx]]
-                for row_num, cells in enumerate(grid[header_idx + 1 :], start=header_idx + 2):
-                    if not cells or not any(c.strip() for c in cells):
-                        continue
-                    row_dict = {}
-                    for col_idx, col_name in enumerate(header):
-                        if col_idx < len(cells):
-                            row_dict[col_name] = cells[col_idx].strip()
-                    parsed_rows.append({"rowNumber": row_num, "input": row_dict})
-            except Exception as e:
-                return Response({"error": f"Failed to parse CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-        elif rows_data and isinstance(rows_data, list):
-            for idx, r in enumerate(rows_data, start=1):
-                parsed_rows.append({
-                    "rowNumber": r.get("rowNumber", idx),
-                    "input": r.get("input", r),
-                })
-        else:
+    def post(self, request, pk):
+        profile = CandidateProfile.objects.filter(Q(id=pk) | Q(user_id=pk)).select_related("user").first()
+        if not profile:
             return Response(
-                {"error": "Provide either a 'file' (.csv) or 'rows' array."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "Candidate profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
             )
+        user = profile.user
+        user.is_active = True
+        user.save(update_fields=["is_active", "updated_at"])
 
-        results = []
-        created_count = 0
-        total_matches = 0
-
-        for row_entry in parsed_rows:
-            row_num = row_entry["rowNumber"]
-            raw_input = row_entry["input"]
-            email = (raw_input.get("email") or "").strip().lower()
-
-            if not email or "@" not in email:
-                results.append({
-                    "row": row_num,
-                    "ok": False,
-                    "email": email,
-                    "error": "Valid email is required",
-                })
-                continue
-
-            full_name = (raw_input.get("fullName") or raw_input.get("full_name") or raw_input.get("name") or "").strip()
-            if not full_name:
-                results.append({
-                    "row": row_num,
-                    "ok": False,
-                    "email": email,
-                    "error": "Full name is required",
-                })
-                continue
-
-            if User.objects.filter(email=email).exists():
-                results.append({
-                    "row": row_num,
-                    "ok": False,
-                    "email": email,
-                    "error": f"An account already exists for {email}",
-                })
-                continue
-
-            try:
-                profile, user, matches_created = create_single_admin_candidate(raw_input)
-                created_count += 1
-                total_matches += matches_created
-                results.append({
-                    "row": row_num,
-                    "ok": True,
-                    "email": email,
-                    "matchesCreated": matches_created,
-                })
-            except Exception as exc:
-                results.append({
-                    "row": row_num,
-                    "ok": False,
-                    "email": email,
-                    "error": str(exc),
-                })
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'AUDIT: Admin %s activated candidate account %s (%s)',
+            request.user.email,
+            user.id,
+            user.email,
+        )
 
         return Response(
             {
                 "ok": True,
-                "totalRows": len(parsed_rows),
-                "created": created_count,
-                "failed": len([r for r in results if not r["ok"]]),
-                "totalMatches": total_matches,
-                "results": results,
+                "message": "Candidate account activated successfully.",
+                "is_active": True,
+                "candidateId": str(profile.id),
+                "userId": str(user.id),
             },
             status=status.HTTP_200_OK,
         )
 
+
+class AdminCandidateDeactivateView(APIView):
+    """
+    POST /api/v1/admin/candidates/<uuid:pk>/deactivate/
+    Deactivates a candidate account. Only accessible by Admins.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        profile = CandidateProfile.objects.filter(Q(id=pk) | Q(user_id=pk)).select_related("user").first()
+        if not profile:
+            return Response(
+                {"error": "Candidate profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        user = profile.user
+        user.is_active = False
+        user.save(update_fields=["is_active", "updated_at"])
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'AUDIT: Admin %s deactivated candidate account %s (%s)',
+            request.user.email,
+            user.id,
+            user.email,
+        )
+
+        return Response(
+            {
+                "ok": True,
+                "message": "Candidate account deactivated successfully.",
+                "is_active": False,
+                "candidateId": str(profile.id),
+                "userId": str(user.id),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AdminCandidateDeleteView(APIView):
+    """
+    DELETE /api/v1/admin/candidates/<uuid:pk>/
+    Safely deletes a candidate account and related data. Only accessible by Admins.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def delete(self, request, pk):
+        profile = CandidateProfile.objects.filter(Q(id=pk) | Q(user_id=pk)).select_related("user").first()
+        if not profile:
+            return Response(
+                {"error": "Candidate profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        user = profile.user
+        user_email = user.email
+        user_id = str(user.id)
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'AUDIT: Admin %s deleting candidate account %s (%s)',
+            request.user.email,
+            user_id,
+            user_email,
+        )
+
+        user.delete()
+
+        return Response(
+            {
+                "ok": True,
+                "message": "Candidate account deleted successfully.",
+                "candidateId": str(pk),
+                "userId": user_id,
+            },
+            status=status.HTTP_200_OK,
+        )

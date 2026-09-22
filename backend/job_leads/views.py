@@ -49,20 +49,10 @@ class JobLeadListView(APIView):
         )
 
     def post(self, request):
-        user = request.user
-        is_admin = user.role == User.Role.ADMIN or user.is_staff or user.is_superuser
-        if not is_admin:
-            return Response(
-                {"error": "Forbidden. Only administrators can save job leads."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        serializer = JobLeadSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        lead = serializer.save()
-        return Response(JobLeadSerializer(lead).data, status=status.HTTP_201_CREATED)
+        return Response(
+            {"error": "Creating job leads is not permitted for Read-Only Administrator role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 class RoleSubmissionCreateView(APIView):

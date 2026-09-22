@@ -9,6 +9,25 @@ export interface DjangoCandidateProfile {
   user_id?: string;
   user_email?: string;
   user_full_name?: string;
+  user_is_active?: boolean;
+  email?: string;
+  full_name?: string;
+  name?: string;
+  is_active?: boolean;
+  user?: {
+    id?: string;
+    email?: string;
+    full_name?: string;
+    is_active?: boolean;
+  };
+  profiles?: {
+    id?: string;
+    email?: string;
+    full_name?: string;
+    phone?: string;
+    role?: string;
+    is_active?: boolean;
+  };
   headline: string;
   phone?: string | null;
   current_title?: string | null;
@@ -32,6 +51,7 @@ export interface DjangoCandidateProfile {
   profile_completeness: number;
   open_to_matching: boolean;
   profile_complete: boolean;
+  source?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -216,6 +236,16 @@ export const candidatesApi = {
   },
 
   /**
+   * Admin: Get single candidate profile by ID
+   */
+  async getAdminCandidate(
+    candidateId: string,
+    options?: RequestOptions,
+  ): Promise<DjangoCandidateProfile> {
+    return djangoApi.get<DjangoCandidateProfile>(`/api/v1/candidates/${candidateId}/`, options);
+  },
+
+  /**
    * Admin: Get presigned resume download URL for candidate ID
    */
   async getAdminCandidateResume(
@@ -237,5 +267,34 @@ export const candidatesApi = {
     formData.append("file", file);
     return djangoApi.post(`/api/v1/candidates/${candidateId}/resume/`, formData, options);
   },
-};
 
+  /**
+   * Admin: Activate candidate account
+   */
+  async activateAdminCandidate(
+    candidateId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; message: string; is_active: boolean; candidateId: string; userId: string }> {
+    return djangoApi.post(`/api/v1/admin/candidates/${candidateId}/activate/`, {}, options);
+  },
+
+  /**
+   * Admin: Deactivate candidate account
+   */
+  async deactivateAdminCandidate(
+    candidateId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; message: string; is_active: boolean; candidateId: string; userId: string }> {
+    return djangoApi.post(`/api/v1/admin/candidates/${candidateId}/deactivate/`, {}, options);
+  },
+
+  /**
+   * Admin: Permanently delete candidate account
+   */
+  async deleteAdminCandidate(
+    candidateId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; message: string; candidateId: string; userId: string }> {
+    return djangoApi.delete(`/api/v1/admin/candidates/${candidateId}/delete/`, options);
+  },
+};

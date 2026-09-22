@@ -1,3 +1,4 @@
+from companies.views import AdminEmployerListView, AdminEmployerDetailView
 from django.contrib import admin
 from django.urls import path, include
 from common.dashboard_views import AdminDashboardStatsView
@@ -7,6 +8,10 @@ from job_leads.views import RoleSubmissionCreateView
 api_v1_patterns = [
     path("health/", health_check, name="health-check"),
     path("admin/dashboard/stats/", AdminDashboardStatsView.as_view(), name="admin_dashboard_stats"),
+    path("admin/employers/", include([
+        path("", AdminEmployerListView.as_view(), name="admin_employer_list"),
+        path("<uuid:pk>/", AdminEmployerDetailView.as_view(), name="admin_employer_detail"),
+    ])),
     path("admin/candidates/", include([
         path("", include("candidates.admin_urls")),
     ])),

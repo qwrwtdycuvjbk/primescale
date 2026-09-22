@@ -1,17 +1,36 @@
-import { redirect } from "next/navigation";
+import { AuthForm } from "@/components/auth/AuthForm";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { handleLoggedInAuthPage } from "@/lib/auth-visitor";
 
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<{
+    next?: string;
+    error?: string;
+    details?: string;
+    email?: string;
+  }>;
 }) {
   const params = await searchParams;
-  const query = new URLSearchParams();
+  await handleLoggedInAuthPage("admin", {
+    hasError: !!params.error,
+  });
 
-  for (const [key, value] of Object.entries(params)) {
-    if (value) query.set(key, value);
-  }
-
-  const suffix = query.toString();
-  redirect(`/auth/employer/login${suffix ? `?${suffix}` : ""}`);
+  return (
+    <AuthShell
+      audience="candidate"
+      title="Admin Portal."
+      description="Sign in with your administrator credentials to access the People Remotely administrator dashboard."
+    >
+      <AuthForm
+        mode="login"
+        role="admin"
+        next={params.next}
+        error={params.error}
+        details={params.details}
+        email={params.email}
+      />
+    </AuthShell>
+  );
 }

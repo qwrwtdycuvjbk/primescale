@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from accounts.permissions import IsAdmin, IsEmployer, IsEmployerOrAdmin
+from accounts.permissions import IsAdmin, IsEmployer, IsEmployer
 from companies.models import Company
 from companies.utils import is_company_profile_complete
 from .models import Job
@@ -27,7 +27,7 @@ class JobListCreateView(APIView):
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAuthenticated(), IsEmployerOrAdmin()]
+            return [IsAuthenticated(), IsEmployer()]
         return [AllowAny()]
 
     def get(self, request):
@@ -236,7 +236,7 @@ class JobDuplicateView(APIView):
     """
     POST /api/v1/jobs/<uuid:pk>/duplicate/ -> Duplicate existing job as draft
     """
-    permission_classes = [IsAuthenticated, IsEmployerOrAdmin]
+    permission_classes = [IsAuthenticated, IsEmployer]
 
     def post(self, request, pk):
         source = get_object_or_404(Job, pk=pk)

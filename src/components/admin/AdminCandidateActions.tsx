@@ -1,24 +1,12 @@
-import Link from "next/link";
-import { ArrowRight, FileSpreadsheet, UserPlus } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export function AdminCandidateActions() {
   return (
-    <div className="flex flex-wrap gap-3">
-      <Link
-        href="/admin/candidates/new"
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-      >
-        <UserPlus className="h-4 w-4" />
-        Add candidate
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-      <Link
-        href="/admin/candidates/import"
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-muted"
-      >
-        <FileSpreadsheet className="h-4 w-4" />
-        Import Excel
-      </Link>
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground">
+        <Shield className="h-3.5 w-3.5 text-primary" />
+        Read-Only Candidate Registry
+      </span>
     </div>
   );
 }

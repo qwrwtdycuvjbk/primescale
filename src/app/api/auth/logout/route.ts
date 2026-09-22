@@ -15,9 +15,25 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({ status: "ok", message: "Successfully logged out." });
 
-  // 2. Delete cookies
-  response.cookies.delete("access_token");
-  response.cookies.delete("refresh_token");
+  // 2. Delete cookies explicitly
+  response.cookies.set({
+    name: "access_token",
+    value: "",
+    path: "/",
+    expires: new Date(0),
+  });
+  response.cookies.set({
+    name: "refresh_token",
+    value: "",
+    path: "/",
+    expires: new Date(0),
+  });
+  response.cookies.set({
+    name: "refresh_token",
+    value: "",
+    path: "/api/v1/auth/",
+    expires: new Date(0),
+  });
 
   return response;
 }

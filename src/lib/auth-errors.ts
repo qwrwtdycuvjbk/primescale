@@ -10,6 +10,7 @@ export const authErrorMessages: Record<string, string> = {
   validation: "Check the form and try again.",
   login_failed: "Could not sign you in.",
   signup_failed: "Could not create your account.",
+  admin_unauthorized: "This account does not have administrator access.",
 };
 
 export function formatAuthErrorMessage(
@@ -19,6 +20,14 @@ export function formatAuthErrorMessage(
   if (!error || !authErrorMessages[error]) return null;
 
   const detailText = details?.toLowerCase() ?? "";
+
+  if (error === "admin_unauthorized") {
+    return details || authErrorMessages.admin_unauthorized;
+  }
+
+  if (detailText.includes("denied by the admin") || detailText.includes("access is denied")) {
+    return "Your access is denied by the Admin.";
+  }
 
   if (error === "login_failed" && detailText.includes("email not confirmed")) {
     return "Confirm your email first. Check your inbox for the verification link, then log in.";

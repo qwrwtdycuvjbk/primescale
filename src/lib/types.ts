@@ -19,6 +19,7 @@ export interface Profile {
   full_name: string;
   email: string;
   phone?: string;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +55,7 @@ export interface CandidateProfile {
   user_id: string;
   headline?: string;
   phone?: string;
+  is_active?: boolean;
   current_title?: string;
   years_experience?: number;
   skills: string[];
@@ -173,6 +175,7 @@ export interface RoleSubmissionInput {
 export interface CandidateProfileInput {
   headline: string;
   phone?: string;
+  is_active?: boolean;
   currentTitle?: string;
   yearsExperience?: number;
   skills: string;

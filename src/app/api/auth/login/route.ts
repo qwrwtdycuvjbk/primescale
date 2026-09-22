@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { djangoAuth } from "@/lib/api/auth";
 import type { UserRole } from "@/lib/types";
 
-type LoginRole = Extract<UserRole, "employer" | "candidate">;
+type LoginRole = UserRole;
 
 function parseRole(value: FormDataEntryValue | null): LoginRole {
+  if (value === "admin") return "admin";
   return value === "candidate" ? "candidate" : "employer";
 }
 
@@ -45,6 +46,20 @@ export async function POST(request: NextRequest) {
   try {
     const authRes = await djangoAuth.login({ email, password });
     if (authRes && authRes.access && authRes.user) {
+      // If logging in via Admin Login form, verify role is strictly admin!
+      if (role === "admin" && authRes.user.role !== "admin") {
+        return NextResponse.redirect(
+          new URL(
+            authFormPath("admin", {
+              ...params,
+              error: "admin_unauthorized",
+              details: "This account does not have administrator access.",
+            }),
+            request.url,
+          ),
+        );
+      }
+
       const destination =
         authRes.user.role === "admin"
           ? "/admin"

@@ -162,15 +162,22 @@ class MatchDetailView(APIView):
 
 class AdminMatchActionView(APIView):
     """
-    PATCH /api/v1/matches/<uuid:pk>/admin-action/ -> Admin release gate (approve / reject)
+    POST/PATCH /api/v1/matches/<uuid:pk>/admin-action/ (DISABLED: Read-Only Admin).
     """
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        return Response(
+            {"error": "Match modification is not permitted for Read-Only Administrator role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     def patch(self, request, pk):
-        match = get_object_or_404(Match, pk=pk)
-        serializer = AdminMatchActionSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Match modification is not permitted for Read-Only Administrator role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
 
         action = serializer.validated_data["action"]
         if action == "approve":

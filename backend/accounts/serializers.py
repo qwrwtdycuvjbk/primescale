@@ -56,6 +56,14 @@ class UserRegistrationSerializer(serializers.Serializer):
         validate_password(value)
         return value
 
+    def validate(self, attrs):
+        email = attrs.get('email', '').strip().lower()
+        if email:
+            user = User.objects.filter(email=email).first()
+            if user and not user.is_active:
+                raise serializers.ValidationError('Your access is denied by the Admin.')
+        return attrs
+
     def validate_role(self, value):
         if value not in (User.Role.CANDIDATE, User.Role.EMPLOYER):
             raise serializers.ValidationError("Public registration is only allowed for 'candidate' or 'employer' roles.")
@@ -77,6 +85,17 @@ class UserRegistrationSerializer(serializers.Serializer):
             phone=phone,
             role=role,
         )
+        if role == User.Role.CANDIDATE:
+            from candidates.models import CandidateProfile
+            CandidateProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "profile_completeness": 0,
+                    "profile_complete": False,
+                    "availability_status": "open",
+                    "source": "platform",
+                },
+            )
         # Dispatch email verification
         token = email_verification_token_generator.make_token(user)
         uidb64 = encode_uid(user.pk)
@@ -109,7 +128,7 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid email or password.")
 
         if not user.is_active:
-            raise serializers.ValidationError("This account is inactive.")
+            raise serializers.ValidationError("Your access is denied by the Admin.")
 
         attrs["user"] = user
         return attrs
@@ -253,6 +272,14 @@ class GoogleOAuthSerializer(serializers.Serializer):
         default=User.Role.CANDIDATE,
     )
     id_token = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        email = attrs.get('email', '').strip().lower()
+        if email:
+            user = User.objects.filter(email=email).first()
+            if user and not user.is_active:
+                raise serializers.ValidationError('Your access is denied by the Admin.')
+        return attrs
 
     def validate_role(self, value):
         if value not in (User.Role.CANDIDATE, User.Role.EMPLOYER):

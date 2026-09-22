@@ -5,15 +5,13 @@ import { redirect } from "next/navigation";
 import { djangoAuth } from "@/lib/api/auth";
 import type { UserRole } from "@/lib/types";
 
-function parseRole(value: FormDataEntryValue | null): Extract<
-  UserRole,
-  "employer" | "candidate"
-> {
+function parseRole(value: FormDataEntryValue | null): UserRole {
+  if (value === "admin") return "admin";
   return value === "employer" ? "employer" : "candidate";
 }
 
 function authFormPath(
-  role: Extract<UserRole, "employer" | "candidate">,
+  role: UserRole,
   mode: "login" | "signup",
   params: Record<string, string>,
 ) {
@@ -76,6 +74,13 @@ export async function signOutAuth(formData: FormData) {
   redirect(`/auth/${role}/login`);
 }
 
+function isNextRedirect(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if ("message" in error && (error as { message?: string }).message === "NEXT_REDIRECT") return true;
+  if ("digest" in error && typeof (error as { digest?: string }).digest === "string" && (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")) return true;
+  return false;
+}
+
 export async function submitAuth(formData: FormData) {
   const mode = formData.get("mode") === "signup" ? "signup" : "login";
   const role = parseRole(formData.get("role"));
@@ -109,64 +114,93 @@ export async function submitAuth(formData: FormData) {
     );
   }
 
+  let redirectPath: string | null = null;
+
   if (mode === "signup") {
+    if (role === "admin") {
+      redirect(
+        authFormPath("candidate", "signup", {
+          ...returnParams,
+          error: "signup_failed",
+          details: "Public administrator registration is not allowed.",
+        }),
+      );
+    }
+
     try {
       const regRes = await djangoAuth.register({
         email,
         password,
         full_name: fullName,
         phone: phone || null,
-        role,
+        role: role as "employer" | "candidate",
       });
 
       if (regRes && regRes.access) {
         await setDjangoAuthCookies(regRes.access, regRes.refresh);
-        redirect(
-          authFormPath(role, mode, {
-            awaiting: email,
-          }),
-        );
       }
+
+      redirectPath = authFormPath(role, mode, {
+        awaiting: email,
+      });
     } catch (djangoErr: unknown) {
+      if (isNextRedirect(djangoErr)) {
+        throw djangoErr;
+      }
       const errorMsg =
         djangoErr instanceof Error
           ? djangoErr.message
           : "Registration failed. Please check your details.";
-      redirect(
-        authFormPath(role, mode, {
-          ...returnParams,
-          error: "signup_failed",
-          details: errorMsg,
-        }),
-      );
+      redirectPath = authFormPath(role, mode, {
+        ...returnParams,
+        error: "signup_failed",
+        details: errorMsg,
+      });
     }
   } else {
     // Login
     try {
       const loginRes = await djangoAuth.login({ email, password });
       if (loginRes && loginRes.access && loginRes.user) {
+        if (role === "admin" && loginRes.user.role !== "admin") {
+          redirect(
+            authFormPath("admin", "login", {
+              ...returnParams,
+              error: "admin_unauthorized",
+              details: "This account does not have administrator access.",
+            }),
+          );
+        }
+
         await setDjangoAuthCookies(loginRes.access, loginRes.refresh);
         if (loginRes.user.role === "admin") {
-          redirect("/admin");
+          redirectPath = "/admin";
+        } else if (loginRes.user.role === "candidate") {
+          redirectPath = "/candidate";
+        } else {
+          redirectPath = next === "/auth/redirect" ? "/auth/redirect" : next;
         }
-        if (loginRes.user.role === "candidate") {
-          redirect("/candidate");
-        }
-        redirect(next === "/auth/redirect" ? "/auth/redirect" : next);
+      } else {
+        redirectPath = "/auth/redirect";
       }
     } catch (djangoLoginErr: unknown) {
+      if (isNextRedirect(djangoLoginErr)) {
+        throw djangoLoginErr;
+      }
       const errorMsg =
         djangoLoginErr instanceof Error
           ? djangoLoginErr.message
           : "Invalid email or password.";
-      redirect(
-        authFormPath(role, mode, {
-          ...returnParams,
-          error: "login_failed",
-          details: errorMsg,
-        }),
-      );
+      redirectPath = authFormPath(role, mode, {
+        ...returnParams,
+        error: "login_failed",
+        details: errorMsg,
+      });
     }
+  }
+
+  if (redirectPath) {
+    redirect(redirectPath);
   }
 
   redirect("/auth/redirect");
