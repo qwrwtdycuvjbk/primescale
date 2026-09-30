@@ -23,6 +23,12 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+# Security & Reverse Proxy Configuration
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Frontend Application Origin
+FRONTEND_URL = os.getenv("FRONTEND_URL", os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"))
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",

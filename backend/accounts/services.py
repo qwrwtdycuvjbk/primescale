@@ -16,7 +16,8 @@ def send_password_reset_email(to_email: str, uidb64: str, token: str) -> bool:
     Sends a password reset/welcome email containing the secure token and UID.
     In testing or when Celery worker is offline, safely handles or logs.
     """
-    reset_url = f"http://localhost:3000/auth/password-reset-confirm?uid={uidb64}&token={token}"
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    reset_url = f"{frontend_url}/auth/password-reset-confirm?uid={uidb64}&token={token}"
     subject = "Reset Your Password - People Remotely"
     message = (
         f"Hello,\n\n"
@@ -47,7 +48,8 @@ def send_verification_email(to_email: str, uidb64: str, token: str) -> bool:
     """
     Sends an email verification link containing the secure verification token.
     """
-    verify_url = f"http://localhost:3000/auth/verify-email?uid={uidb64}&token={token}"
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    verify_url = f"{frontend_url}/auth/verify-email?uid={uidb64}&token={token}"
     subject = "Verify Your Email - People Remotely"
     message = (
         f"Hello,\n\n"
