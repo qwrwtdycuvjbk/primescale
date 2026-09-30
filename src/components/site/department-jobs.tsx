@@ -193,26 +193,10 @@ export function DepartmentJobs() {
                       isSelected ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
                     }`}
                   />
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-mono font-medium ${
-                      isSelected
-                        ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {count}
-                  </span>
                 </div>
                 <div className="mt-3">
                   <div className="text-xs font-semibold leading-tight line-clamp-1">
                     {dept.label}
-                  </div>
-                  <div
-                    className={`mt-0.5 text-[10px] ${
-                      isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
-                    }`}
-                  >
-                    {count === 1 ? "1 job" : `${count} jobs`}
                   </div>
                 </div>
               </button>
