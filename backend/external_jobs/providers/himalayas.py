@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import time
 from decimal import Decimal, InvalidOperation
 import requests
 from django.conf import settings
@@ -18,6 +19,10 @@ HIMALAYAS_BASE_API_URL = "https://himalayas.app/jobs/api"
 HIMALAYAS_ATTRIBUTION_URL = "https://himalayas.app"
 DEFAULT_PAGE_SIZE = 20
 DEFAULT_MAX_PAGES = None  # None = fetch all pages until nextCursor is absent
+
+MAX_RETRIES_PER_PAGE = 4
+RETRY_DELAYS = [5, 10, 20, 40]
+INTER_PAGE_DELAY = 1.0  # seconds between successful pagination requests
 
 COUNTRY_NAME_TO_CODE = {
     "united states": "US",
@@ -201,9 +206,27 @@ def sync_himalayas_jobs(
                 params["cursor"] = str(cursor)
 
             try:
-                response = session.get(base_api_url, params=params, timeout=15)
-                response.raise_for_status()
-                data = response.json()
+                retry_attempt = 0
+                while True:
+                    response = session.get(base_api_url, params=params, timeout=15)
+                    if response.status_code == 429:
+                        if retry_attempt < MAX_RETRIES_PER_PAGE:
+                            wait_time = RETRY_DELAYS[retry_attempt]
+                            retry_attempt += 1
+                            logger.warning(
+                                f"Himalayas API returned HTTP 429 on page {pages_fetched + 1} "
+                                f"(retry {retry_attempt}/{MAX_RETRIES_PER_PAGE}). Waiting {wait_time}s..."
+                            )
+                            time.sleep(wait_time)
+                            continue
+                        else:
+                            logger.error(
+                                f"Himalayas API returned HTTP 429 on page {pages_fetched + 1} "
+                                f"after {MAX_RETRIES_PER_PAGE} retries. Aborting sync."
+                            )
+                    response.raise_for_status()
+                    data = response.json()
+                    break
             except Exception as req_err:
                 api_errors += 1
                 logger.error(
@@ -363,6 +386,9 @@ def sync_himalayas_jobs(
             # Safety page limit check if specified
             if max_p is not None and pages_fetched >= max_p:
                 break
+
+            # Delay between successful page requests to reduce throttling risk
+            time.sleep(INTER_PAGE_DELAY)
 
         # Stale Reconciliation: Deactivate previously active Himalayas jobs not in this successful sync
         stale_queryset = ExternalJob.objects.filter(

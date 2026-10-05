@@ -1527,8 +1527,9 @@ class HimalayasSyncTests(TestCase):
         self.assertEqual(job_data["source_attribution"]["attribution_name"], "Himalayas")
         self.assertEqual(job_data["source_attribution"]["attribution_url"], "https://himalayas.app")
 
+    @patch("time.sleep")
     @patch("requests.Session.get")
-    def test_himalayas_cursor_pagination(self, mock_get):
+    def test_himalayas_cursor_pagination(self, mock_get, mock_sleep):
         page1_res = MagicMock()
         page1_res.raise_for_status.return_value = None
         page1_res.json.return_value = {
@@ -1570,6 +1571,7 @@ class HimalayasSyncTests(TestCase):
         self.assertEqual(result["jobs_created"], 2)
         self.assertTrue(ExternalJob.objects.filter(external_job_id="him-p1-1").exists())
         self.assertTrue(ExternalJob.objects.filter(external_job_id="him-p2-1").exists())
+        mock_sleep.assert_called_with(1.0)
 
     @patch("requests.Session.get")
     def test_himalayas_empty_jobs_response(self, mock_get):
@@ -1679,6 +1681,85 @@ class HimalayasSyncTests(TestCase):
         stale_job.refresh_from_db()
         self.assertFalse(stale_job.is_active)
         self.assertEqual(stale_job.status, ExternalJob.Status.INACTIVE)
+
+    @patch("time.sleep")
+    @patch("requests.Session.get")
+    def test_himalayas_http_429_retry_success(self, mock_get, mock_sleep):
+        from external_jobs.providers.himalayas import sync_himalayas_jobs
+
+        res_429_1 = MagicMock()
+        res_429_1.status_code = 429
+
+        res_429_2 = MagicMock()
+        res_429_2.status_code = 429
+
+        res_200 = MagicMock()
+        res_200.status_code = 200
+        res_200.raise_for_status.return_value = None
+        res_200.json.return_value = {
+            "jobs": [
+                {
+                    "title": "Retry Success Job",
+                    "companyName": "Retry Co",
+                    "guid": "him-retry-1",
+                    "applicationLink": "https://himalayas.app/jobs/retry-1",
+                }
+            ],
+            "nextCursor": None,
+        }
+
+        mock_get.side_effect = [res_429_1, res_429_2, res_200]
+
+        result = sync_himalayas_jobs()
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["jobs_created"], 1)
+        self.assertEqual(mock_get.call_count, 3)
+
+        # Check sleeps: retry 1 (5s), retry 2 (10s)
+        sleep_args = [c[0][0] for c in mock_sleep.call_args_list]
+        self.assertEqual(sleep_args, [5, 10])
+
+    @patch("time.sleep")
+    @patch("requests.Session.get")
+    def test_himalayas_http_429_retries_exhausted_preserves_jobs(self, mock_get, mock_sleep):
+        from external_jobs.providers.himalayas import get_or_create_himalayas_source, sync_himalayas_jobs
+        source = get_or_create_himalayas_source()
+
+        existing_job = ExternalJob.objects.create(
+            source=source,
+            external_job_id="existing-him-429",
+            title="Existing Job 429",
+            company_name="Old Co",
+            country="US",
+            remote_type=ExternalJob.RemoteType.REMOTE,
+            original_job_url="https://himalayas.app/old",
+            source_name="Himalayas",
+            is_active=True,
+            status=ExternalJob.Status.ACTIVE,
+        )
+
+        res_429 = MagicMock()
+        res_429.status_code = 429
+        res_429.raise_for_status.side_effect = requests.HTTPError("429 Client Error: Too Many Requests")
+
+        mock_get.return_value = res_429
+
+        result = sync_himalayas_jobs()
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["jobs_marked_inactive"], 0)
+        # 1 initial request + 4 retries = 5 total attempts
+        self.assertEqual(mock_get.call_count, 5)
+
+        # Verify retry backoff delays
+        sleep_args = [c[0][0] for c in mock_sleep.call_args_list]
+        self.assertEqual(sleep_args, [5, 10, 20, 40])
+
+        # Existing job must remain ACTIVE (partial-sync safety)
+        existing_job.refresh_from_db()
+        self.assertTrue(existing_job.is_active)
+        self.assertEqual(existing_job.status, ExternalJob.Status.ACTIVE)
 
 
 class ExternalJobDetailAPITests(TestCase):
