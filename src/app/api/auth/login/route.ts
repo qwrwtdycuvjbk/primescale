@@ -20,6 +20,7 @@ function authFormPath(
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
+  const publicOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || "http://localhost:3000";
   const role = parseRole(formData.get("role"));
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
           error: "validation",
           details: "Enter your email and password.",
         }),
-        request.url,
+        publicOrigin,
       ),
     );
   }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
             ? (next.startsWith("/candidate") ? next : "/candidate")
             : (next.startsWith("/employer") ? next : (next === "/auth/redirect" ? "/auth/redirect" : "/employer"));
 
-      const response = NextResponse.redirect(new URL(destination, request.url));
+      const response = NextResponse.redirect(new URL(destination, publicOrigin));
 
       // Set secure HttpOnly cookies for Next.js middleware & server components
       const isSecure = process.env.NODE_ENV === "production";
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
           error: "login_failed",
           details: errorMsg,
         }),
-        request.url,
+        publicOrigin,
       ),
     );
   }

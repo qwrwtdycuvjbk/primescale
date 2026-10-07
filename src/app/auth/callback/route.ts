@@ -21,7 +21,7 @@ function loginPathForRole(
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const origin = request.nextUrl.origin;
+  const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || "http://localhost:3000";
 
   // 1. Check for OAuth error responses from Google (e.g. user cancelled prompt)
   const errorParam = searchParams.get("error");

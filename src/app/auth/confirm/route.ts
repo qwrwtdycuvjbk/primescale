@@ -5,6 +5,7 @@ import { djangoAuth } from "@/lib/api/auth";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const uid = searchParams.get("uid");
+  const publicOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || "http://localhost:3000";
   const token = searchParams.get("token");
 
   // Django Email Verification Path
@@ -17,12 +18,12 @@ export async function GET(request: NextRequest) {
             ? "/auth/employer/login"
             : "/auth/candidate/login";
         return NextResponse.redirect(
-          new URL(`${loginPath}?verified=true`, request.url),
+          new URL(`${loginPath}?verified=true`, publicOrigin),
         );
       }
     } catch {
       return NextResponse.redirect(
-        new URL("/auth/login?error=confirmation_failed&details=Verification+link+is+invalid+or+has+expired.", request.url),
+        new URL("/auth/login?error=confirmation_failed&details=Verification+link+is+invalid+or+has+expired.", publicOrigin),
       );
     }
   }

@@ -144,6 +144,68 @@ class CandidateProfileInputSerializer(serializers.Serializer):
     def validate_skills(self, value):
         return parse_skills_list(value)
 
+    def create(self, validated_data):
+        request = self.context["request"]
+        user = request.user
+
+        profile_data = {
+            **validated_data,
+            "skills": parse_skills_list(validated_data.get("skills")),
+            "role_categories": validated_data.get("role_categories") or [],
+        }
+
+        completeness = calculate_profile_completeness(profile_data)
+        is_complete = is_candidate_profile_complete(profile_data)
+
+        open_to_matching = (
+            profile_data.get("availability_status")
+            != CandidateProfile.AvailabilityStatus.NOT_LOOKING
+        )
+
+        profile, created = CandidateProfile.objects.update_or_create(
+            user=user,
+            defaults={
+                "headline": profile_data.get("headline", ""),
+                "phone": profile_data.get("phone"),
+                "current_title": profile_data.get("current_title", ""),
+                "years_experience": profile_data.get("years_experience"),
+                "skills": profile_data["skills"],
+                "role_categories": profile_data["role_categories"],
+                "experience_level": profile_data.get("experience_level"),
+                "salary_min": profile_data.get("salary_min"),
+                "salary_max": profile_data.get("salary_max"),
+                "work_authorization": profile_data.get("work_authorization"),
+                "us_state": profile_data.get("us_state", ""),
+                "remote_preference": (
+                    "remote"
+                    if profile_data.get("preferred_work_type") == "remote"
+                    else profile_data.get("preferred_work_type", "remote")
+                ),
+                "preferred_work_type": profile_data.get(
+                    "preferred_work_type",
+                    CandidateProfile.PreferredWorkType.REMOTE,
+                ),
+                "availability_status": profile_data.get(
+                    "availability_status",
+                    CandidateProfile.AvailabilityStatus.ACTIVELY_LOOKING,
+                ),
+                "privacy_visibility": profile_data.get(
+                    "privacy_visibility",
+                    CandidateProfile.PrivacyVisibility.PUBLIC,
+                ),
+                "bio": profile_data.get("bio", ""),
+                "github_url": profile_data.get("github_url") or None,
+                "portfolio_url": profile_data.get("portfolio_url") or None,
+                "linkedin_url": profile_data.get("linkedin_url") or None,
+                "resume_url": profile_data.get("resume_url") or None,
+                "profile_completeness": completeness,
+                "open_to_matching": open_to_matching,
+                "profile_complete": is_complete,
+            },
+        )
+
+        return profile
+
 
 class PublicTalentShowcaseSerializer(serializers.ModelSerializer):
     """

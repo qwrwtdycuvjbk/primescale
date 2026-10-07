@@ -14,6 +14,7 @@ module.exports = {
       name: "peopleremotely-django",
       cwd: "/var/www/peopleremotely/backend",
       script: "venv/bin/gunicorn",
+      interpreter: "none",
       args: "config.wsgi:application --bind 127.0.0.1:8000 --workers 3",
       env: {
         DJANGO_SETTINGS_MODULE: "config.settings",
@@ -23,6 +24,7 @@ module.exports = {
       name: "peopleremotely-celery",
       cwd: "/var/www/peopleremotely/backend",
       script: "venv/bin/celery",
+      interpreter: "none",
       args: "-A config worker --loglevel=info",
       env: {
         DJANGO_SETTINGS_MODULE: "config.settings",

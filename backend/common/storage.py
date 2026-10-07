@@ -51,12 +51,14 @@ class PrivateMediaStorage(S3Boto3Storage if S3Boto3Storage else FileSystemStorag
 
 def is_s3_configured() -> bool:
     """
-    Checks if AWS S3 credentials and bucket name are fully configured.
+    Checks whether AWS S3 storage is configured.
+
+    Credentials are optional because boto3 can use the EC2 instance IAM
+    role when explicit AWS access keys are not provided.
     """
     return bool(
-        getattr(settings, "AWS_ACCESS_KEY_ID", "")
-        and getattr(settings, "AWS_SECRET_ACCESS_KEY", "")
-        and getattr(settings, "AWS_STORAGE_BUCKET_NAME", "")
+        getattr(settings, "AWS_STORAGE_BUCKET_NAME", "")
+        and S3Boto3Storage
     )
 
 
