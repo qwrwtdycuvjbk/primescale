@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 import mimetypes
+from urllib.parse import urlparse, unquote
 from django.conf import settings
 from django.core.files.storage import default_storage, FileSystemStorage
 from rest_framework.exceptions import ValidationError
@@ -158,17 +159,36 @@ def generate_presigned_download_url(storage_path: str, expiration: int = None) -
         import boto3
         from botocore.config import Config
 
-        s3_client = boto3.client(
-            "s3",
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_S3_REGION_NAME,
-            config=Config(signature_version=settings.AWS_S3_SIGNATURE_VERSION),
-        )
+        client_kwargs = {
+            "service_name": "s3",
+            "region_name": settings.AWS_S3_REGION_NAME,
+            "config": Config(
+                signature_version=settings.AWS_S3_SIGNATURE_VERSION
+            ),
+        }
+
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            client_kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+            client_kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+
+        s3_client = boto3.client(**client_kwargs)
 
         # Storage path may or may not have prefix 'resumes/'
-        key = storage_path.lstrip("/")
-        if not key.startswith("resumes/") and not key.startswith("company-logos/"):
+        raw_path = storage_path.strip()
+        parsed = urlparse(raw_path)
+
+        if parsed.scheme in ("http", "https"):
+            key = unquote(parsed.path).lstrip("/")
+        else:
+            key = unquote(raw_path.split("?", 1)[0]).lstrip("/")
+
+        # Remove the bucket name if the path uses a virtual-hosted S3 URL.
+        bucket_prefix = f"{settings.AWS_STORAGE_BUCKET_NAME}/"
+        if key.startswith(bucket_prefix):
+            key = key[len(bucket_prefix):]
+
+        # Add the default prefix only when it is missing.
+        if not key.startswith(("resumes/", "company-logos/")):
             key = f"resumes/{key}"
 
         presigned_url = s3_client.generate_presigned_url(

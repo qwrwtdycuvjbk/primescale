@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionProfile } from "@/lib/auth";
+import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import { uploadAdminCandidateResume } from "@/lib/admin-create-candidate";
 import { candidatesApi } from "@/lib/api";
 
@@ -21,7 +21,8 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const res = await candidatesApi.getAdminCandidateResume(id);
+    const token = await getAccessToken();
+    const res = await candidatesApi.getAdminCandidateResume(id, { token });
     if (res && res.ok && res.downloadUrl) {
       return NextResponse.redirect(res.downloadUrl);
     }

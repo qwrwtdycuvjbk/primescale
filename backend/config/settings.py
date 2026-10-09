@@ -1,3 +1,4 @@
+from celery.schedules import crontab
 import os
 import uuid
 from datetime import timedelta
@@ -249,3 +250,19 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Celery Beat - External Job Synchronization
+CELERY_BEAT_SCHEDULE = {
+    "sync-people-prime-jobs": {
+        "task": "external_jobs.tasks.sync_people_prime_jobs_task",
+        "schedule": crontab(minute=0, hour="*/6"),
+    },
+    "sync-adzuna-jobs": {
+        "task": "external_jobs.tasks.sync_adzuna_jobs_task",
+        "schedule": crontab(minute=10, hour="*/6"),
+    },
+    "sync-himalayas-jobs": {
+        "task": "external_jobs.tasks.sync_himalayas_jobs_task",
+        "schedule": crontab(minute=20, hour="*/6"),
+    },
+}

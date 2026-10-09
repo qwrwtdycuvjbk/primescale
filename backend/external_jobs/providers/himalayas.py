@@ -110,11 +110,15 @@ def parse_himalayas_date(val) -> timezone.datetime | None:
 
 def extract_himalayas_country(location_restrictions: list | None) -> tuple[str, str]:
     """
-    Extracts normalized country code and human-readable location string.
-    locationRestrictions = [] -> ('GLOBAL', 'Worldwide (Remote)')
-    locationRestrictions = ['United States'] -> ('US', 'United States (Remote)')
-    locationRestrictions = ['India'] -> ('IN', 'India (Remote)')
+    Extracts normalized country code and a database-safe human-readable
+    location string.
+
+    The complete locationRestrictions list is preserved separately in
+    raw_metadata. The returned location is limited to 255 characters
+    because ExternalJob.location is a VARCHAR(255).
     """
+    max_location_length = 255
+
     if not location_restrictions:
         return "GLOBAL", "Worldwide (Remote)"
 
@@ -128,18 +132,41 @@ def extract_himalayas_country(location_restrictions: list | None) -> tuple[str, 
     # Check for United States / US presence
     for r in cleaned:
         if r.lower() in ("united states", "united states of america", "usa", "us"):
-            return "US", f"{', '.join(cleaned)} (Remote)"
+            country_code = "US"
+            break
+    else:
+        # Extract primary country code
+        first_r = cleaned[0].lower()
+        country_code = COUNTRY_NAME_TO_CODE.get(first_r)
 
-    # Extract primary country code
-    first_r = cleaned[0].lower()
-    country_code = COUNTRY_NAME_TO_CODE.get(first_r)
-    if not country_code:
-        if len(cleaned[0]) == 2 and cleaned[0].isalpha():
-            country_code = cleaned[0].upper()
-        else:
-            country_code = cleaned[0][:10].upper()
+        if not country_code:
+            if len(cleaned[0]) == 2 and cleaned[0].isalpha():
+                country_code = cleaned[0].upper()
+            else:
+                country_code = cleaned[0][:10].upper()
 
-    return country_code, f"{', '.join(cleaned)} (Remote)"
+    suffix = " (Remote)"
+    available_length = max_location_length - len(suffix)
+
+    location_parts = []
+    current_length = 0
+
+    for country in cleaned:
+        separator_length = 2 if location_parts else 0
+        proposed_length = current_length + separator_length + len(country)
+
+        if proposed_length > available_length:
+            break
+
+        location_parts.append(country)
+        current_length = proposed_length
+
+    if location_parts:
+        location_str = ", ".join(location_parts) + suffix
+    else:
+        location_str = cleaned[0][:available_length].rstrip(", ") + suffix
+
+    return country_code, location_str
 
 
 def get_or_create_himalayas_source() -> ExternalJobSource:
