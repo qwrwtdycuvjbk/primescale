@@ -148,6 +148,19 @@ class ApplicationsApiTests(APITestCase):
             "Please complete your profile before applying for jobs.",
         )
 
+    def test_employer_cannot_apply_to_job(self):
+        self.client.force_authenticate(user=self.employer_user)
+        response = self.client.post(
+            "/api/v1/applications/apply/",
+            {"job_id": str(self.job.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["error"],
+            "You are currently logged in as an employer. To apply for jobs, please go back, create a separate candidate profile, and log in using your candidate account.",
+        )
+        self.assertEqual(Match.objects.filter(job=self.job, candidate_profile__user=self.employer_user).count(), 0)
+
     def test_candidate_cannot_apply_to_paused_job(self):
         self.job.status = Job.Status.PAUSED
         self.job.save()

@@ -93,6 +93,7 @@ export default function ExternalJobDetailPage() {
   const [candidateProfile, setCandidateProfile] = useState<DjangoCandidateProfile | null>(null);
   const [isCandidateProfileValid, setIsCandidateProfileValid] = useState<boolean>(false);
   const [profileIncompleteNotice, setProfileIncompleteNotice] = useState<boolean>(false);
+  const [employerNotice, setEmployerNotice] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -175,13 +176,22 @@ export default function ExternalJobDetailPage() {
   const hasValidAttributionUrl = isValidUrl(attributionUrl);
   const attributionName = job?.source_attribution?.attribution_name || job?.source_name || "Official Source";
 
+  const isEmployerUser = currentUser?.role === "employer";
   const isCandidateUser = currentUser?.role === "candidate";
   const isIncompleteCandidate = isCandidateUser && !isCandidateProfileValid;
 
   const handleApplyClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isEmployerUser) {
+      e.preventDefault();
+      setEmployerNotice(true);
+      setProfileIncompleteNotice(false);
+      return;
+    }
     if (isIncompleteCandidate) {
       e.preventDefault();
       setProfileIncompleteNotice(true);
+      setEmployerNotice(false);
+      return;
     }
   };
 
@@ -358,8 +368,8 @@ export default function ExternalJobDetailPage() {
                   <div className="sm:shrink-0 flex flex-col items-start sm:items-end gap-2">
                     {hasValidApplyUrl ? (
                       <a
-                        href={isIncompleteCandidate ? "#" : job.original_job_url}
-                        target={isIncompleteCandidate ? "_self" : "_blank"}
+                        href={isEmployerUser || isIncompleteCandidate ? "#" : job.original_job_url}
+                        target={isEmployerUser || isIncompleteCandidate ? "_self" : "_blank"}
                         rel="noopener noreferrer"
                         onClick={handleApplyClick}
                         className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition-opacity"
@@ -374,6 +384,18 @@ export default function ExternalJobDetailPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Employer Account Banner Alert */}
+                {employerNotice && (
+                  <div className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-900 dark:text-amber-100 flex items-start sm:items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span>
+                        You are currently logged in as an employer. To apply for jobs, please go back, create a separate candidate profile, and log in using your candidate account.
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Profile Incomplete Banner Alert */}
                 {profileIncompleteNotice && (

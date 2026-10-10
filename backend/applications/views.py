@@ -135,8 +135,13 @@ class ApplyView(APIView):
     def post(self, request):
         user = request.user
         if user.role != User.Role.CANDIDATE:
+            msg = (
+                "You are currently logged in as an employer. To apply for jobs, please go back, create a separate candidate profile, and log in using your candidate account."
+                if user.role == User.Role.EMPLOYER
+                else "Only candidates can apply to jobs."
+            )
             return Response(
-                {"error": "Only candidates can apply to jobs."},
+                {"error": msg},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
