@@ -18,7 +18,15 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { externalJobsApi, ExternalJob } from "@/lib/api";
+import {
+  externalJobsApi,
+  ExternalJob,
+  djangoAuth,
+  candidatesApi,
+  DjangoCandidateProfile,
+} from "@/lib/api";
+import { isCandidateProfileComplete } from "@/lib/candidate-profile";
+import type { Profile } from "@/lib/types";
 
 function isValidUrl(url?: string | null): boolean {
   if (!url || typeof url !== "string") return false;
@@ -81,6 +89,38 @@ export default function ExternalJobDetailPage() {
   const [notFound, setNotFound] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
+  const [candidateProfile, setCandidateProfile] = useState<DjangoCandidateProfile | null>(null);
+  const [isCandidateProfileValid, setIsCandidateProfileValid] = useState<boolean>(false);
+  const [profileIncompleteNotice, setProfileIncompleteNotice] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUserSession() {
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isMounted && data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          if (data.user.role === "candidate") {
+            setCandidateProfile(data.candidateProfile || null);
+            setIsCandidateProfileValid(Boolean(data.isProfileComplete));
+          }
+        }
+      } catch {
+        // User is unauthenticated
+      }
+    }
+
+    loadUserSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!jobId) {
       setNotFound(true);
@@ -134,6 +174,16 @@ export default function ExternalJobDetailPage() {
   const attributionUrl = job?.source_attribution?.attribution_url;
   const hasValidAttributionUrl = isValidUrl(attributionUrl);
   const attributionName = job?.source_attribution?.attribution_name || job?.source_name || "Official Source";
+
+  const isCandidateUser = currentUser?.role === "candidate";
+  const isIncompleteCandidate = isCandidateUser && !isCandidateProfileValid;
+
+  const handleApplyClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isIncompleteCandidate) {
+      e.preventDefault();
+      setProfileIncompleteNotice(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-between">
@@ -308,9 +358,10 @@ export default function ExternalJobDetailPage() {
                   <div className="sm:shrink-0 flex flex-col items-start sm:items-end gap-2">
                     {hasValidApplyUrl ? (
                       <a
-                        href={job.original_job_url}
-                        target="_blank"
+                        href={isIncompleteCandidate ? "#" : job.original_job_url}
+                        target={isIncompleteCandidate ? "_self" : "_blank"}
                         rel="noopener noreferrer"
+                        onClick={handleApplyClick}
                         className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition-opacity"
                       >
                         <span>Apply to Job</span>
@@ -323,6 +374,22 @@ export default function ExternalJobDetailPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Profile Incomplete Banner Alert */}
+                {profileIncompleteNotice && (
+                  <div className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-900 dark:text-amber-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span>Please complete your profile before applying for jobs.</span>
+                    </div>
+                    <Link
+                      href="/candidate/onboarding"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition-opacity shrink-0"
+                    >
+                      <span>Complete Profile</span>
+                    </Link>
+                  </div>
+                )}
 
                 {/* Metadata Grid */}
                 <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border pt-6">

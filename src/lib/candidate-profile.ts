@@ -33,8 +33,62 @@ export function mapCandidateRowToInput(
 }
 
 export function isCandidateProfileComplete(
-  row: { profile_complete?: boolean; resume_url?: string | null } | null,
+  row: {
+    profile_complete?: boolean;
+    headline?: string | null;
+    phone?: string | null;
+    current_title?: string | null;
+    currentTitle?: string | null;
+    skills?: string[] | string | null;
+    role_categories?: string[] | null;
+    roleCategories?: string[] | null;
+    resume_url?: string | null;
+    resumeUrl?: string | null;
+    user?: Record<string, any> | null;
+    profiles?: Record<string, any> | null;
+    [key: string]: any;
+  } | null,
 ): boolean {
   if (!row) return false;
-  return Boolean(row.profile_complete && row.resume_url?.trim());
+
+  const headline = typeof row.headline === "string" ? row.headline.trim() : "";
+
+  const rawPhone =
+    row.phone ??
+    row.user?.phone ??
+    row.profiles?.phone ??
+    "";
+  const phone = typeof rawPhone === "string" ? rawPhone.trim() : "";
+
+  const rawTitle = row.current_title ?? row.currentTitle ?? "";
+  const currentTitle = typeof rawTitle === "string" ? rawTitle.trim() : "";
+
+  const rawResume = row.resume_url ?? row.resumeUrl ?? "";
+  const resumeUrl = typeof rawResume === "string" ? rawResume.trim() : "";
+
+  let skillsCount = 0;
+  if (Array.isArray(row.skills)) {
+    skillsCount = row.skills.filter((s) => typeof s === "string" && s.trim().length > 0).length;
+  } else if (typeof row.skills === "string") {
+    skillsCount = row.skills.split(",").filter((s) => s.trim().length > 0).length;
+  }
+
+  const rawRoleCats = row.role_categories ?? row.roleCategories;
+  const roleCategoriesCount = Array.isArray(rawRoleCats)
+    ? rawRoleCats.filter((c) => typeof c === "string" && c.trim().length > 0).length
+    : 0;
+
+  const hasRequiredFields =
+    headline.length > 0 &&
+    phone.length > 0 &&
+    currentTitle.length > 0 &&
+    skillsCount > 0 &&
+    roleCategoriesCount > 0 &&
+    resumeUrl.length > 0;
+
+  if (row.profile_complete === false) {
+    return false;
+  }
+
+  return hasRequiredFields;
 }

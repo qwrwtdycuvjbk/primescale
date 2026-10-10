@@ -43,6 +43,38 @@ class CandidateUtilsTests(TestCase):
         self.assertEqual(calculate_profile_completeness(full_data), 100)
         self.assertTrue(is_candidate_profile_complete(full_data))
 
+    def test_stale_profile_complete_flag_ignored(self):
+        incomplete_data = {
+            "headline": "Fullstack Engineer",
+            "phone": "",
+            "current_title": "Senior Dev",
+            "skills": ["Python"],
+            "role_categories": ["Backend"],
+            "resume_url": "https://storage/resume.pdf",
+            "profile_complete": True,
+        }
+        self.assertFalse(is_candidate_profile_complete(incomplete_data))
+
+    def test_serializer_computes_profile_complete_dynamically(self):
+        from .serializers import CandidateProfileSerializer
+        user = User.objects.create_user(
+            email="stale@test.com",
+            password="Password123!",
+            full_name="Stale Candidate",
+            role=User.Role.CANDIDATE,
+        )
+        profile = CandidateProfile.objects.create(
+            user=user,
+            headline="Backend Dev",
+            current_title="Software Engineer",
+            skills=["Python"],
+            role_categories=["Backend"],
+            resume_url="https://storage/resume.pdf",
+            profile_complete=True,
+        )
+        serializer = CandidateProfileSerializer(profile)
+        self.assertFalse(serializer.data["profile_complete"])
+
 
 class CandidateApiTests(TestCase):
     def setUp(self):

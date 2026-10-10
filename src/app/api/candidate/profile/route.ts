@@ -4,6 +4,30 @@ import { parseSkills } from "@/lib/matching";
 import { calculateProfileCompleteness } from "@/lib/profile-completeness";
 import type { CandidateProfileInput } from "@/lib/types";
 import { candidatesApi } from "@/lib/api";
+import { isCandidateProfileComplete } from "@/lib/candidate-profile";
+
+export async function GET() {
+  const { user, profile } = await getSessionProfile();
+  const token = await getAccessToken();
+
+  if (!user || profile?.role !== "candidate") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const candProfile = await candidatesApi.getMyProfile({ token });
+    return NextResponse.json({
+      ok: true,
+      profile: candProfile,
+      isComplete: isCandidateProfileComplete(candProfile),
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || "Failed to load candidate profile", isComplete: false },
+      { status: err?.status || 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const { user } = await getSessionProfile();

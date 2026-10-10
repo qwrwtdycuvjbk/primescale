@@ -2,7 +2,12 @@ from rest_framework import serializers
 from accounts.models import User
 from accounts.serializers import UserSerializer
 from .models import CandidateProfile
-from .utils import calculate_profile_completeness, is_candidate_profile_complete, parse_skills_list
+from .utils import (
+    calculate_profile_completeness,
+    check_candidate_profile_complete,
+    is_candidate_profile_complete,
+    parse_skills_list,
+)
 
 
 class CandidateProfileSerializer(serializers.ModelSerializer):
@@ -14,6 +19,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     is_active = serializers.SerializerMethodField()
     user_id = serializers.UUIDField(source="user.id", read_only=True)
+    profile_complete = serializers.SerializerMethodField()
 
     class Meta:
         model = CandidateProfile
@@ -99,6 +105,9 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
 
     def get_is_active(self, obj) -> bool:
         return self.get_user_is_active(obj)
+
+    def get_profile_complete(self, obj) -> bool:
+        return check_candidate_profile_complete(obj)
 
 
 class CandidateProfileInputSerializer(serializers.Serializer):
@@ -328,6 +337,7 @@ class AdminCandidateListSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
     is_active = serializers.SerializerMethodField()
+    profile_complete = serializers.SerializerMethodField()
 
     class Meta:
         model = CandidateProfile
@@ -399,6 +409,9 @@ class AdminCandidateListSerializer(serializers.ModelSerializer):
 
     def get_is_active(self, obj) -> bool:
         return self.get_user_is_active(obj)
+
+    def get_profile_complete(self, obj) -> bool:
+        return check_candidate_profile_complete(obj)
 
 
 class AdminCreateCandidateSerializer(serializers.Serializer):
