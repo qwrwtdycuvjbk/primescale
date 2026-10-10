@@ -77,3 +77,25 @@ def is_candidate_profile_complete(data: Dict[str, Any]) -> bool:
     )
     has_resume = bool((data.get("resume_url") or "").strip())
     return has_required and has_resume
+
+
+def check_candidate_profile_complete(profile: Optional[Any]) -> bool:
+    """
+    Evaluates profile completeness directly on a CandidateProfile model instance or dict.
+    """
+    if not profile:
+        return False
+    if isinstance(profile, dict):
+        return is_candidate_profile_complete(profile)
+
+    user = getattr(profile, "user", None)
+    data = {
+        "headline": getattr(profile, "headline", ""),
+        "phone": getattr(profile, "phone", "") or (getattr(user, "phone", "") if user else ""),
+        "current_title": getattr(profile, "current_title", ""),
+        "skills": getattr(profile, "skills", []),
+        "role_categories": getattr(profile, "role_categories", []),
+        "resume_url": getattr(profile, "resume_url", ""),
+    }
+    return is_candidate_profile_complete(data)
+    

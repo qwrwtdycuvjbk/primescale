@@ -275,7 +275,30 @@ class CandidateResumeView(APIView):
 
         # Update candidate profile
         profile.resume_url = saved_path
-        profile.save(update_fields=["resume_url", "updated_at"])
+        profile_data = {
+            "headline": profile.headline,
+            "phone": profile.phone,
+            "current_title": profile.current_title,
+            "years_experience": profile.years_experience,
+            "skills": profile.skills,
+            "role_categories": profile.role_categories,
+            "experience_level": profile.experience_level,
+            "salary_min": profile.salary_min,
+            "salary_max": profile.salary_max,
+            "work_authorization": profile.work_authorization,
+            "us_state": profile.us_state,
+            "preferred_work_type": profile.preferred_work_type,
+            "availability_status": profile.availability_status,
+            "privacy_visibility": profile.privacy_visibility,
+            "bio": profile.bio,
+            "github_url": profile.github_url,
+            "portfolio_url": profile.portfolio_url,
+            "linkedin_url": profile.linkedin_url,
+            "resume_url": saved_path,
+        }
+        profile.profile_completeness = calculate_profile_completeness(profile_data)
+        profile.profile_complete = is_candidate_profile_complete(profile_data)
+        profile.save(update_fields=["resume_url", "profile_completeness", "profile_complete", "updated_at"])
 
         download_url = generate_presigned_download_url(saved_path)
 

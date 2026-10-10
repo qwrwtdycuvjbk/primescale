@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { AlertCircle, ArrowRight } from "lucide-react";
 import type { Match, MatchStatus } from "@/lib/types";
 import { PrimaryButton, SecondaryButton } from "@/components/site/form";
 
 export function CandidateMatchCard({ match }: { match: Match }) {
   const [status, setStatus] = useState(match.status);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function updateStatus(newStatus: MatchStatus) {
+    setErrorMsg(null);
     setLoading(true);
     try {
       const response = await fetch("/api/matches", {
@@ -21,7 +23,14 @@ export function CandidateMatchCard({ match }: { match: Match }) {
       if (response.ok) {
         const data = (await response.json()) as { status?: MatchStatus };
         setStatus(data.status ?? newStatus);
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        setErrorMsg(
+          errData?.error || "Please complete your profile before applying for jobs."
+        );
       }
+    } catch {
+      setErrorMsg("Please complete your profile before applying for jobs.");
     } finally {
       setLoading(false);
     }
@@ -74,6 +83,21 @@ export function CandidateMatchCard({ match }: { match: Match }) {
           Mutual fit confirmed. People Prime will reach out to coordinate next
           steps with the employer.
         </p>
+      )}
+
+      {errorMsg && (
+        <div className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-semibold">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+          <Link
+            href="/candidate/onboarding"
+            className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            Complete Profile
+          </Link>
+        </div>
       )}
 
       {(status === "suggested" || status === "employer_shortlisted") && (

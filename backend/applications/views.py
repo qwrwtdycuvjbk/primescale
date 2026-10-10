@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from candidates.models import CandidateProfile
+from candidates.utils import check_candidate_profile_complete
 from handoffs.services import create_mutual_fit_handoff
 from jobs.models import Job
 from matching.models import Match
@@ -140,9 +141,9 @@ class ApplyView(APIView):
             )
 
         profile = getattr(user, "candidate_profile", None)
-        if not profile:
+        if not check_candidate_profile_complete(profile):
             return Response(
-                {"error": "Candidate profile not found. Please complete your profile before applying."},
+                {"error": "Please complete your profile before applying for jobs."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

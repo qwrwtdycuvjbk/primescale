@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from accounts.permissions import IsAdmin
+from candidates.utils import check_candidate_profile_complete
 from handoffs.services import create_mutual_fit_handoff
 from .models import Match
 from .serializers import (
@@ -134,11 +135,19 @@ class MatchDetailView(APIView):
 
         requested_status = serializer.validated_data["status"]
         if not is_admin:
-            if is_candidate_owner and requested_status not in [Match.Status.CANDIDATE_INTERESTED, Match.Status.REJECTED]:
-                return Response(
-                    {"error": "Candidate can only express interest or reject."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            if is_candidate_owner:
+                if requested_status not in [Match.Status.CANDIDATE_INTERESTED, Match.Status.REJECTED]:
+                    return Response(
+                        {"error": "Candidate can only express interest or reject."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                if requested_status == Match.Status.CANDIDATE_INTERESTED:
+                    profile = getattr(user, "candidate_profile", None)
+                    if not check_candidate_profile_complete(profile):
+                        return Response(
+                            {"error": "Please complete your profile before applying for jobs."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if is_employer_owner and requested_status not in [Match.Status.EMPLOYER_SHORTLISTED, Match.Status.REJECTED]:
                 return Response(
                     {"error": "Employer can only shortlist or reject."},

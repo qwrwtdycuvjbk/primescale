@@ -100,7 +100,11 @@ class MatchApiAndRunnerTests(TestCase):
         self.candidate_profile = CandidateProfile.objects.create(
             user=self.candidate_user,
             headline="Staff Python Engineer",
+            phone="1234567890",
+            current_title="Staff Python Engineer",
             skills=["python", "django", "postgresql", "redis", "celery", "aws"],
+            role_categories=["Engineering"],
+            resume_url="https://example.com/resumes/alice.pdf",
             experience_level="lead",
             profile_complete=True,
             open_to_matching=True,
@@ -176,6 +180,31 @@ class MatchApiAndRunnerTests(TestCase):
         self.assertEqual(res.data["status"], "candidate_interested")
         match.refresh_from_db()
         self.assertEqual(match.status, Match.Status.CANDIDATE_INTERESTED)
+
+    def test_incomplete_candidate_cannot_mark_interest(self):
+        inc_user = User.objects.create_user(
+            email="inc@test.com", password="Password123!", role=User.Role.CANDIDATE, full_name="Incomplete Cand"
+        )
+        inc_profile = CandidateProfile.objects.create(
+            user=inc_user,
+            headline="Dev",
+        )
+        match = Match.objects.create(
+            candidate_profile=inc_profile,
+            job=self.job,
+            match_score=80,
+            status=Match.Status.SUGGESTED,
+            visible_to_employer=False,
+        )
+
+        self._auth(inc_user)
+        res = self.client.patch(
+            f"/api/v1/matches/{match.id}/",
+            {"status": "candidate_interested"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.data["error"], "Please complete your profile before applying for jobs.")
 
     def test_mutual_fit_creates_handoff(self):
         match = Match.objects.create(

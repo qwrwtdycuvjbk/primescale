@@ -24,7 +24,11 @@ class ApplicationsApiTests(APITestCase):
         self.candidate_profile = CandidateProfile.objects.create(
             user=self.candidate_user,
             headline="Full Stack Engineer",
+            phone="1234567890",
+            current_title="Senior Full Stack Engineer",
             skills=["Python", "Django", "React"],
+            role_categories=["Engineering"],
+            resume_url="https://example.com/resumes/cand1.pdf",
             experience_level="senior",
             open_to_matching=True,
             profile_complete=True,
@@ -40,7 +44,11 @@ class ApplicationsApiTests(APITestCase):
         self.candidate_profile2 = CandidateProfile.objects.create(
             user=self.candidate_user2,
             headline="Frontend Engineer",
+            phone="0987654321",
+            current_title="Frontend Developer",
             skills=["React", "TypeScript"],
+            role_categories=["Engineering"],
+            resume_url="https://example.com/resumes/cand2.pdf",
             experience_level="mid",
             open_to_matching=True,
             profile_complete=True,
@@ -117,6 +125,28 @@ class ApplicationsApiTests(APITestCase):
         )
         self.assertEqual(dup_res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("already applied", dup_res.data["error"])
+
+    def test_incomplete_candidate_cannot_apply_to_job(self):
+        incomplete_user = User.objects.create_user(
+            email="incomplete@example.com",
+            password="testpassword123",
+            role=User.Role.CANDIDATE,
+            full_name="Incomplete Candidate",
+        )
+        CandidateProfile.objects.create(
+            user=incomplete_user,
+            headline="Backend Dev",
+        )
+        self.client.force_authenticate(user=incomplete_user)
+        response = self.client.post(
+            "/api/v1/applications/apply/",
+            {"job_id": str(self.job.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["error"],
+            "Please complete your profile before applying for jobs.",
+        )
 
     def test_candidate_cannot_apply_to_paused_job(self):
         self.job.status = Job.Status.PAUSED
