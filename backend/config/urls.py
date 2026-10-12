@@ -1,4 +1,10 @@
-from companies.views import AdminEmployerListView, AdminEmployerDetailView
+from companies.views import (
+    AdminEmployerListView,
+    AdminEmployerDetailView,
+    AdminEmployerActivateView,
+    AdminEmployerDeactivateView,
+    AdminEmployerDeleteView,
+)
 from django.contrib import admin
 from django.urls import path, include
 from common.dashboard_views import AdminDashboardStatsView
@@ -11,6 +17,9 @@ api_v1_patterns = [
     path("admin/employers/", include([
         path("", AdminEmployerListView.as_view(), name="admin_employer_list"),
         path("<uuid:pk>/", AdminEmployerDetailView.as_view(), name="admin_employer_detail"),
+        path("<uuid:pk>/activate/", AdminEmployerActivateView.as_view(), name="admin_employer_activate"),
+        path("<uuid:pk>/deactivate/", AdminEmployerDeactivateView.as_view(), name="admin_employer_deactivate"),
+        path("<uuid:pk>/delete/", AdminEmployerDeleteView.as_view(), name="admin_employer_delete"),
     ])),
     path("admin/candidates/", include([
         path("", include("candidates.admin_urls")),

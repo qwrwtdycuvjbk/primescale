@@ -8,7 +8,7 @@ import {
 import { AdminShell } from "@/components/admin/AdminShell";
 import { appMainClass } from "@/components/site/layout";
 import { requireAdmin, getAccessToken } from "@/lib/auth";
-import { companiesApi } from "@/lib/api/companies";
+import { companiesApi, type DjangoAdminEmployer } from "@/lib/api/companies";
 import { EmployersRegistryTable } from "@/components/admin/EmployersRegistryTable";
 
 export default async function AdminEmployersPage({
@@ -25,7 +25,7 @@ export default async function AdminEmployersPage({
   const params = await searchParams;
 
   let employersData: {
-    employers: any[];
+    employers: DjangoAdminEmployer[];
     totalCount: number;
     activeCount: number;
     count: number;
@@ -67,12 +67,9 @@ export default async function AdminEmployersPage({
               <h1 className="display-headline text-3xl sm:text-4xl">
                 Employer <span className="italic text-foreground">registry.</span>
               </h1>
-              <span className="rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
-                Read-Only
-              </span>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Monitor registered hiring organizations, hiring managers, company profiles, and posted positions.
+              Monitor and manage registered hiring organizations, hiring managers, company profiles, and posted positions.
             </p>
           </div>
         </div>
@@ -109,7 +106,7 @@ export default async function AdminEmployersPage({
               <Shield className="h-4 w-4 text-primary" />
             </div>
             <p className="mt-2 text-xs font-semibold text-muted-foreground">
-              Strictly Read-Only Monitor
+              Account Controls Active
             </p>
           </div>
         </div>

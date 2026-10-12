@@ -234,7 +234,7 @@ export const companiesApi = {
   },
 
   /**
-   * Admin: Get single employer / company detail by ID (read-only)
+   * Admin: Get single employer / company detail by ID
    */
   async getAdminEmployer(
     employerId: string,
@@ -242,4 +242,35 @@ export const companiesApi = {
   ): Promise<DjangoAdminEmployerDetail> {
     return djangoApi.get<DjangoAdminEmployerDetail>(`/api/v1/admin/employers/${employerId}/`, options);
   },
+
+  /**
+   * Admin: Activate employer account
+   */
+  async activateAdminEmployer(
+    employerId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; message: string; is_active: boolean; employerId: string; userId: string }> {
+    return djangoApi.post(`/api/v1/admin/employers/${employerId}/activate/`, {}, options);
+  },
+
+  /**
+   * Admin: Deactivate employer account
+   */
+  async deactivateAdminEmployer(
+    employerId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; message: string; is_active: boolean; employerId: string; userId: string }> {
+    return djangoApi.post(`/api/v1/admin/employers/${employerId}/deactivate/`, {}, options);
+  },
+
+  /**
+   * Admin: Permanently delete employer account
+   */
+  async deleteAdminEmployer(
+    employerId: string,
+    options?: RequestOptions,
+  ): Promise<{ ok: boolean; message: string; employerId: string; userId: string }> {
+    return djangoApi.delete(`/api/v1/admin/employers/${employerId}/delete/`, options);
+  },
 };
+

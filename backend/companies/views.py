@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from accounts.models import User
-from accounts.permissions import IsAdminReadOnly
+from accounts.permissions import IsAdmin, IsAdminReadOnly
 from .models import Company, CompanyMember
 from .serializers import (
     CompanySerializer,
@@ -330,9 +330,10 @@ class AdminEmployerListView(APIView):
 
 class AdminEmployerDetailView(APIView):
     """
-    GET /api/v1/admin/employers/<uuid:pk>/ -> View full employer details (Read-Only).
+    GET /api/v1/admin/employers/<uuid:pk>/ -> View full employer details.
+    DELETE /api/v1/admin/employers/<uuid:pk>/ -> Delete employer account.
     """
-    permission_classes = [IsAuthenticated, IsAdminReadOnly]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request, pk):
         from accounts.models import User
@@ -352,3 +353,148 @@ class AdminEmployerDetailView(APIView):
 
         serializer = AdminEmployerDetailSerializer(employer)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        return AdminEmployerDeleteView().delete(request, pk)
+
+
+class AdminEmployerActivateView(APIView):
+    """
+    POST /api/v1/admin/employers/<uuid:pk>/activate/
+    Activates an employer account. Only accessible by Admins.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        import logging
+        from django.db.models import Q
+        from accounts.models import User
+
+        employer = User.objects.filter(Q(id=pk) | Q(owned_company__id=pk), role=User.Role.EMPLOYER).first()
+        if not employer:
+            comp = Company.objects.filter(id=pk).select_related("owner").first()
+            if comp and comp.owner:
+                employer = comp.owner
+            else:
+                return Response(
+                    {"error": "Employer not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        employer.is_active = True
+        employer.save(update_fields=["is_active", "updated_at"])
+
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'AUDIT: Admin %s activated employer account %s (%s)',
+            request.user.email,
+            employer.id,
+            employer.email,
+        )
+
+        return Response(
+            {
+                "ok": True,
+                "message": "Employer account activated successfully.",
+                "is_active": True,
+                "employerId": str(pk),
+                "userId": str(employer.id),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AdminEmployerDeactivateView(APIView):
+    """
+    POST /api/v1/admin/employers/<uuid:pk>/deactivate/
+    Deactivates an employer account. Only accessible by Admins.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        import logging
+        from django.db.models import Q
+        from accounts.models import User
+
+        employer = User.objects.filter(Q(id=pk) | Q(owned_company__id=pk), role=User.Role.EMPLOYER).first()
+        if not employer:
+            comp = Company.objects.filter(id=pk).select_related("owner").first()
+            if comp and comp.owner:
+                employer = comp.owner
+            else:
+                return Response(
+                    {"error": "Employer not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        employer.is_active = False
+        employer.save(update_fields=["is_active", "updated_at"])
+
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'AUDIT: Admin %s deactivated employer account %s (%s)',
+            request.user.email,
+            employer.id,
+            employer.email,
+        )
+
+        return Response(
+            {
+                "ok": True,
+                "message": "Employer account deactivated successfully.",
+                "is_active": False,
+                "employerId": str(pk),
+                "userId": str(employer.id),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AdminEmployerDeleteView(APIView):
+    """
+    DELETE /api/v1/admin/employers/<uuid:pk>/delete/
+    Safely deletes an employer account and related company/jobs data. Only accessible by Admins.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def delete(self, request, pk):
+        import logging
+        from django.db.models import Q
+        from accounts.models import User
+
+        employer = User.objects.filter(Q(id=pk) | Q(owned_company__id=pk), role=User.Role.EMPLOYER).first()
+        if not employer:
+            comp = Company.objects.filter(id=pk).select_related("owner").first()
+            if comp and comp.owner:
+                employer = comp.owner
+            else:
+                return Response(
+                    {"error": "Employer not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        user_id = str(employer.id)
+        user_email = employer.email
+
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'AUDIT: Admin %s deleting employer account %s (%s)',
+            request.user.email,
+            user_id,
+            user_email,
+        )
+
+        employer.delete()
+
+        return Response(
+            {
+                "ok": True,
+                "message": "Employer account deleted successfully.",
+                "employerId": str(pk),
+                "userId": user_id,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request, pk):
+        return self.delete(request, pk)

@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import type { DjangoAdminEmployer } from "@/lib/api/companies";
+import { EmployerAccountActionButtons } from "./EmployerAccountActionButtons";
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -35,7 +36,7 @@ export function EmployersRegistryTable({
   totalCount,
   activeCount,
 }: Props) {
-  const [employers] = useState<DjangoAdminEmployer[]>(initialEmployers);
+  const [employers, setEmployers] = useState<DjangoAdminEmployer[]>(initialEmployers);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [industryFilter, setIndustryFilter] = useState("all");
@@ -226,13 +227,38 @@ export function EmployersRegistryTable({
 
                       {/* Actions */}
                       <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <Link
-                          href={`/admin/employers/${employer.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:text-primary underline"
-                        >
-                          View details
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <EmployerAccountActionButtons
+                            employerId={employer.id}
+                            employerName={companyName}
+                            employerEmail={employer.primary_contact_email}
+                            isActive={employer.is_active}
+                            compact={true}
+                            onStatusChange={(newStatus) => {
+                              setEmployers((prev) =>
+                                prev.map((e) =>
+                                  e.id === employer.id
+                                    ? {
+                                        ...e,
+                                        is_active: newStatus,
+                                        primary_contact_active: newStatus,
+                                      }
+                                    : e
+                                )
+                              );
+                            }}
+                            onDeleted={() => {
+                              setEmployers((prev) => prev.filter((e) => e.id !== employer.id));
+                            }}
+                          />
+                          <Link
+                            href={`/admin/employers/${employer.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:text-primary underline ml-1"
+                          >
+                            View details
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
