@@ -6,7 +6,7 @@ type AuthRole = UserRole;
 
 export async function handleLoggedInAuthPage(
   intendedRole: AuthRole,
-  options?: { hasError?: boolean },
+  options?: { hasError?: boolean; next?: string },
 ) {
   if (options?.hasError) return;
 
@@ -20,7 +20,13 @@ export async function handleLoggedInAuthPage(
       } else if (profile.role === "employer") {
         redirect("/employer");
       } else {
-        redirect("/candidate");
+        const safeNext =
+          options?.next &&
+          options.next.startsWith("/") &&
+          !options.next.startsWith("//")
+            ? options.next
+            : "/candidate";
+        redirect(safeNext);
       }
     }
     // If the active session is for a different role, do NOT redirect to the other portal.

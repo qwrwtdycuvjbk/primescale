@@ -75,7 +75,65 @@ export interface UpdateJobInput extends Partial<CreateJobInput> {
   status?: "draft" | "active" | "paused" | "closed" | "archived";
 }
 
+export interface EmployerPublicJob {
+  id: string;
+  title: string;
+  company_name: string;
+  company_logo?: string | null;
+  company_website?: string | null;
+  location: string;
+  work_type: string;
+  role_type: string;
+  experience_level: string;
+  salary_range?: string | null;
+  tech_stack: string[];
+  description: string;
+  description_summary: string;
+  source_name: string;
+  featured: boolean;
+  expires_at?: string | null;
+  created_at: string;
+}
+
+export interface PaginatedEmployerJobs {
+  count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  results: EmployerPublicJob[];
+}
+
+export interface PublicJobFilterParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  technology?: string;
+  role_type?: string;
+  experience_level?: string;
+  work_type?: string;
+}
+
 export const jobsApi = {
+  /**
+   * Fetch paginated list of public active employer-posted jobs
+   */
+  async listPublicJobs(
+    params?: PublicJobFilterParams,
+    options?: RequestOptions,
+  ): Promise<PaginatedEmployerJobs> {
+    return djangoApi.get<PaginatedEmployerJobs>("/api/v1/jobs/public/", {
+      ...options,
+      params: params as Record<string, string | number | boolean | undefined>,
+    });
+  },
+
+  /**
+   * Retrieve a single public active employer job by UUID
+   */
+  async getPublicJob(id: string, options?: RequestOptions): Promise<EmployerPublicJob> {
+    return djangoApi.get<EmployerPublicJob>(`/api/v1/jobs/public/${id}/`, options);
+  },
+
   /**
    * List jobs with filters
    */

@@ -23,6 +23,16 @@ export const applicationsApi = {
     params?: ApplicationFilterParams,
     options?: RequestOptions,
   ): Promise<DjangoApplication[]> {
+    if (typeof window !== "undefined" && !options?.token) {
+      const search = new URLSearchParams();
+      if (params?.job_id) search.set("job_id", params.job_id);
+      if (params?.status) search.set("status", params.status);
+      const query = search.toString();
+      const res = await fetch(`/api/applications${query ? `?${query}` : ""}`, { cache: "no-store" });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.applications || [];
+    }
     return djangoApi.get<DjangoApplication[]>("/api/v1/applications/", {
       ...options,
       params: params as Record<string, string | number | boolean | undefined>,
@@ -44,6 +54,18 @@ export const applicationsApi = {
     coverNote?: string,
     options?: RequestOptions,
   ): Promise<{ ok: boolean; application: DjangoApplication }> {
+    if (typeof window !== "undefined" && !options?.token) {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId, coverNote }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to submit application");
+      }
+      return data;
+    }
     return djangoApi.post<{ ok: boolean; application: DjangoApplication }>(
       "/api/v1/applications/apply/",
       { job_id: jobId, cover_note: coverNote },

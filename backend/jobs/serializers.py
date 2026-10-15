@@ -123,3 +123,56 @@ class JobCreateUpdateSerializer(serializers.Serializer):
                 "Describe who can work remotely in the US for this role."
             )
         return value.strip()
+
+
+class EmployerJobPublicSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source="company.name", read_only=True)
+    company_logo = serializers.CharField(source="company.logo_url", read_only=True)
+    company_website = serializers.CharField(source="company.website", read_only=True)
+    location = serializers.SerializerMethodField()
+    description_summary = serializers.SerializerMethodField()
+    source_name = serializers.CharField(source="company.name", read_only=True)
+
+    class Meta:
+        model = Job
+        fields = [
+            "id",
+            "title",
+            "company_name",
+            "company_logo",
+            "company_website",
+            "location",
+            "work_type",
+            "role_type",
+            "experience_level",
+            "salary_range",
+            "tech_stack",
+            "description",
+            "description_summary",
+            "source_name",
+            "featured",
+            "expires_at",
+            "created_at",
+        ]
+
+    def get_location(self, obj) -> str:
+        if not obj.company:
+            return obj.work_type.capitalize() if obj.work_type else "Remote"
+        hq = obj.company.hq_city.strip() if obj.company.hq_city else None
+        country = obj.company.country.strip() if obj.company.country else None
+        if hq and country:
+            return f"{hq}, {country}"
+        if country:
+            return country
+        if obj.work_type:
+            return obj.work_type.capitalize()
+        return "Remote"
+
+    def get_description_summary(self, obj) -> str:
+        if not obj.description:
+            return ""
+        desc = obj.description.strip()
+        if len(desc) <= 220:
+            return desc
+        return desc[:217].rstrip() + "..."
+

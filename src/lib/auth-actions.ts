@@ -170,6 +170,7 @@ export async function submitAuth(formData: FormData) {
       }
 
       redirectPath = authFormPath(role, mode, {
+        ...returnParams,
         awaiting: email,
       });
     } catch (djangoErr: unknown) {
@@ -195,7 +196,7 @@ export async function submitAuth(formData: FormData) {
         if (loginRes.user.role === "admin") {
           redirectPath = "/admin";
         } else if (loginRes.user.role === "candidate") {
-          redirectPath = next.startsWith("/candidate") ? next : "/candidate";
+          redirectPath = (next.startsWith("/candidate") || next.startsWith("/jobs/")) ? next : "/candidate";
         } else if (loginRes.user.role === "employer") {
           redirectPath = next.startsWith("/employer") ? next : (next === "/auth/redirect" ? "/auth/redirect" : "/employer");
         } else {

@@ -62,6 +62,9 @@ class ApplyToJobSerializer(serializers.Serializer):
             raise serializers.ValidationError("Job not found.")
         if job.status != Job.Status.ACTIVE:
             raise serializers.ValidationError(f"Cannot apply to job with status '{job.status}'. Only active jobs accept applications.")
+        from django.utils import timezone
+        if job.expires_at and job.expires_at <= timezone.now():
+            raise serializers.ValidationError("This job posting has expired.")
         return value
 
 

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         role === "admin"
           ? "/admin"
           : role === "candidate"
-            ? (next.startsWith("/candidate") ? next : "/candidate")
+            ? (next.startsWith("/candidate") || next.startsWith("/jobs/") ? next : "/candidate")
             : (next.startsWith("/employer") ? next : (next === "/auth/redirect" ? "/auth/redirect" : "/employer"));
 
       const response = NextResponse.redirect(new URL(destination, publicOrigin));

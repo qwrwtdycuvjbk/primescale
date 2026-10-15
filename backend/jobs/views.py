@@ -1,17 +1,19 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import generics, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from accounts.permissions import IsAdmin, IsEmployer, IsEmployer
+from accounts.permissions import IsAdmin, IsEmployer, IsEmployerOrAdmin
 from companies.models import Company
 from companies.utils import is_company_profile_complete
 from .models import Job
 from .serializers import (
+    EmployerJobPublicSerializer,
     JobCreateUpdateSerializer,
     JobPublicListSerializer,
     JobSerializer,
@@ -27,7 +29,7 @@ class JobListCreateView(APIView):
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAuthenticated(), IsEmployer()]
+            return [IsAuthenticated(), IsEmployerOrAdmin()]
         return [AllowAny()]
 
     def get(self, request):
@@ -80,7 +82,7 @@ class JobListCreateView(APIView):
 
         queryset = queryset.order_by("-created_at")
 
-        if is_admin or is_employer:
+        if is_admin or (is_employer and request.query_params.get("view") == "my_company"):
             serializer = JobSerializer(queryset, many=True)
         else:
             serializer = JobPublicListSerializer(queryset, many=True)
@@ -273,4 +275,94 @@ class JobDuplicateView(APIView):
                 "job": JobSerializer(copy_job).data,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class EmployerJobPagination(PageNumberPagination):
+    page_size = 9
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+    def get_paginated_response(self, data):
+        return Response(
+            {
+                "count": self.page.paginator.count,
+                "total_pages": self.page.paginator.num_pages,
+                "current_page": self.page.number,
+                "page_size": self.get_page_size(self.request),
+                "results": data,
+            }
+        )
+
+
+class EmployerJobPublicListView(generics.ListAPIView):
+    """
+    Public Endpoint: GET /api/v1/jobs/public/
+    Lists eligible active, non-expired employer jobs for public display on the homepage.
+    """
+    permission_classes = [AllowAny]
+    serializer_class = EmployerJobPublicSerializer
+    pagination_class = EmployerJobPagination
+
+    def get_queryset(self):
+        now = timezone.now()
+        queryset = (
+            Job.objects.select_related("company", "posted_by")
+            .filter(
+                status=Job.Status.ACTIVE,
+                posted_by__is_active=True,
+                company__isnull=False,
+            )
+            .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+        )
+
+        params = self.request.query_params
+        q = params.get("search") or params.get("q")
+        if q and q.strip():
+            terms = q.strip().split()
+            for term in terms:
+                queryset = queryset.filter(
+                    Q(title__icontains=term)
+                    | Q(company__name__icontains=term)
+                    | Q(description__icontains=term)
+                )
+
+        technology = params.get("technology")
+        if technology and technology.strip().lower() != "all":
+            tech_clean = technology.strip()
+            queryset = queryset.filter(tech_stack__icontains=tech_clean)
+
+        role_type = params.get("role_type")
+        if role_type and role_type.strip().lower() != "all":
+            queryset = queryset.filter(role_type=role_type.strip())
+
+        experience_level = params.get("experience_level")
+        if experience_level and experience_level.strip().lower() != "all":
+            queryset = queryset.filter(experience_level=experience_level.strip())
+
+        work_type = params.get("work_type")
+        if work_type and work_type.strip().lower() != "all":
+            queryset = queryset.filter(work_type=work_type.strip())
+
+        return queryset.order_by("-featured", "-created_at")
+
+
+class EmployerJobPublicDetailView(generics.RetrieveAPIView):
+    """
+    Public Endpoint: GET /api/v1/jobs/public/<uuid:pk>/
+    Retrieves a single active, non-expired employer job for public viewing.
+    """
+    permission_classes = [AllowAny]
+    serializer_class = EmployerJobPublicSerializer
+
+    def get_queryset(self):
+        now = timezone.now()
+        return (
+            Job.objects.select_related("company", "posted_by")
+            .filter(
+                status=Job.Status.ACTIVE,
+                posted_by__is_active=True,
+                company__isnull=False,
+            )
+            .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
         )

@@ -324,3 +324,106 @@ class JobApiTests(TestCase):
         # Ensure company_id and companies are serialized
         self.assertEqual(str(res.data[0]["company_id"]), str(self.company1.id))
         self.assertIn("companies", res.data[0])
+
+    def test_employer_public_feed_and_detail(self):
+        # 1. Create an active non-expired job
+        active_job = Job.objects.create(
+            company=self.company1,
+            posted_by=self.employer1,
+            title="Principal Python Engineer",
+            description="Leading architecture and AI systems.",
+            role_type="full-time",
+            experience_level="lead",
+            tech_stack=["Python", "FastAPI", "Docker"],
+            salary_range="$180,000 - $220,000",
+            work_type="remote",
+            status="active",
+            featured=True,
+        )
+
+        # 2. Create a draft job (should be excluded)
+        draft_job = Job.objects.create(
+            company=self.company1,
+            posted_by=self.employer1,
+            title="Draft Secret Role",
+            description="Internal draft.",
+            role_type="full-time",
+            experience_level="mid",
+            tech_stack=["Go", "AWS"],
+            salary_range="$120k - $140k",
+            status="draft",
+        )
+
+        # 3. Create a paused job (should be excluded)
+        paused_job = Job.objects.create(
+            company=self.company2,
+            posted_by=self.employer2,
+            title="Paused Role",
+            description="Paused.",
+            role_type="contract",
+            experience_level="senior",
+            tech_stack=["React", "TypeScript"],
+            salary_range="$100k - $120k",
+            status="paused",
+        )
+
+        # 4. Create an expired active job (should be excluded)
+        expired_job = Job.objects.create(
+            company=self.company2,
+            posted_by=self.employer2,
+            title="Expired Role",
+            description="Expired yesterday.",
+            role_type="full-time",
+            experience_level="mid",
+            tech_stack=["Python", "Postgres"],
+            salary_range="$110k - $130k",
+            status="active",
+            expires_at=timezone.now() - timezone.timedelta(days=1),
+        )
+
+        # 5. Anonymous visitor hits GET /api/v1/jobs/public/
+        self.client.credentials()
+        res = self.client.get("/api/v1/jobs/public/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("results", res.data)
+        self.assertIn("count", res.data)
+        self.assertEqual(res.data["count"], 1)
+
+        result = res.data["results"][0]
+        self.assertEqual(result["id"], str(active_job.id))
+        self.assertEqual(result["title"], "Principal Python Engineer")
+        # Ensure company name matches Company.name, NOT employer's user name
+        self.assertEqual(result["company_name"], "Acme Corp")
+        self.assertEqual(result["source_name"], "Acme Corp")
+        self.assertNotEqual(result["company_name"], self.employer1.full_name)
+        self.assertEqual(result["salary_range"], "$180,000 - $220,000")
+        self.assertTrue(result["featured"])
+
+        # Verify privacy: sensitive fields must NOT be present
+        self.assertNotIn("posted_by", result)
+        self.assertNotIn("posted_by_email", result)
+        self.assertNotIn("posted_by_full_name", result)
+        self.assertNotIn("jd_quality_score", result)
+        self.assertNotIn("jd_quality_feedback", result)
+
+        # 6. Retrieve public detail
+        detail_res = self.client.get(f"/api/v1/jobs/public/{active_job.id}/")
+        self.assertEqual(detail_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_res.data["company_name"], "Acme Corp")
+        self.assertEqual(detail_res.data["description"], "Leading architecture and AI systems.")
+
+        # 7. Draft and expired jobs return 404 on public detail
+        draft_res = self.client.get(f"/api/v1/jobs/public/{draft_job.id}/")
+        self.assertEqual(draft_res.status_code, status.HTTP_404_NOT_FOUND)
+
+        expired_res = self.client.get(f"/api/v1/jobs/public/{expired_job.id}/")
+        self.assertEqual(expired_res.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 8. Deactivated employer's active job is excluded
+        self.employer1.is_active = False
+        self.employer1.save()
+
+        deact_res = self.client.get("/api/v1/jobs/public/")
+        self.assertEqual(deact_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(deact_res.data["count"], 0)
+

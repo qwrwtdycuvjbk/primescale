@@ -16,7 +16,19 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-export default async function CandidateOnboardingPage() {
+export default async function CandidateOnboardingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ next?: string }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
+  const rawNext = params?.next;
+  const next =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//")
+      ? rawNext
+      : null;
+  const targetDestination = next || "/candidate";
+
   const { profile } = await requireRole("candidate");
   const token = await getAccessToken();
   const cookieStore = await cookies();
@@ -32,7 +44,7 @@ export default async function CandidateOnboardingPage() {
   }
 
   if (existing && isCandidateProfileComplete(existing)) {
-    redirect("/candidate");
+    redirect(targetDestination);
   }
 
   const fromRow: Partial<CandidateProfileInput> = existing
@@ -91,7 +103,7 @@ export default async function CandidateOnboardingPage() {
         <div className="mt-10 rounded-3xl border border-border bg-card p-8">
           <CandidateProfileWizard
             initialData={initialData}
-            redirectTo="/candidate"
+            redirectTo={targetDestination}
           />
         </div>
         </div>

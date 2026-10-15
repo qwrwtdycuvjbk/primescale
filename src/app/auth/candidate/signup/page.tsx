@@ -13,6 +13,7 @@ export default async function CandidateSignupPage({
     awaiting?: string;
     email?: string;
     queue?: string;
+    next?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -20,6 +21,7 @@ export default async function CandidateSignupPage({
 
   await handleLoggedInAuthPage("candidate", {
     hasError: !!params.error,
+    next: params.next,
   });
 
   const title = queue ? `Join the ${queue} queue.` : "Get matched.";
@@ -40,6 +42,7 @@ export default async function CandidateSignupPage({
       <AuthForm
         mode="signup"
         role="candidate"
+        next={params.next}
         error={params.error}
         details={params.details}
         awaiting={params.awaiting}

@@ -88,7 +88,11 @@ export function AuthForm({
           in that email to activate your account, then log in.
         </p>
         <Link
-          href={`${basePath}/login`}
+          href={
+            next && next.startsWith("/") && !next.startsWith("//")
+              ? `${basePath}/login?next=${encodeURIComponent(next)}`
+              : `${basePath}/login`
+          }
           className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
         >
           Go to log in
@@ -180,7 +184,11 @@ export function AuthForm({
           <p className="mt-3 text-center text-xs text-muted-foreground sm:text-sm">
             New to People Remotely?{" "}
             <Link
-              href={`${basePath}/signup`}
+              href={
+                next && next.startsWith("/") && !next.startsWith("//")
+                  ? `${basePath}/signup?next=${encodeURIComponent(next)}`
+                  : `${basePath}/signup`
+              }
               className="font-medium text-foreground hover:text-primary"
             >
               Create an account
@@ -341,7 +349,11 @@ export function AuthForm({
             <>
               Already have an account?{" "}
               <Link
-                href={`${basePath}/login`}
+                href={
+                  next && next.startsWith("/") && !next.startsWith("//")
+                    ? `${basePath}/login?next=${encodeURIComponent(next)}`
+                    : `${basePath}/login`
+                }
                 className="font-medium text-foreground hover:text-primary"
               >
                 Log in
@@ -351,7 +363,11 @@ export function AuthForm({
             <>
               New to People Remotely?{" "}
               <Link
-                href={`${basePath}/signup`}
+                href={
+                  next && next.startsWith("/") && !next.startsWith("//")
+                    ? `${basePath}/signup?next=${encodeURIComponent(next)}`
+                    : `${basePath}/signup`
+                }
                 className="font-medium text-foreground hover:text-primary"
               >
                 Create an account

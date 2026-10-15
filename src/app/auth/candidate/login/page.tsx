@@ -15,6 +15,7 @@ export default async function CandidateLoginPage({
   const params = await searchParams;
   await handleLoggedInAuthPage("candidate", {
     hasError: !!params.error,
+    next: params.next,
   });
 
   return (

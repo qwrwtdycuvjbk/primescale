@@ -15,6 +15,9 @@ const DepartmentJobs = dynamic(() =>
 const HowItWorks = dynamic(() =>
   import("@/components/site/how-it-works").then((mod) => mod.HowItWorks),
 );
+const EmployerJobs = dynamic(() =>
+  import("@/components/site/employer-jobs").then((mod) => mod.EmployerJobs),
+);
 const SiteFooter = dynamic(() =>
   import("@/components/site/site-footer").then((mod) => mod.SiteFooter),
 );
@@ -41,6 +44,8 @@ export default function Home() {
       </div>
 
       <HowItWorks />
+
+      <EmployerJobs />
 
       <DepartmentJobs />
 
