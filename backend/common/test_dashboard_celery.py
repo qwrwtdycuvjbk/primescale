@@ -110,16 +110,18 @@ class AdminDashboardAnalyticsTests(APITestCase):
 
         data = response.data
         self.assertIn("pendingMatches", data)
-        self.assertIn("pendingHandoffs", data)
+        self.assertIn("totalMatches", data)
         self.assertIn("newCandidatesThisWeek", data)
         self.assertIn("newEmployersThisWeek", data)
         self.assertIn("activeJobsWithNoMatches", data)
         self.assertIn("incompleteProfiles", data)
+        # Handoffs are decoupled from admin platform monitoring (Phase 18 contract)
+        self.assertNotIn("pendingHandoffs", data)
 
         # Verify values
         self.assertGreaterEqual(data["newCandidatesThisWeek"], 2)
         self.assertGreaterEqual(data["newEmployersThisWeek"], 1)
-        self.assertEqual(data["pendingHandoffs"], 1)
+        self.assertEqual(data["totalMatches"], 1)
         self.assertEqual(data["activeJobsWithNoMatches"], 1)
         self.assertEqual(len(data["unmatchedJobPreviews"]), 1)
         self.assertEqual(data["unmatchedJobPreviews"][0]["title"], "DevOps Lead")

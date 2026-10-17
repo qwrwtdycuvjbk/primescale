@@ -118,21 +118,25 @@ class CandidateResumeStorageTests(TestCase):
         self.candidate_profile.save()
 
         self._auth(self.admin_user)
-        # Admin GET
+        # Admin GET is allowed (read-only)
         get_res = self.client.get(f"/api/v1/candidates/{self.candidate_profile.id}/resume/")
         self.assertEqual(get_res.status_code, status.HTTP_200_OK)
         self.assertTrue(get_res.data["ok"])
 
-        # Admin POST upload on behalf of candidate
+        # Admin POST upload on behalf of candidate is prohibited under Read-Only Administrator policy
         new_pdf = SimpleUploadedFile("admin_uploaded.pdf", b"%PDF-1.4 admin override", content_type="application/pdf")
         post_res = self.client.post(
             f"/api/v1/candidates/{self.candidate_profile.id}/resume/",
             {"file": new_pdf},
             format="multipart",
         )
-        self.assertEqual(post_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(post_res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            post_res.data.get("error"),
+            "Resume upload is not permitted for Read-Only Administrator role.",
+        )
         self.candidate_profile.refresh_from_db()
-        self.assertEqual(self.candidate_profile.resume_url, post_res.data["resumePath"])
+        self.assertEqual(self.candidate_profile.resume_url, f"{self.candidate_user.id}/resume_abc.pdf")
 
     def test_candidate_cannot_access_admin_candidate_resume_endpoint(self):
         self._auth(self.candidate_user)

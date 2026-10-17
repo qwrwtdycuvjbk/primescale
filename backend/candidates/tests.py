@@ -249,6 +249,7 @@ class CandidateApiTests(TestCase):
         self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_admin_candidate_create_and_duplicate_rejection(self):
+        # Admin candidate creation is prohibited under Read-Only Administrator policy
         self._auth(self.admin)
         payload = {
             "fullName": "Admin Added User",
@@ -260,14 +261,12 @@ class CandidateApiTests(TestCase):
             "workAuthorization": "us_citizen",
         }
         res = self.client.post("/api/v1/admin/candidates/", payload, format="json")
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(res.data["ok"])
-        self.assertTrue(User.objects.filter(email="admin_added@test.com").exists())
-
-        # Duplicate email rejected
-        res_dup = self.client.post("/api/v1/admin/candidates/", payload, format="json")
-        self.assertEqual(res_dup.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("already exists", str(res_dup.data))
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            res.data.get("error"),
+            "Candidate creation is not permitted for Read-Only Administrator role.",
+        )
+        self.assertFalse(User.objects.filter(email="admin_added@test.com").exists())
 
         # Non-admin forbidden
         self._auth(self.candidate1)
@@ -275,6 +274,7 @@ class CandidateApiTests(TestCase):
         self.assertEqual(res_cand.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_admin_candidate_bulk_import_csv(self):
+        # Admin candidate bulk import is prohibited under Read-Only Administrator policy
         self._auth(self.admin)
         csv_content = (
             "full_name,email,headline,skills,role_categories,experience_level,work_authorization\n"
@@ -289,9 +289,11 @@ class CandidateApiTests(TestCase):
             {"file": file_obj},
             format="multipart",
         )
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data["created"], 2)
-        self.assertEqual(res.data["failed"], 0)
-        self.assertTrue(User.objects.filter(email="import1@test.com").exists())
-        self.assertTrue(User.objects.filter(email="import2@test.com").exists())
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            res.data.get("error"),
+            "Candidate bulk import is not permitted for Read-Only Administrator role.",
+        )
+        self.assertFalse(User.objects.filter(email="import1@test.com").exists())
+        self.assertFalse(User.objects.filter(email="import2@test.com").exists())
 

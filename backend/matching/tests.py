@@ -245,18 +245,25 @@ class MatchApiAndRunnerTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 0)
 
-        # Admin approves match
+        # Admin match mutation is prohibited under Read-Only Administrator policy
         self._auth(self.admin)
         res = self.client.patch(
             f"/api/v1/matches/{match.id}/admin-action/",
             {"action": "approve"},
             format="json",
         )
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            res.data.get("error"),
+            "Match modification is not permitted for Read-Only Administrator role.",
+        )
         match.refresh_from_db()
-        self.assertTrue(match.visible_to_employer)
+        self.assertFalse(match.visible_to_employer)
 
-        # Now employer sees the match
+        # When match is approved (e.g. via backend workflow), employer sees the match
+        match.visible_to_employer = True
+        match.save(update_fields=["visible_to_employer"])
+
         self._auth(self.employer_user)
         res = self.client.get("/api/v1/matches/")
         self.assertEqual(len(res.data), 1)

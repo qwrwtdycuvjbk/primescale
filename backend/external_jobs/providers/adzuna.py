@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 import requests
 from django.conf import settings
@@ -317,6 +318,16 @@ def sync_adzuna_jobs(
                         posted_at = parse_datetime(created_raw)
                         if posted_at and timezone.is_naive(posted_at):
                             posted_at = timezone.make_aware(posted_at)
+
+                    # Ingestion retention filter: skip listings strictly older than 21 days
+                    if posted_at:
+                        max_age_cutoff = timezone.now() - timedelta(days=21)
+                        if posted_at < max_age_cutoff:
+                            logger.info(
+                                f"Skipping stale Adzuna listing {ext_id}: posted_at ({posted_at}) is older than 21 days."
+                            )
+                            jobs_skipped += 1
+                            continue
 
                     dedup_hash = generate_dedup_hash(
                         company_name=company_name,

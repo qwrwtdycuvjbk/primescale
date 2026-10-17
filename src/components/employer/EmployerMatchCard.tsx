@@ -27,9 +27,9 @@ export function EmployerMatchCard({ match }: { match: Match }) {
     }
   }
 
-  const candidate = match.candidate_profiles;
-  const name = candidate?.profiles?.full_name ?? "Candidate";
-  const jobTitle = match.jobs?.title;
+  const candidate = match.candidate_profiles || (match as any).candidate_profile;
+  const name = candidate?.profiles?.full_name ?? candidate?.full_name ?? "Candidate";
+  const jobTitle = match.jobs?.title || (match as any).job?.title || (match as any).job_title;
 
   const meta = [
     candidate?.current_title,

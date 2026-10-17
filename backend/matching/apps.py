@@ -7,3 +7,4 @@ class MatchingConfig(AppConfig):
 
     def ready(self):
         import matching.tasks  # noqa: F401
+        import matching.signals  # noqa: F401

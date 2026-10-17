@@ -77,7 +77,6 @@ class EmployerCandidateProfileSummarySerializer(serializers.ModelSerializer):
             "linkedin_url",
             "github_url",
             "portfolio_url",
-            "resume_url",
         )
 
     def get_profiles(self, obj):

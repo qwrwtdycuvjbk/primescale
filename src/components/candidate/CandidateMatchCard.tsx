@@ -36,7 +36,14 @@ export function CandidateMatchCard({ match }: { match: Match }) {
     }
   }
 
-  const job = match.jobs;
+  const job = match.jobs || (match as any).job;
+  const companyName = job?.companies?.name || job?.company_name || (job as any)?.company?.name;
+  const jobMeta = [
+    job?.experience_level ? `${job.experience_level} level` : null,
+    job?.role_type,
+    job?.work_type,
+    job?.salary_range,
+  ].filter(Boolean);
 
   return (
     <article className="rounded-3xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
@@ -48,9 +55,14 @@ export function CandidateMatchCard({ match }: { match: Match }) {
           <h3 className="display-headline mt-2 text-2xl">
             {job?.title ?? "Role"}
           </h3>
-          {job?.companies?.name && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {job.companies.name}
+          {companyName && (
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
+              {companyName}
+            </p>
+          )}
+          {jobMeta.length > 0 && (
+            <p className="mt-1 text-xs text-muted-foreground/80">
+              {jobMeta.join(" · ")}
             </p>
           )}
         </div>

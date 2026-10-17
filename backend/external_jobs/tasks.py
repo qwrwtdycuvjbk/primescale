@@ -94,3 +94,18 @@ def expire_stale_external_jobs_task():
         source.save(update_fields=["active_jobs_count"])
 
     return {"expired_count": expired_count}
+
+
+@shared_task(name="external_jobs.tasks.cleanup_external_jobs_task")
+def cleanup_external_jobs_task(days: int = 21, batch_size: int = 1000, execute: bool = True):
+    """
+    Scheduled task to automatically delete stale external jobs from third-party aggregators
+    ('adzuna', 'himalayas') whose original publication date (posted_at) is older than `days`.
+    Preserves People Prime ATS jobs and employer-created jobs.
+    """
+    logger.info(
+        f"Executing external jobs cleanup task (days={days}, batch_size={batch_size}, execute={execute})..."
+    )
+    from external_jobs.cleanup import cleanup_external_jobs
+
+    return cleanup_external_jobs(days=days, batch_size=batch_size, execute=execute)

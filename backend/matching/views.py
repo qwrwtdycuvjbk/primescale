@@ -35,6 +35,12 @@ class MatchListView(APIView):
 
         status_param = request.query_params.get("status")
         job_id = request.query_params.get("job") or request.query_params.get("job_id")
+        limit_param = request.query_params.get("limit")
+        try:
+            limit = int(limit_param) if limit_param else 100
+            limit = max(1, min(limit, 100))
+        except (ValueError, TypeError):
+            limit = 100
 
         if is_admin:
             queryset = Match.objects.select_related(
@@ -47,22 +53,22 @@ class MatchListView(APIView):
             visible = request.query_params.get("visible_to_employer")
             if visible is not None:
                 queryset = queryset.filter(visible_to_employer=(visible.lower() == "true"))
-            queryset = queryset.order_by("-match_score", "-created_at")
+            queryset = queryset.order_by("-match_score", "-created_at")[:limit]
             serializer = AdminMatchSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         elif is_employer:
             queryset = Match.objects.select_related(
-                "job", "candidate_profile", "candidate_profile__user"
+                "job", "job__company", "candidate_profile", "candidate_profile__user"
             ).filter(
-                Q(job__posted_by=user) | Q(job__company__owner=user),
+                Q(job__posted_by=user) | Q(job__company__owner=user) | Q(job__company__members__user=user),
                 visible_to_employer=True,
-            )
+            ).distinct()
             if status_param and status_param != "all":
                 queryset = queryset.filter(status=status_param)
             if job_id and job_id != "all":
                 queryset = queryset.filter(job_id=job_id)
-            queryset = queryset.order_by("-match_score", "-created_at")
+            queryset = queryset.order_by("-match_score", "-created_at")[:limit]
             serializer = EmployerMatchSerializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -72,7 +78,8 @@ class MatchListView(APIView):
             ).filter(
                 candidate_profile__user=user,
                 match_score__gt=60,
-            ).order_by("-match_score", "-created_at")
+                job__status="active",
+            ).order_by("-match_score", "-created_at")[:limit]
             if status_param and status_param != "all":
                 queryset = queryset.filter(status=status_param)
             serializer = CandidateMatchSerializer(queryset, many=True)
@@ -96,12 +103,27 @@ class MatchDetailView(APIView):
             pk=pk,
         )
         is_admin = user.role == User.Role.ADMIN or user.is_staff or user.is_superuser
-        is_candidate_owner = match.candidate_profile.user == user
-        is_employer_owner = match.job.posted_by == user or match.job.company.owner == user
+        if is_admin:
+            return match, True
 
-        if not (is_admin or is_candidate_owner or is_employer_owner):
+        if user.role == User.Role.CANDIDATE:
+            is_candidate_owner = match.candidate_profile.user == user
+            if is_candidate_owner and match.match_score > 60:
+                return match, True
             return match, False
-        return match, True
+
+        if user.role == User.Role.EMPLOYER:
+            is_employer_owner = (
+                match.job.posted_by == user
+                or match.job.company.owner == user
+                or match.job.company.members.filter(user=user).exists()
+            )
+            # Employers can ONLY access approved matches for their company/job
+            if is_employer_owner and match.visible_to_employer:
+                return match, True
+            return match, False
+
+        return match, False
 
     def get(self, request, pk):
         match, has_access = self._get_match_and_validate_access(request.user, pk)

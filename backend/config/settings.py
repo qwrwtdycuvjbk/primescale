@@ -240,6 +240,21 @@ GREENHOUSE_ENABLED = os.getenv("GREENHOUSE_ENABLED", "False").lower() in ("true"
 LEVER_ENABLED = os.getenv("LEVER_ENABLED", "False").lower() in ("true", "1")
 ASHBY_ENABLED = os.getenv("ASHBY_ENABLED", "False").lower() in ("true", "1")
 
+# NVIDIA NIM Embedding API Configuration (Phase 3 AI Resume-Job Matching)
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+NVIDIA_EMBEDDING_API_URL = os.getenv(
+    "NVIDIA_EMBEDDING_API_URL",
+    "https://integrate.api.nvidia.com/v1/embeddings",
+)
+NVIDIA_EMBEDDING_MODEL = os.getenv(
+    "NVIDIA_EMBEDDING_MODEL",
+    "nvidia/nemotron-3-embed-1b",
+)
+NVIDIA_EMBEDDING_DIMENSIONS = int(os.getenv("NVIDIA_EMBEDDING_DIMENSIONS", "2048"))
+NVIDIA_EMBEDDING_CONNECT_TIMEOUT = float(os.getenv("NVIDIA_EMBEDDING_CONNECT_TIMEOUT", "5.0"))
+NVIDIA_EMBEDDING_READ_TIMEOUT = float(os.getenv("NVIDIA_EMBEDDING_READ_TIMEOUT", "30.0"))
+NVIDIA_EMBEDDING_MAX_RETRIES = int(os.getenv("NVIDIA_EMBEDDING_MAX_RETRIES", "3"))
+
 # Internationalization
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -251,7 +266,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Celery Beat - External Job Synchronization
+# Celery Beat - External Job Synchronization & Daily Cleanup
 CELERY_BEAT_SCHEDULE = {
     "sync-people-prime-jobs": {
         "task": "external_jobs.tasks.sync_people_prime_jobs_task",
@@ -264,5 +279,9 @@ CELERY_BEAT_SCHEDULE = {
     "sync-himalayas-jobs": {
         "task": "external_jobs.tasks.sync_himalayas_jobs_task",
         "schedule": crontab(minute=20, hour="*/6"),
+    },
+    "cleanup-external-jobs": {
+        "task": "external_jobs.tasks.cleanup_external_jobs_task",
+        "schedule": crontab(minute=30, hour=3),
     },
 }
