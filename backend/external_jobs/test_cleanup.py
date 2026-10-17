@@ -2,7 +2,7 @@ import io
 from datetime import timedelta
 from unittest.mock import patch, MagicMock
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
@@ -330,6 +330,10 @@ class ProviderIngestionFilterTests(TestCase):
             defaults={"name": "Himalayas", "api_enabled": True},
         )
 
+    @override_settings(
+        ADZUNA_APP_ID="test-app-id",
+        ADZUNA_APP_KEY="test-app-key",
+    )
     @patch("external_jobs.providers.adzuna.requests.Session")
     def test_adzuna_skips_listings_older_than_21_days_during_sync(self, mock_session_cls):
         """Adzuna ingestion skips jobs with created > 21 days old and does not insert them."""

@@ -283,5 +283,6 @@ CELERY_BEAT_SCHEDULE = {
     "cleanup-external-jobs": {
         "task": "external_jobs.tasks.cleanup_external_jobs_task",
         "schedule": crontab(minute=30, hour=3),
+        "kwargs": {"execute": False},
     },
 }
