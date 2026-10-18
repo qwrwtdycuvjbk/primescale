@@ -75,7 +75,7 @@ export function EmployerMatchCard({ match }: { match: Match }) {
       )}
       {candidate?.skills && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {candidate.skills.slice(0, 8).map((skill) => (
+          {candidate.skills.slice(0, 8).map((skill: string) => (
             <span key={skill} className="rounded-full border border-border px-3 py-1 text-xs">
               {skill}
             </span>

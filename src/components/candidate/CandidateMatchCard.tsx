@@ -79,7 +79,7 @@ export function CandidateMatchCard({ match }: { match: Match }) {
 
       {job?.tech_stack && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {job.tech_stack.slice(0, 6).map((skill) => (
+          {job.tech_stack.slice(0, 6).map((skill: string) => (
             <span
               key={skill}
               className="rounded-full border border-border px-3 py-1 text-xs text-foreground"
