@@ -138,7 +138,7 @@ export function CandidateProfileWizard({
       throw new Error(data.error ?? "Resume upload failed");
     }
 
-    setForm((prev) => ({ ...prev, resumeUrl: data.url }));
+    setForm((prev) => ({ ...prev, resumeUrl: data.path }));
     setResumeFileName(file.name);
     setStatus("idle");
   }
