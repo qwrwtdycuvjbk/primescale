@@ -73,11 +73,15 @@ class MatchListView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         elif is_candidate:
+            profile = getattr(user, "candidate_profile", None)
+            if not profile or getattr(profile, "profile_completeness", 0) != 100:
+                return Response([], status=status.HTTP_200_OK)
+
             queryset = Match.objects.select_related(
                 "job", "job__company"
             ).filter(
                 candidate_profile__user=user,
-                match_score__gt=60,
+                match_score__gte=70,
                 job__status="active",
             ).order_by("-match_score", "-created_at")[:limit]
             if status_param and status_param != "all":
@@ -108,7 +112,7 @@ class MatchDetailView(APIView):
 
         if user.role == User.Role.CANDIDATE:
             is_candidate_owner = match.candidate_profile.user == user
-            if is_candidate_owner and match.match_score > 60:
+            if is_candidate_owner and match.match_score >= 70:
                 return match, True
             return match, False
 
@@ -131,6 +135,8 @@ class MatchDetailView(APIView):
             return Response({"error": "You do not have permission to view this match."}, status=status.HTTP_403_FORBIDDEN)
 
         if request.user.role == User.Role.CANDIDATE:
+            if getattr(match.candidate_profile, "profile_completeness", 0) != 100:
+                return Response({"error": "You do not have permission to view this match."}, status=status.HTTP_403_FORBIDDEN)
             serializer = CandidateMatchSerializer(match)
         elif request.user.role == User.Role.EMPLOYER:
             serializer = EmployerMatchSerializer(match)
@@ -163,13 +169,17 @@ class MatchDetailView(APIView):
                         {"error": "Candidate can only express interest or reject."},
                         status=status.HTTP_403_FORBIDDEN,
                     )
-                if requested_status == Match.Status.CANDIDATE_INTERESTED:
-                    profile = getattr(user, "candidate_profile", None)
-                    if not check_candidate_profile_complete(profile):
-                        return Response(
-                            {"error": "Please complete your profile before applying for jobs."},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
+                profile = getattr(user, "candidate_profile", None)
+                if not profile or not profile.profile_complete or not check_candidate_profile_complete(profile):
+                    return Response(
+                        {"error": "Please complete your profile before applying for jobs."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if getattr(profile, "profile_completeness", 0) != 100:
+                    return Response(
+                        {"error": "Profile must be 100% complete to interact with AI recommendations."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             if is_employer_owner and requested_status not in [Match.Status.EMPLOYER_SHORTLISTED, Match.Status.REJECTED]:
                 return Response(
                     {"error": "Employer can only shortlist or reject."},

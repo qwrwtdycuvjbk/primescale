@@ -213,8 +213,8 @@ def process_candidate_resume_task(
         }
 
     # 4. Check eligibility & trigger hybrid matching
-    profile.refresh_from_db(fields=["open_to_matching", "profile_complete", "resume_url"])
-    is_eligible = profile.open_to_matching and profile.profile_complete and bool(profile.resume_url)
+    profile.refresh_from_db(fields=["open_to_matching", "profile_complete", "profile_completeness", "resume_url"])
+    is_eligible = profile.open_to_matching and profile.profile_complete and getattr(profile, "profile_completeness", 0) == 100 and bool(profile.resume_url)
 
     if is_eligible:
         run_matching_for_candidate_task.delay(profile_id_str)
@@ -223,10 +223,10 @@ def process_candidate_resume_task(
     else:
         matching_scheduled = False
         logger.info(
-            "Candidate %s not eligible for immediate matching (open=%s, complete=%s)",
+            "Candidate %s not eligible for immediate matching (open=%s, complete=%s, completeness=%s)",
             profile_id_str,
             profile.open_to_matching,
-            profile.profile_complete,
+            profile.profile_complete, getattr(profile, "profile_completeness", None),
         )
 
     return {

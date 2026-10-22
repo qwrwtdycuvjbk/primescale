@@ -107,6 +107,7 @@ class MatchApiAndRunnerTests(TestCase):
             resume_url="https://example.com/resumes/alice.pdf",
             experience_level="lead",
             profile_complete=True,
+            profile_completeness=100,
             open_to_matching=True,
         )
 

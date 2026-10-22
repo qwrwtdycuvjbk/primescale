@@ -34,6 +34,7 @@ api_v1_patterns = [
     path("applications/", include("applications.urls", namespace="applications")),
     path("job-leads/", include("job_leads.urls", namespace="job_leads")),
     path("role-submissions/", RoleSubmissionCreateView.as_view(), name="role_submissions"),
+    path("notifications/", include("notifications.urls", namespace="notifications")),
 ]
 
 urlpatterns = [

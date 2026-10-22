@@ -198,9 +198,10 @@ def record_candidate_profile_initial_state(sender, instance: CandidateProfile, *
     Records initial field values on model instance initialization.
     Used in post_save to detect whether resume_url or eligibility flags changed.
     """
-    instance._initial_resume_url = instance.resume_url
-    instance._initial_open_to_matching = instance.open_to_matching
-    instance._initial_profile_complete = instance.profile_complete
+    instance._initial_resume_url = instance.__dict__.get("resume_url")
+    instance._initial_open_to_matching = instance.__dict__.get("open_to_matching")
+    instance._initial_profile_complete = instance.__dict__.get("profile_complete")
+    instance._initial_profile_completeness = instance.__dict__.get("profile_completeness", 0)
 
 
 @receiver(post_save, sender=CandidateProfile)
@@ -228,6 +229,9 @@ def handle_candidate_profile_post_save(sender, instance: CandidateProfile, creat
 
     initial_complete = getattr(instance, "_initial_profile_complete", False)
     current_complete = instance.profile_complete
+
+    initial_completeness = getattr(instance, "_initial_profile_completeness", 0)
+    current_completeness = getattr(instance, "profile_completeness", 0)
 
     # Determine if resume_url changed
     if created:
@@ -270,8 +274,8 @@ def handle_candidate_profile_post_save(sender, instance: CandidateProfile, creat
     # 3. Eligibility transition without resume change
     elif not resume_changed and current_resume_url:
         became_eligible = (
-            (not initial_open or not initial_complete)
-            and (current_open and current_complete)
+            (not initial_open or not initial_complete or initial_completeness != 100)
+            and (current_open and current_complete and current_completeness == 100)
         )
         if became_eligible:
             expected_fp = calculate_source_fingerprint(current_resume_url)
@@ -295,6 +299,7 @@ def handle_candidate_profile_post_save(sender, instance: CandidateProfile, creat
     instance._initial_resume_url = current_resume_url
     instance._initial_open_to_matching = current_open
     instance._initial_profile_complete = current_complete
+    instance._initial_profile_completeness = current_completeness
 
 
 @receiver(post_delete, sender=CandidateProfile)

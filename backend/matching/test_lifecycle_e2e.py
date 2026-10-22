@@ -121,8 +121,10 @@ class CandidateResumeLifecycleE2ETests(TestCase):
             availability_status=CandidateProfile.AvailabilityStatus.ACTIVELY_LOOKING,
             privacy_visibility=CandidateProfile.PrivacyVisibility.PUBLIC,
             bio="Passionate distributed systems engineer.",
+            github_url="https://github.com/alice",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
 
         # 2. Employer & Active First-Party Job
@@ -528,6 +530,7 @@ class EmployerJobLifecycleE2ETests(TestCase):
             resume_url="resumes/carol/cloud_resume.pdf",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
         self.cand_vector = make_uniform_unit_vector()
         self.candidate_embedding = CandidateResumeEmbedding.objects.create(
@@ -841,6 +844,7 @@ class MatchAndNotificationWorkflowE2ETests(TestCase):
             resume_url="resumes/dave/resume.pdf",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
         self.cand_embedding = CandidateResumeEmbedding.objects.create(
             candidate_profile=self.candidate_profile,
@@ -861,13 +865,18 @@ class MatchAndNotificationWorkflowE2ETests(TestCase):
         """
         Verifies:
         - 50% semantic, 30% skills, 20% experience.
-        - Exact score of 70.00 does NOT qualify.
-        - Strictly > 70.00 qualifies.
+        - Exact score of 70.00 qualifies.
+        - Score of 69.99 does NOT qualify; >= 70.00 qualifies.
         """
         # Exact 70.00: 50% * 80 + 30% * 60 + 20% * 60 = 40 + 18 + 12 = 70.00
         bd_exact = calculate_hybrid_score(semantic_score=80.0, skill_score=60.0, exp_score=60.0)
         self.assertEqual(bd_exact.final_score, 70.0)
-        self.assertFalse(bd_exact.qualifies)
+        self.assertTrue(bd_exact.qualifies)
+
+        # 69.99 fails: 50% * 79.98 + 30% * 60 + 20% * 60 = 39.99 + 18 + 12 = 69.99
+        bd_below = calculate_hybrid_score(semantic_score=79.98, skill_score=60.0, exp_score=60.0)
+        self.assertEqual(bd_below.final_score, 69.99)
+        self.assertFalse(bd_below.qualifies)
 
         # 70.01 qualifies: 50% * 80.02 + 30% * 60 + 20% * 60 = 40.01 + 18 + 12 = 70.01
         bd_above = calculate_hybrid_score(semantic_score=80.02, skill_score=60.0, exp_score=60.0)

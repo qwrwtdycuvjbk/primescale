@@ -135,7 +135,7 @@ def create_single_admin_candidate(data: dict) -> tuple:
         )
 
     matches_result = {"matched": 0}
-    if is_complete and open_to_matching:
+    if is_complete and open_to_matching and completeness == 100:
         try:
             matches_result = run_matching_for_candidate(str(profile.id))
         except Exception:

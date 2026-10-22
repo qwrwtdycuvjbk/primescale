@@ -96,6 +96,7 @@ class JobLifecycleSignalAndMatchingTests(TestCase):
             work_authorization=CandidateProfile.WorkAuthorization.US_CITIZEN,
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
             resume_url="resumes/test_candidate/resume.pdf",
         )
 

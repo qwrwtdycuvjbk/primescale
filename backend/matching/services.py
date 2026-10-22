@@ -168,6 +168,7 @@ def run_matching_for_candidate(candidate_profile_id: str) -> dict:
             id=candidate_profile_id,
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
     except CandidateProfile.DoesNotExist:
         return {"matched": 0}

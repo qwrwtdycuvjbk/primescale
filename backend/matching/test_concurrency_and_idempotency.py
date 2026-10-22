@@ -25,9 +25,10 @@ Covers:
    - External jobs (Himalayas, Adzuna, People Prime ATS) remain strictly excluded.
 """
 
+from unittest import skipUnless
 from unittest.mock import MagicMock, call, patch
 import uuid
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
@@ -98,6 +99,7 @@ class CandidateResumeConcurrencyTests(TestCase):
             work_authorization=CandidateProfile.WorkAuthorization.US_CITIZEN,
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
             resume_url="resumes/user/resume_A.pdf",
         )
 
@@ -465,6 +467,7 @@ class MatchingAndNotificationIdempotencyTests(TestCase):
             work_authorization=CandidateProfile.WorkAuthorization.US_CITIZEN,
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
             resume_url="resumes/user/resume.pdf",
         )
         self.candidate_emb = CandidateResumeEmbedding.objects.create(
@@ -539,12 +542,17 @@ class MatchingAndNotificationIdempotencyTests(TestCase):
         ).count()
         self.assertEqual(outbox_count_2, 1)
 
-    # 15. Strict qualification score threshold > 70.00
+    # 15. Qualification score threshold >= 70.00
     def test_qualification_threshold_strictly_greater_than_70(self):
-        # Exact 70.00 does NOT qualify
+        # 69.99 does NOT qualify
+        bd_below = calculate_hybrid_score(semantic_score=69.98, skill_score=70.0, exp_score=70.0)
+        self.assertEqual(bd_below.final_score, 69.99)
+        self.assertFalse(bd_below.qualifies)
+
+        # Exact 70.00 DOES qualify
         breakdown_exact = calculate_hybrid_score(semantic_score=70.0, skill_score=70.0, exp_score=70.0)
         self.assertEqual(breakdown_exact.final_score, 70.0)
-        self.assertFalse(breakdown_exact.qualifies)
+        self.assertTrue(breakdown_exact.qualifies)
 
         # 70.10 DOES qualify
         breakdown_above = calculate_hybrid_score(semantic_score=70.2, skill_score=70.0, exp_score=70.0)
@@ -577,6 +585,7 @@ import threading
 from django.db import connections
 
 
+@skipUnless(connection.vendor == "postgresql", "Genuine concurrent multi-threading tests require PostgreSQL row-level locking.")
 class GenuinePostgresConcurrencyTests(TransactionTestCase):
     """
     Genuine concurrent transaction tests executing simultaneously across
@@ -631,6 +640,7 @@ class GenuinePostgresConcurrencyTests(TransactionTestCase):
             work_authorization=CandidateProfile.WorkAuthorization.US_CITIZEN,
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
             resume_url="resumes/user/concurrent_resume.pdf",
         )
         self.candidate_emb, _ = CandidateResumeEmbedding.objects.get_or_create(

@@ -111,21 +111,21 @@ class HybridScoringFormulaUnitTests(TestCase):
         self.assertTrue(res.qualifies)
 
     def test_strict_qualification_threshold_at_70(self):
-        """A candidate-job pair qualifies only when score is STRICTLY greater than 70.0 (70.00 does not qualify)."""
+        """A candidate-job pair qualifies when score is greater than or equal to 70.0 (70.00 qualifies, 69.99 does not)."""
         # Exactly 70.00: e.g. 70 * 0.50 (35) + 70 * 0.30 (21) + 70 * 0.20 (14) = 70.00
         res_70 = calculate_hybrid_score(semantic_score=70.0, skill_score=70.0, exp_score=70.0)
         self.assertEqual(res_70.final_score, 70.0)
-        self.assertFalse(res_70.qualifies, "Score of exactly 70.00 must NOT qualify.")
+        self.assertTrue(res_70.qualifies, "Score of exactly 70.00 MUST qualify.")
 
-        # Just below: 69.99
+        # Just below: 69.99 fails
         res_below = calculate_hybrid_score(semantic_score=69.98, skill_score=70.0, exp_score=70.0)
-        self.assertLess(res_below.final_score, 70.0)
-        self.assertFalse(res_below.qualifies)
+        self.assertEqual(res_below.final_score, 69.99)
+        self.assertFalse(res_below.qualifies, "Score of 69.99 must NOT qualify.")
 
-        # Just above: 70.01 -> e.g. 70.1 * 0.50 (35.05) + 70 * 0.30 (21.0) + 70 * 0.20 (14.0) = 70.05
-        res_above = calculate_hybrid_score(semantic_score=70.1, skill_score=70.0, exp_score=70.0)
-        self.assertGreater(res_above.final_score, 70.0)
-        self.assertTrue(res_above.qualifies, "Score strictly above 70.00 MUST qualify.")
+        # Just above: 70.01 qualifies (50% * 70.02 + 30% * 70.0 + 20% * 70.0 = 70.01)
+        res_above = calculate_hybrid_score(semantic_score=70.02, skill_score=70.0, exp_score=70.0)
+        self.assertEqual(res_above.final_score, 70.01)
+        self.assertTrue(res_above.qualifies, "Score of 70.01 MUST qualify.")
 
         # Clearly above: 71.0
         res_71 = calculate_hybrid_score(semantic_score=72.0, skill_score=70.0, exp_score=70.0)
@@ -274,6 +274,7 @@ class HybridMatchingEngineIntegrationTests(TestCase):
             resume_url="resumes/alice/resume.pdf",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
         # Candidate Resume Embedding (completed, matching vector)
         self.cand_vector = create_unit_vector()
@@ -313,6 +314,7 @@ class HybridMatchingEngineIntegrationTests(TestCase):
             experience_level="junior",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
         ortho_vector = [0.0] * TARGET_EMBEDDING_DIMENSIONS
         ortho_vector[1] = 1.0
@@ -389,11 +391,11 @@ class HybridMatchingEngineIntegrationTests(TestCase):
         self.assertFalse(Match.objects.filter(candidate_profile=self.candidate, job=failed_job).exists())
 
     def test_ineligible_candidates_excluded(self):
-        """Ineligible, incomplete, not open, or unembedded candidates are excluded from job matching."""
+        """Ineligible, incomplete, not open, sub-100% completeness, or unembedded candidates are excluded from job matching."""
         # 1. Candidate not open to matching
         cand2_user = User.objects.create_user(email="notopen@test.com", password="Password123!", role=User.Role.CANDIDATE)
         cand2 = CandidateProfile.objects.create(
-            user=cand2_user, open_to_matching=False, profile_complete=True,
+            user=cand2_user, open_to_matching=False, profile_complete=True, profile_completeness=100,
             skills=["python"], experience_level="senior",
         )
         CandidateResumeEmbedding.objects.create(candidate_profile=cand2, status=EmbeddingStatus.COMPLETED, embedding=self.cand_vector)
@@ -401,7 +403,7 @@ class HybridMatchingEngineIntegrationTests(TestCase):
         # 2. Incomplete profile
         cand3_user = User.objects.create_user(email="incomplete@test.com", password="Password123!", role=User.Role.CANDIDATE)
         cand3 = CandidateProfile.objects.create(
-            user=cand3_user, open_to_matching=True, profile_complete=False,
+            user=cand3_user, open_to_matching=True, profile_complete=False, profile_completeness=100,
             skills=["python"], experience_level="senior",
         )
         CandidateResumeEmbedding.objects.create(candidate_profile=cand3, status=EmbeddingStatus.COMPLETED, embedding=self.cand_vector)
@@ -409,10 +411,18 @@ class HybridMatchingEngineIntegrationTests(TestCase):
         # 3. Candidate with pending/failed embedding
         cand4_user = User.objects.create_user(email="failed_emb@test.com", password="Password123!", role=User.Role.CANDIDATE)
         cand4 = CandidateProfile.objects.create(
-            user=cand4_user, open_to_matching=True, profile_complete=True,
+            user=cand4_user, open_to_matching=True, profile_complete=True, profile_completeness=100,
             skills=["python"], experience_level="senior",
         )
         CandidateResumeEmbedding.objects.create(candidate_profile=cand4, status=EmbeddingStatus.FAILED, embedding=None)
+
+        # 4. Candidate with profile_completeness < 100
+        cand5_user = User.objects.create_user(email="incomplete90@test.com", password="Password123!", role=User.Role.CANDIDATE)
+        cand5 = CandidateProfile.objects.create(
+            user=cand5_user, open_to_matching=True, profile_complete=True, profile_completeness=90,
+            skills=["python"], experience_level="senior",
+        )
+        CandidateResumeEmbedding.objects.create(candidate_profile=cand5, status=EmbeddingStatus.COMPLETED, embedding=self.cand_vector)
 
         # Run job matching: only self.candidate should match
         res = run_hybrid_matching_for_job(self.job.id)
@@ -421,6 +431,7 @@ class HybridMatchingEngineIntegrationTests(TestCase):
         self.assertFalse(Match.objects.filter(candidate_profile=cand2, job=self.job).exists())
         self.assertFalse(Match.objects.filter(candidate_profile=cand3, job=self.job).exists())
         self.assertFalse(Match.objects.filter(candidate_profile=cand4, job=self.job).exists())
+        self.assertFalse(Match.objects.filter(candidate_profile=cand5, job=self.job).exists())
 
     def test_duplicate_matching_preserves_unique_constraint_and_status(self):
         """Re-running matching updates the match score without duplicating or resetting existing status."""
@@ -484,6 +495,7 @@ class HybridMatchingEngineIntegrationTests(TestCase):
             experience_level="lead",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
         CandidateResumeEmbedding.objects.create(
             candidate_profile=failed_cand,
@@ -506,6 +518,7 @@ class HybridMatchingEngineIntegrationTests(TestCase):
             experience_level="lead",
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
         CandidateResumeEmbedding.objects.create(
             candidate_profile=pending_cand,
@@ -613,17 +626,19 @@ class HybridMatchingEngineIntegrationTests(TestCase):
         # Sem=70.0 (35.0) + Skill=70.0 (21.0) + Exp=70.0 (14.0) = 70.00
         b6a = calculate_hybrid_score(70.0, 70.0, 70.0)
         self.assertEqual(b6a.final_score, 70.0)
-        self.assertFalse(b6a.qualifies, "Score of exactly 70.00 MUST NOT qualify.")
+        self.assertTrue(b6a.qualifies, "Score of exactly 70.00 MUST qualify.")
 
-        # Case 6b: Just below 70.00 (69.98)
-        b6b = calculate_hybrid_score(69.96, 70.0, 70.0)
-        self.assertEqual(b6b.final_score, 69.98)
-        self.assertFalse(b6b.qualifies, "Score below 70.00 must NOT qualify.")
+        # Case 6b: Just below 70.00 (69.99)
+        # Sem=69.98 (34.99) + Skill=70.0 (21.0) + Exp=70.0 (14.0) = 69.99
+        b6b = calculate_hybrid_score(69.98, 70.0, 70.0)
+        self.assertEqual(b6b.final_score, 69.99)
+        self.assertFalse(b6b.qualifies, "Score of 69.99 must NOT qualify.")
 
-        # Case 6c: Just above 70.00 (70.05)
-        b6c = calculate_hybrid_score(70.1, 70.0, 70.0)
-        self.assertEqual(b6c.final_score, 70.05)
-        self.assertTrue(b6c.qualifies, "Score strictly above 70.00 MUST qualify.")
+        # Case 6c: Just above 70.00 (70.01)
+        # Sem=70.02 (35.01) + Skill=70.0 (21.0) + Exp=70.0 (14.0) = 70.01
+        b6c = calculate_hybrid_score(70.02, 70.0, 70.0)
+        self.assertEqual(b6c.final_score, 70.01)
+        self.assertTrue(b6c.qualifies, "Score of 70.01 MUST qualify.")
 
     def test_recruiter_notification_idempotency_and_semantics(self):
         """
@@ -760,3 +775,13 @@ class HybridMatchingEngineIntegrationTests(TestCase):
         self.assertTrue(is_ok_renewed)
         res_renewed = run_hybrid_matching_for_candidate(self.candidate.id)
         self.assertEqual(res_renewed["matched"], 1)
+
+    def test_recruiter_notification_outbox_failure_not_suppressed(self):
+        """Notification outbox persistence failures are NOT suppressed and propagate."""
+        breakdown = calculate_hybrid_score(95.0, 95.0, 95.0)
+        self.assertTrue(breakdown.final_score >= 85.0)
+
+        with patch("notifications.services.create_high_match_outbox_record", side_effect=RuntimeError("Database failure writing outbox")):
+            with self.assertRaises(RuntimeError) as ctx:
+                HybridMatchingEngine._persist_match(self.candidate, self.job, breakdown)
+            self.assertIn("Database failure writing outbox", str(ctx.exception))

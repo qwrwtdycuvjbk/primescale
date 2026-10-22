@@ -80,21 +80,26 @@ export default async function CandidateDashboardPage() {
     console.error("Failed to load candidate profile from Django:", err);
   }
 
-  const isComplete = Boolean(
+  const isMandatoryComplete = Boolean(
     candidateProfile && isCandidateProfileComplete(candidateProfile),
   );
+  const completenessPercentage =
+    typeof candidateProfile?.profile_completeness === "number"
+      ? candidateProfile.profile_completeness
+      : 0;
+  const isAiEligible = isMandatoryComplete && completenessPercentage === 100;
 
   let matches: any[] = [];
   let matchCount = 0;
   let applications: any[] = [];
 
-  if (isComplete) {
+  if (isAiEligible) {
     try {
       const djangoMatches = await matchingApi.listMatches({}, { token });
       if (djangoMatches && Array.isArray(djangoMatches)) {
-        // Enforce match_score > 60 (60 is excluded, 61+ included)
+        // Enforce match_score >= 70 (70+ included)
         const qualifiedMatches = djangoMatches.filter(
-          (m: any) => typeof m.match_score === "number" && m.match_score > 60,
+          (m: any) => typeof m.match_score === "number" && m.match_score >= 70,
         );
         matchCount = qualifiedMatches.length;
         matches = qualifiedMatches.slice(0, 4);
@@ -132,10 +137,10 @@ export default async function CandidateDashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href={isComplete ? "/candidate/profile" : "/candidate/onboarding"}
+              href={isMandatoryComplete ? "/candidate/profile" : "/candidate/onboarding"}
               className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5"
             >
-              {isComplete ? "Edit Profile" : "Complete Profile"}
+              {isMandatoryComplete ? "Edit Profile" : "Complete Profile"}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <form action={handleSignOut}>
@@ -151,7 +156,7 @@ export default async function CandidateDashboardPage() {
         </div>
 
         {/* Section 1: Incomplete Profile Banner Alert */}
-        {!isComplete && (
+        {!isMandatoryComplete && (
           <div className="mt-8 rounded-3xl border border-amber-500/30 bg-amber-500/10 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
@@ -188,7 +193,7 @@ export default async function CandidateDashboardPage() {
             </div>
             <p className="display-headline mt-6 text-4xl">{matchCount}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Qualified Matches (&gt;60%)
+              Qualified Matches (70%+)
             </p>
           </div>
 
@@ -207,10 +212,10 @@ export default async function CandidateDashboardPage() {
               <FileText className="h-5 w-5" />
             </div>
             <p className="display-headline mt-6 text-4xl">
-              {isComplete ? "100%" : `${candidateProfile?.profile_completeness ?? 0}%`}
+              {`${completenessPercentage}%`}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isComplete ? "Profile Complete" : "Profile Incomplete"}
+              {completenessPercentage === 100 ? "Profile 100% Complete" : "Profile Incomplete"}
             </p>
           </div>
         </div>
@@ -223,10 +228,10 @@ export default async function CandidateDashboardPage() {
               <div>
                 <h2 className="display-headline text-2xl">Job Matches</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Roles matching your skills &amp; experience (Score &gt; 60%)
+                  Roles matching your skills &amp; experience (Score &ge; 70%)
                 </p>
               </div>
-              {isComplete && matches.length > 0 && (
+              {isAiEligible && matches.length > 0 && (
                 <Link
                   href="/candidate/matches"
                   className="text-sm font-semibold text-primary hover:underline"
@@ -237,24 +242,27 @@ export default async function CandidateDashboardPage() {
             </div>
 
             <div className="mt-6 space-y-4">
-              {!isComplete ? (
+              {!isAiEligible ? (
                 <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                     <Sparkles className="h-6 w-6" />
                   </div>
                   <h3 className="mt-4 text-base font-semibold text-foreground">
-                    Complete your profile to see personalized job matches.
+                    {!isMandatoryComplete
+                      ? "Complete your profile to see personalized job matches."
+                      : "Reach 100% profile completeness to unlock AI recommendations."}
                   </h3>
                   <p className="mt-2 text-xs text-muted-foreground max-w-md mx-auto">
-                    Your matching queue activates as soon as your candidate
-                    profile and required resume are saved.
+                    {!isMandatoryComplete
+                      ? "Your matching queue activates as soon as your candidate profile and required resume are saved."
+                      : `Your profile is currently ${completenessPercentage}% complete. Complete all profile sections to receive AI-matched roles.`}
                   </p>
                   <div className="mt-6">
                     <Link
-                      href="/candidate/onboarding"
+                      href={!isMandatoryComplete ? "/candidate/onboarding" : "/candidate/profile"}
                       className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground"
                     >
-                      Complete Profile Now
+                      {!isMandatoryComplete ? "Complete Profile Now" : "Update Profile"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
@@ -332,7 +340,7 @@ export default async function CandidateDashboardPage() {
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground max-w-md mx-auto">
                     We scan active roles against your profile. New roles
-                    qualifying with &gt;60% match score will appear here.
+                    qualifying with &ge;70% match score will appear here.
                   </p>
                 </div>
               )}
@@ -345,7 +353,7 @@ export default async function CandidateDashboardPage() {
               <p className="font-mono text-xs uppercase tracking-widest text-foreground">
                 Your Profile
               </p>
-              {isComplete ? (
+              {isMandatoryComplete ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Profile Complete
@@ -410,10 +418,10 @@ export default async function CandidateDashboardPage() {
             </dl>
 
             <Link
-              href={isComplete ? "/candidate/profile" : "/candidate/onboarding"}
+              href={isMandatoryComplete ? "/candidate/profile" : "/candidate/onboarding"}
               className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              {isComplete ? "Edit Profile" : "Complete Profile"}
+              {isMandatoryComplete ? "Edit Profile" : "Complete Profile"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </aside>

@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "applications",
     "job_leads",
     "common",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -213,8 +214,17 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Resend Settings
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails")
 RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 PEOPLE_PRIME_HANDOFF_EMAIL = os.getenv("PEOPLE_PRIME_HANDOFF_EMAIL", "remote@people-prime.com")
+RESEND_CONNECT_TIMEOUT = float(os.getenv("RESEND_CONNECT_TIMEOUT", "3.0"))
+RESEND_READ_TIMEOUT = float(os.getenv("RESEND_READ_TIMEOUT", "10.0"))
+RESEND_WEBHOOK_SECRET = os.getenv("RESEND_WEBHOOK_SECRET", "")
+RESEND_WEBHOOK_TOLERANCE_SECONDS = int(os.getenv("RESEND_WEBHOOK_TOLERANCE_SECONDS", "300"))
+RESEND_WEBHOOK_UNMATCHED_RETRY_WINDOW_SECONDS = int(os.getenv("RESEND_WEBHOOK_UNMATCHED_RETRY_WINDOW_SECONDS", "60"))
+
+# Notification Outbox Dispatch Kill Switch (Default False; requires explicit opt-in to enable live dispatch)
+NOTIFICATIONS_DISPATCH_ENABLED = os.getenv("NOTIFICATIONS_DISPATCH_ENABLED", "false").strip().lower() in ("true", "1", "yes")
 
 # OpenWeb Ninja Settings
 OPENWEB_NINJA_API_KEY = os.getenv("OPENWEB_NINJA_API_KEY", "")

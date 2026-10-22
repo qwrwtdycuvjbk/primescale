@@ -6,7 +6,7 @@ Phase 7 Implementation:
     1. Semantic similarity (50% weight) via dense 2,048-dimensional embeddings and pgvector cosine distance.
     2. Skills match (30% weight) via normalized tech stack overlap.
     3. Experience match (20% weight) via canonical career level progression.
-- Qualification threshold: strictly score > 70.0 (scores of 70.00 or lower DO NOT qualify).
+- Qualification threshold: score >= 70.0 (scores below 70.00 DO NOT qualify).
 - Candidate and Job eligibility:
     - Jobs: must be eligible, active, non-expired, first-party jobs with completed 2,048-dim embedding.
     - Candidates: must be open to matching, profile complete, with completed 2,048-dim resume embedding.
@@ -50,7 +50,7 @@ WEIGHT_SEMANTIC: Final[float] = 0.50
 WEIGHT_SKILLS: Final[float] = 0.30
 WEIGHT_EXPERIENCE: Final[float] = 0.20
 
-# Qualification threshold: strictly greater than 70.0
+# Qualification threshold: greater than or equal to 70.0
 QUALIFICATION_THRESHOLD: Final[float] = 70.0
 
 # Recruiter alert threshold for high matches
@@ -70,7 +70,7 @@ class HybridScoreBreakdown:
     skill_score: float     # 0.0 - 100.0 (30% weight)
     exp_score: float       # 0.0 - 100.0 (20% weight)
     final_score: float     # 0.0 - 100.0
-    qualifies: bool        # True if and only if final_score > 70.0
+    qualifies: bool        # True if and only if final_score >= 70.0
     reason: str            # Recruiter-facing summary of component scores
 
 
@@ -202,7 +202,7 @@ def calculate_hybrid_score(
     """
     Calculates combined hybrid score according to the 50/30/20 formula:
     Final = (0.50 * Semantic) + (0.30 * Skills) + (0.20 * Experience)    
-    Enforces qualification strictly at score > 70.0 (70.00 does not qualify).
+    Enforces qualification at score >= 70.0 (69.99 does not qualify).
     """
     sem = max(0.0, min(100.0, float(semantic_score)))
     ski = max(0.0, min(100.0, float(skill_score)))
@@ -211,8 +211,8 @@ def calculate_hybrid_score(
     final_score = (WEIGHT_SEMANTIC * sem) + (WEIGHT_SKILLS * ski) + (WEIGHT_EXPERIENCE * exp)
     final_score = round(final_score, 4)
 
-    # Strictly greater than 70.00
-    qualifies = final_score > QUALIFICATION_THRESHOLD
+    # Greater than or equal to 70.00
+    qualifies = final_score >= QUALIFICATION_THRESHOLD
 
     reason = (
         f"Hybrid match ({round(final_score, 1)}%): "
@@ -239,6 +239,7 @@ def is_candidate_eligible_for_hybrid_matching(
     - Is an instance of CandidateProfile
     - open_to_matching is True
     - profile_complete is True
+    - profile_completeness is 100
     - Has an associated completed CandidateResumeEmbedding with non-null 2,048-dim vector
     """
     if not isinstance(candidate, CandidateProfile):
@@ -249,6 +250,9 @@ def is_candidate_eligible_for_hybrid_matching(
 
     if not candidate.profile_complete:
         return False, "Candidate profile is incomplete."
+
+    if getattr(candidate, "profile_completeness", 0) != 100:
+        return False, "Candidate profile completeness is not 100%."
 
     resume_emb = getattr(candidate, "resume_embedding", None)
     if not resume_emb:
@@ -305,6 +309,7 @@ def get_eligible_candidate_resume_embeddings() -> models.QuerySet[CandidateResum
         embedding__isnull=False,
         candidate_profile__open_to_matching=True,
         candidate_profile__profile_complete=True,
+        candidate_profile__profile_completeness=100,
         candidate_profile__resume_url__isnull=False,
     ).exclude(candidate_profile__resume_url="").select_related("candidate_profile")
 

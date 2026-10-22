@@ -69,6 +69,7 @@ class CandidateResumeLifecyclePipelineTests(TestCase):
             work_authorization=CandidateProfile.WorkAuthorization.US_CITIZEN,
             open_to_matching=True,
             profile_complete=True,
+            profile_completeness=100,
         )
 
         # Create Employer & Company & First-Party Active Job
@@ -343,6 +344,54 @@ class CandidateResumeLifecyclePipelineTests(TestCase):
         # Matching is enqueued now using the existing valid embedding without re-calling NVIDIA API!
         mock_matching_task.assert_called_once_with(str(self.candidate_profile.id))
         self.assertEqual(mock_client.embed.call_count, 1)
+
+    @patch("matching.tasks.run_matching_for_candidate_task.delay")
+    @patch("matching.resume_embeddings.NvidiaEmbeddingClient")
+    @patch("common.resume_extraction.ResumeTextExtractionService.extract_from_storage")
+    def test_resume_processing_sub_100_completeness_does_not_dispatch_matching_until_100(
+        self,
+        mock_extract,
+        mock_client_cls,
+        mock_matching_task,
+    ):
+        mock_extract.return_value = MagicMock(
+            is_success=True,
+            text="Resume text for candidate with 90 percent completeness.",
+            content_hash="hash_90_pct",
+            character_count=50,
+            word_count=8,
+            status=MagicMock(value="success"),
+        )
+        mock_client = MagicMock()
+        mock_client.model = TARGET_EMBEDDING_MODEL
+        mock_client.embed.return_value = MagicMock(
+            embedding=make_dummy_vector(val=0.05),
+            model=TARGET_EMBEDDING_MODEL,
+            input_type="passage",
+        )
+        mock_client_cls.return_value = mock_client
+
+        # Candidate has profile_completeness = 90
+        self.candidate_profile.profile_completeness = 90
+        self.candidate_profile.resume_url = f"{self.candidate_user.id}/incomplete_resume.pdf"
+        self.candidate_profile.save()
+
+        result = process_candidate_resume_task(
+            str(self.candidate_profile.id),
+            expected_resume_path=self.candidate_profile.resume_url,
+        )
+
+        self.assertEqual(result["status"], "completed")
+        self.assertFalse(result["matching_scheduled"])
+        mock_matching_task.assert_not_called()
+
+        # When candidate subsequently reaches 100% profile completeness:
+        with self.captureOnCommitCallbacks(execute=True):
+            self.candidate_profile.profile_completeness = 100
+            self.candidate_profile.save()
+
+        # Matching is dispatched on reaching 100% with the existing embedding
+        mock_matching_task.assert_called_once_with(str(self.candidate_profile.id))
 
     # ------------------------------------------------------------------------
     # 9. Clearing a resume invalidates associated private embedding data

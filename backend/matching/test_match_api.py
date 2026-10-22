@@ -65,6 +65,7 @@ class Phase8MatchApiAndAuthorizationTests(TestCase):
             skills=["python", "django", "postgresql"],
             experience_level="senior",
             profile_complete=True,
+            profile_completeness=100,
             open_to_matching=True,
             resume_url="https://example.com/resumes/alice.pdf",
         )
@@ -82,6 +83,7 @@ class Phase8MatchApiAndAuthorizationTests(TestCase):
             skills=["react", "javascript"],
             experience_level="junior",
             profile_complete=True,
+            profile_completeness=100,
             open_to_matching=True,
         )
 
@@ -205,22 +207,145 @@ class Phase8MatchApiAndAuthorizationTests(TestCase):
         self.assertEqual(res_patch.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_candidate_subthreshold_match_hidden(self):
-        """Matches with score <= 60 are hidden from candidate list and detail endpoints."""
-        m_low = Match.objects.create(
+        """Matches with score < 70 (e.g. 69) are hidden from candidate list and detail endpoints, while scores >= 70 (70, 71) are visible."""
+        job3 = Job.objects.create(
+            company=self.company1,
+            posted_by=self.emp1_user,
+            title="DevOps Engineer",
+            description="Leading DevOps infrastructure.",
+            role_type="full-time",
+            experience_level="mid",
+            tech_stack=["docker", "kubernetes"],
+            status=Job.Status.ACTIVE,
+        )
+        m_69 = Match.objects.create(
             candidate_profile=self.cand1_profile,
             job=self.job1,
-            match_score=55,
+            match_score=69,
+            status=Match.Status.SUGGESTED,
+        )
+        m_70 = Match.objects.create(
+            candidate_profile=self.cand1_profile,
+            job=self.job2,
+            match_score=70,
+            status=Match.Status.SUGGESTED,
+        )
+        m_71 = Match.objects.create(
+            candidate_profile=self.cand1_profile,
+            job=job3,
+            match_score=71,
             status=Match.Status.SUGGESTED,
         )
 
+        self.assertEqual(self.cand1_profile.profile_completeness, 100)
         self._auth(self.cand1_user)
         res = self.client.get("/api/v1/matches/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         ids = [item["id"] for item in res.data]
-        self.assertNotIn(str(m_low.id), ids)
+        self.assertNotIn(str(m_69.id), ids)
+        self.assertIn(str(m_70.id), ids)
+        self.assertIn(str(m_71.id), ids)
 
-        res_detail = self.client.get(f"/api/v1/matches/{m_low.id}/")
+        # 69 is forbidden
+        res_detail_69 = self.client.get(f"/api/v1/matches/{m_69.id}/")
+        self.assertEqual(res_detail_69.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 70 qualifies and is accessible
+        res_detail_70 = self.client.get(f"/api/v1/matches/{m_70.id}/")
+        self.assertEqual(res_detail_70.status_code, status.HTTP_200_OK)
+
+        # 71 qualifies and is accessible
+        res_detail_71 = self.client.get(f"/api/v1/matches/{m_71.id}/")
+        self.assertEqual(res_detail_71.status_code, status.HTTP_200_OK)
+
+    def test_candidate_below_100_percent_completeness_gets_no_recommendations(self):
+        """A candidate with profile_completeness < 100 receives no recommendations, cannot view, and cannot update match status."""
+        # Update candidate to 90% completeness
+        self.cand1_profile.profile_completeness = 90
+        self.cand1_profile.save(update_fields=["profile_completeness"])
+
+        m_qualifying = Match.objects.create(
+            candidate_profile=self.cand1_profile,
+            job=self.job1,
+            match_score=85,
+            status=Match.Status.SUGGESTED,
+        )
+
+        self._auth(self.cand1_user)
+        # List returns empty
+        res = self.client.get("/api/v1/matches/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 0)
+
+        # Detail returns 403
+        res_detail = self.client.get(f"/api/v1/matches/{m_qualifying.id}/")
         self.assertEqual(res_detail.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Patch candidate_interested returns 403
+        res_patch_interest = self.client.patch(
+            f"/api/v1/matches/{m_qualifying.id}/",
+            {"status": "candidate_interested"},
+            format="json",
+        )
+        self.assertEqual(res_patch_interest.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res_patch_interest.data["error"], "Profile must be 100% complete to interact with AI recommendations.")
+
+        # Patch rejected returns 403
+        res_patch_reject = self.client.patch(
+            f"/api/v1/matches/{m_qualifying.id}/",
+            {"status": "rejected"},
+            format="json",
+        )
+        self.assertEqual(res_patch_reject.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res_patch_reject.data["error"], "Profile must be 100% complete to interact with AI recommendations.")
+
+        # Tampering: employer_shortlisted returns 403
+        res_patch_tamper = self.client.patch(
+            f"/api/v1/matches/{m_qualifying.id}/",
+            {"status": "employer_shortlisted"},
+            format="json",
+        )
+        self.assertEqual(res_patch_tamper.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res_patch_tamper.data["error"], "Candidate can only express interest or reject.")
+
+        # Restore
+        self.cand1_profile.profile_completeness = 100
+        self.cand1_profile.save(update_fields=["profile_completeness"])
+
+    def test_candidate_mandatory_incomplete_cannot_patch_status(self):
+        """Candidate with mandatory profile incomplete (profile_complete=False) receives 400 Bad Request on PATCH."""
+        self.cand1_profile.profile_complete = False
+        self.cand1_profile.save(update_fields=["profile_complete"])
+
+        m = Match.objects.create(
+            candidate_profile=self.cand1_profile,
+            job=self.job1,
+            match_score=85,
+            status=Match.Status.SUGGESTED,
+        )
+
+        self._auth(self.cand1_user)
+        # candidate_interested returns 400
+        res1 = self.client.patch(
+            f"/api/v1/matches/{m.id}/",
+            {"status": "candidate_interested"},
+            format="json",
+        )
+        self.assertEqual(res1.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res1.data["error"], "Please complete your profile before applying for jobs.")
+
+        # rejected returns 400
+        res2 = self.client.patch(
+            f"/api/v1/matches/{m.id}/",
+            {"status": "rejected"},
+            format="json",
+        )
+        self.assertEqual(res2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res2.data["error"], "Please complete your profile before applying for jobs.")
+
+        # restore
+        self.cand1_profile.profile_complete = True
+        self.cand1_profile.save(update_fields=["profile_complete"])
 
     def test_candidate_status_update_restrictions(self):
         """Candidate can express interest or reject, but cannot self-shortlist."""
@@ -443,6 +568,7 @@ class Phase910OutboxOnlyNotificationTests(TestCase):
             skills=["python"],
             experience_level="mid",
             profile_complete=True,
+            profile_completeness=100,
             open_to_matching=True,
         )
         self.employer = User.objects.create_user(
