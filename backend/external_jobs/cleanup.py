@@ -11,7 +11,7 @@ from external_jobs.models import ExternalJob, ExternalJobSource
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_RETENTION_DAYS = 21
+DEFAULT_RETENTION_DAYS = 7
 DEFAULT_BATCH_SIZE = 1000
 ALLOWED_CLEANUP_PROVIDERS = ("adzuna", "himalayas")
 PROTECTED_PROVIDERS = ("people_prime",)

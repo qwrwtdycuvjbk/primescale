@@ -9,7 +9,7 @@ from external_jobs.cleanup import (
 
 class Command(BaseCommand):
     help = (
-        "Cleans up stale third-party external job listings older than 21 days (posted_at). "
+        f"Cleans up stale third-party external job listings older than {DEFAULT_RETENTION_DAYS} days (posted_at). "
         "Defaults to dry-run mode. Requires --execute to delete records."
     )
 

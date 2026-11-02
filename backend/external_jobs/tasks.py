@@ -2,6 +2,7 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 from external_jobs.models import ExternalJob, ExternalJobSource
+from external_jobs.cleanup import DEFAULT_RETENTION_DAYS, cleanup_external_jobs
 from external_jobs.providers.people_prime import sync_people_prime_jobs
 from external_jobs.providers.adzuna import sync_adzuna_jobs
 from external_jobs.providers.himalayas import sync_himalayas_jobs
@@ -97,7 +98,9 @@ def expire_stale_external_jobs_task():
 
 
 @shared_task(name="external_jobs.tasks.cleanup_external_jobs_task")
-def cleanup_external_jobs_task(days: int = 21, batch_size: int = 1000, execute: bool = False):
+def cleanup_external_jobs_task(
+    days: int = DEFAULT_RETENTION_DAYS, batch_size: int = 1000, execute: bool = False
+):
     """
     Scheduled task to automatically delete stale external jobs from third-party aggregators
     ('adzuna', 'himalayas') whose original publication date (posted_at) is older than `days`.
@@ -106,6 +109,6 @@ def cleanup_external_jobs_task(days: int = 21, batch_size: int = 1000, execute: 
     logger.info(
         f"Executing external jobs cleanup task (days={days}, batch_size={batch_size}, execute={execute})..."
     )
-    from external_jobs.cleanup import cleanup_external_jobs
+
 
     return cleanup_external_jobs(days=days, batch_size=batch_size, execute=execute)
