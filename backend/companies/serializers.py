@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Company, CompanyMember
 from .utils import is_work_email_domain_verified, is_company_profile_complete
+from common.validators import validate_employer_or_company_name
 
 
 class CompanyMemberSerializer(serializers.ModelSerializer):
@@ -73,6 +74,9 @@ class CompanyPublicSerializer(serializers.ModelSerializer):
 
 class CompanyInputSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
+
+    def validate_name(self, value):
+        return validate_employer_or_company_name(value, field_label="Company name")
     website = serializers.URLField(max_length=500, required=False, allow_blank=True, allow_null=True)
     size = serializers.CharField(max_length=50, required=False, allow_blank=True, allow_null=True)
     country = serializers.CharField(max_length=100, required=False, default="US")

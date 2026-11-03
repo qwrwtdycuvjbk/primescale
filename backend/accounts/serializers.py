@@ -4,6 +4,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import User
+from common.validators import validate_employer_or_company_name
 from .tokens import (
     decode_uid,
     encode_uid,
@@ -63,6 +64,20 @@ class UserRegistrationSerializer(serializers.Serializer):
             user = User.objects.filter(email=email).first()
             if user and not user.is_active:
                 raise serializers.ValidationError('Your access is denied by the Admin.')
+
+        role = attrs.get('role', User.Role.CANDIDATE)
+        full_name = attrs.get('full_name', '')
+        if role == User.Role.EMPLOYER:
+            if not full_name or not full_name.strip():
+                raise serializers.ValidationError({'full_name': 'Full name is required for employer registration.'})
+            try:
+                validated_name = validate_employer_or_company_name(full_name, field_label='Full name')
+                attrs['full_name'] = validated_name
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError({'full_name': exc.detail})
+        elif full_name:
+            attrs['full_name'] = ' '.join(full_name.strip().split())
+
         return attrs
 
     def validate_role(self, value):

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionProfile, getAccessToken } from "@/lib/auth";
 import type { CompanyInput } from "@/lib/types";
 import { companiesApi } from "@/lib/api";
+import { validateEmployerOrCompanyName } from "@/lib/name-validation";
 
 export async function POST(request: Request) {
   const { user } = await getSessionProfile();
@@ -15,6 +16,11 @@ export async function POST(request: Request) {
 
   if (!body.name?.trim()) {
     return NextResponse.json({ error: "Company name is required" }, { status: 400 });
+  }
+
+  const nameCheck = validateEmployerOrCompanyName(body.name, "Company name");
+  if (!nameCheck.isValid) {
+    return NextResponse.json({ error: nameCheck.error || "Invalid company name" }, { status: 400 });
   }
 
   try {

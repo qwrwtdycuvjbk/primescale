@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { djangoAuth } from "@/lib/api/auth";
 import type { UserRole } from "@/lib/types";
+import { validateEmployerOrCompanyName } from "@/lib/name-validation";
 
 function parseRole(value: FormDataEntryValue | null): UserRole {
   if (value === "admin") return "admin";
@@ -130,6 +131,19 @@ export async function submitAuth(formData: FormData) {
           details: "Full name is required.",
         }),
       );
+    }
+
+    if (role === "employer") {
+      const nameCheck = validateEmployerOrCompanyName(fullName, "Full name");
+      if (!nameCheck.isValid) {
+        redirect(
+          authFormPath(role, mode, {
+            ...returnParams,
+            error: "validation",
+            details: nameCheck.error || "Invalid employer name.",
+          }),
+        );
+      }
     }
 
     if (password.length < 8) {

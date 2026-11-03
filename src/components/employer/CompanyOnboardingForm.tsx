@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { CompanyInput } from "@/lib/types";
 import { buttonPrimaryClass, inputClass, labelClass } from "@/lib/ui";
+import { validateEmployerOrCompanyName } from "@/lib/name-validation";
 
 export function CompanyOnboardingForm() {
   const router = useRouter();
@@ -19,6 +20,13 @@ export function CompanyOnboardingForm() {
     event.preventDefault();
     setStatus("loading");
     setError("");
+
+    const nameCheck = validateEmployerOrCompanyName(form.name, "Company name");
+    if (!nameCheck.isValid) {
+      setStatus("error");
+      setError(nameCheck.error || "Invalid company name.");
+      return;
+    }
 
     try {
       const response = await fetch("/api/employer/company", {
