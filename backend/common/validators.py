@@ -81,3 +81,65 @@ def validate_employer_or_company_name(name: str, field_label: str = "Name") -> s
         )
 
     return cleaned
+
+
+def validate_candidate_name(name: str, field_label: str = "Full name") -> str:
+    """
+    Validates candidate full_name to prevent spam accounts, automated bot injections,
+    URLs, promotional advertising, and garbage strings while preserving legitimate
+    international personal names.
+
+    Preserves legitimate names such as:
+    - 'John Doe'
+    - 'Mary-Jane Watson'
+    - "O'Connor"
+    - 'René Müller'
+    - 'José García'
+    - 'Jean-Luc Picard'
+    - 'Anne Marie'
+    - 'Li Wei'
+    - 'A. Kumar'
+    """
+    if not name or not name.strip():
+        raise serializers.ValidationError(f"{field_label} is required.")
+
+    # 1. Normalize leading, trailing, and repeated whitespace
+    cleaned = " ".join(name.strip().split())
+
+    # 2. Length limits: 2 to 80 characters
+    if len(cleaned) < 2:
+        raise serializers.ValidationError(f"{field_label} must be at least 2 characters long.")
+    if len(cleaned) > 80:
+        raise serializers.ValidationError(f"{field_label} cannot exceed 80 characters.")
+
+    # 3. Reject URLs and web links
+    if URL_PATTERN.search(cleaned):
+        raise serializers.ValidationError(
+            f"{field_label} cannot contain website URLs or web links."
+        )
+
+    # 4. Reject Google Drive and Google sharing links
+    if GOOGLE_SHARE_PATTERN.search(cleaned):
+        raise serializers.ValidationError(
+            f"{field_label} cannot contain website URLs or web links."
+        )
+
+    # 5. Reject promotional and monetary advertising
+    if PROMO_MONETARY_PATTERN.search(cleaned):
+        raise serializers.ValidationError(
+            f"{field_label} cannot contain promotional codes, bonus offers, or monetary advertising."
+        )
+
+    # 6. Reject excessive repeated characters (5 or more consecutive identical characters)
+    if REPEATED_CHARS_PATTERN.search(cleaned):
+        raise serializers.ValidationError(
+            f"{field_label} cannot contain excessively repeated characters."
+        )
+
+    # 7. Reject names consisting only of numbers or symbols
+    if NO_LETTERS_PATTERN.match(cleaned):
+        raise serializers.ValidationError(
+            f"{field_label} must contain at least one letter."
+        )
+
+    return cleaned

@@ -4,7 +4,10 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import User
-from common.validators import validate_employer_or_company_name
+from common.validators import (
+    validate_candidate_name,
+    validate_employer_or_company_name,
+)
 from .tokens import (
     decode_uid,
     encode_uid,
@@ -75,8 +78,14 @@ class UserRegistrationSerializer(serializers.Serializer):
                 attrs['full_name'] = validated_name
             except serializers.ValidationError as exc:
                 raise serializers.ValidationError({'full_name': exc.detail})
-        elif full_name:
-            attrs['full_name'] = ' '.join(full_name.strip().split())
+        elif role == User.Role.CANDIDATE:
+            if not full_name or not full_name.strip():
+                raise serializers.ValidationError({'full_name': 'Full name is required.'})
+            try:
+                validated_name = validate_candidate_name(full_name, field_label='Full name')
+                attrs['full_name'] = validated_name
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError({'full_name': exc.detail})
 
         return attrs
 

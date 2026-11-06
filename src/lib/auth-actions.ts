@@ -4,7 +4,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { djangoAuth } from "@/lib/api/auth";
 import type { UserRole } from "@/lib/types";
-import { validateEmployerOrCompanyName } from "@/lib/name-validation";
+import {
+  validateCandidateName,
+  validateEmployerOrCompanyName,
+} from "@/lib/name-validation";
 
 function parseRole(value: FormDataEntryValue | null): UserRole {
   if (value === "admin") return "admin";
@@ -141,6 +144,17 @@ export async function submitAuth(formData: FormData) {
             ...returnParams,
             error: "validation",
             details: nameCheck.error || "Invalid employer name.",
+          }),
+        );
+      }
+    } else if (role === "candidate") {
+      const nameCheck = validateCandidateName(fullName, "Full name");
+      if (!nameCheck.isValid) {
+        redirect(
+          authFormPath(role, mode, {
+            ...returnParams,
+            error: "validation",
+            details: nameCheck.error || "Invalid candidate name.",
           }),
         );
       }

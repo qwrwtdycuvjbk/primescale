@@ -149,10 +149,10 @@ class EmployerAndCompanyNameValidationTests(TestCase):
         self.assertIn("full_name", res.data)
 
     # =========================================================================
-    # 2. Candidate Registration Isolation (Must NOT be affected)
+    # 2. Candidate Registration Validation Tests
     # =========================================================================
 
-    def test_candidate_registration_unaffected_by_employer_rules(self):
+    def test_candidate_registration_valid_names(self):
         candidate_names = [
             "John Doe",
             "Alice O'Connor",
@@ -161,6 +161,8 @@ class EmployerAndCompanyNameValidationTests(TestCase):
             "René François-Auguste Rodin",
             "Dr. Martin Luther King Jr.",
             "Li Wei",
+            "A. Kumar",
+            "Søren Kierkegaard",
         ]
         for idx, name in enumerate(candidate_names):
             payload = {
@@ -177,6 +179,89 @@ class EmployerAndCompanyNameValidationTests(TestCase):
             )
             user = User.objects.get(email=payload["email"])
             self.assertEqual(user.full_name, name)
+            self.assertTrue(user.is_candidate)
+            self.assertTrue(hasattr(user, "candidate_profile"))
+
+    def test_candidate_registration_rejects_urls_and_google_share(self):
+        spam_names = [
+            "3500 USD PROMO GET >> https://www.google.com/share.google?q=w8eJSz8rIWaeKlLBd",
+            "Visit us at https://spam-domain.xyz",
+            "Check www.freepromo.com for deals",
+            "drive.google.com/open?id=12345",
+            "promo.live/bonus",
+        ]
+        for idx, name in enumerate(spam_names):
+            payload = {
+                "email": f"candidate_url_spammer_{idx}@example.com",
+                "password": "SecurePassword123!",
+                "full_name": name,
+                "role": "candidate",
+            }
+            res = self.client.post("/api/v1/auth/register/", payload, format="json")
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                f"URL spam candidate name '{name}' was not rejected!",
+            )
+            self.assertIn("full_name", res.data)
+
+    def test_candidate_registration_rejects_promotional_and_monetary_spam(self):
+        promo_names = [
+            "$4000 PROMOCODE! GET NOW",
+            "$$4000 PROMOCODE from ROCKSTAR!",
+            "3500$ PROMO SIGN UP",
+            "500 USD CLAIM BONUS",
+            "Free Spins and Deposit Bonus Code",
+        ]
+        for idx, name in enumerate(promo_names):
+            payload = {
+                "email": f"candidate_promo_spammer_{idx}@example.com",
+                "password": "SecurePassword123!",
+                "full_name": name,
+                "role": "candidate",
+            }
+            res = self.client.post("/api/v1/auth/register/", payload, format="json")
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                f"Promo spam candidate name '{name}' was not rejected!",
+            )
+            self.assertIn("full_name", res.data)
+
+    def test_candidate_registration_rejects_repeated_chars_and_symbols_only(self):
+        invalid_names = [
+            "Aaaaaaaa",
+            "!!!!!!!!!!",
+            "123456789",
+            "--- ___ ---",
+            "X",  # Too short (< 2 chars)
+            "A" * 85,  # Too long (> 80 chars for candidates)
+        ]
+        for idx, name in enumerate(invalid_names):
+            payload = {
+                "email": f"candidate_invalid_spammer_{idx}@example.com",
+                "password": "SecurePassword123!",
+                "full_name": name,
+                "role": "candidate",
+            }
+            res = self.client.post("/api/v1/auth/register/", payload, format="json")
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                f"Invalid candidate name '{name}' was not rejected!",
+            )
+            self.assertIn("full_name", res.data)
+
+    def test_candidate_registration_requires_full_name(self):
+        payload = {
+            "email": "empty_name_candidate@example.com",
+            "password": "SecurePassword123!",
+            "full_name": "   ",
+            "role": "candidate",
+        }
+        res = self.client.post("/api/v1/auth/register/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("full_name", res.data)
 
     # =========================================================================
     # 3. Company Name Validation Tests (CompanyInputSerializer)

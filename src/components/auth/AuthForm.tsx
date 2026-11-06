@@ -257,6 +257,7 @@ export function AuthForm({
               name="fullName"
               type="text"
               required
+              maxLength={role === "candidate" ? 80 : 100}
               autoComplete="name"
               className={compactInputClass}
             />

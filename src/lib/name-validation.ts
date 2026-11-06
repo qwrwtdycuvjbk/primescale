@@ -55,3 +55,45 @@ export function validateEmployerOrCompanyName(
 
   return { isValid: true, cleaned };
 }
+
+export function validateCandidateName(
+  name: string,
+  fieldLabel = "Full name"
+): { isValid: boolean; error?: string; cleaned: string } {
+  const trimmed = name ? name.trim() : "";
+  const cleaned = trimmed.replace(/\s+/g, " ");
+
+  if (!cleaned) {
+    return { isValid: false, error: `${fieldLabel} is required.`, cleaned };
+  }
+
+  if (cleaned.length < 2) {
+    return { isValid: false, error: `${fieldLabel} must be at least 2 characters long.`, cleaned };
+  }
+
+  if (cleaned.length > 80) {
+    return { isValid: false, error: `${fieldLabel} cannot exceed 80 characters.`, cleaned };
+  }
+
+  if (URL_REGEX.test(cleaned) || GOOGLE_SHARE_REGEX.test(cleaned)) {
+    return { isValid: false, error: `${fieldLabel} cannot contain website URLs or web links.`, cleaned };
+  }
+
+  if (PROMO_MONETARY_REGEX.test(cleaned)) {
+    return {
+      isValid: false,
+      error: `${fieldLabel} cannot contain promotional codes, bonus offers, or monetary advertising.`,
+      cleaned,
+    };
+  }
+
+  if (REPEATED_CHARS_REGEX.test(cleaned)) {
+    return { isValid: false, error: `${fieldLabel} cannot contain excessively repeated characters.`, cleaned };
+  }
+
+  if (NO_LETTERS_REGEX.test(cleaned)) {
+    return { isValid: false, error: `${fieldLabel} must contain at least one letter.`, cleaned };
+  }
+
+  return { isValid: true, cleaned };
+}
