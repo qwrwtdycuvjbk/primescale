@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from candidates.models import CandidateProfile
+from external_jobs.models import ExternalJob
 from jobs.models import Job
-from .models import Match
+from .models import Match, ExternalJobRecommendation, ExternalJobRecommendationFeedback
 
 
 class CandidateJobSummarySerializer(serializers.ModelSerializer):
@@ -152,3 +153,125 @@ class MatchStatusUpdateSerializer(serializers.Serializer):
 
 class AdminMatchActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["approve", "reject"])
+
+
+class CandidateExternalJobSummarySerializer(serializers.ModelSerializer):
+    """
+    Public-safe representation of an external job for candidate recommendations.
+    Never exposes raw internal embeddings, error logs, or candidate resume URLs.
+    Includes sanitized application URLs and provider attribution.
+    """
+    job_title = serializers.CharField(source="title", read_only=True)
+    source_attribution = serializers.SerializerMethodField()
+    application_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ExternalJob
+        fields = (
+            "id",
+            "external_job_id",
+            "job_title",
+            "company_name",
+            "company_website",
+            "location",
+            "country",
+            "state",
+            "city",
+            "remote_type",
+            "employment_type",
+            "salary_min",
+            "salary_max",
+            "salary_currency",
+            "tech_stack",
+            "source_name",
+            "source_attribution",
+            "posted_at",
+            "expires_at",
+            "original_job_url",
+            "source_job_url",
+            "application_url",
+        )
+
+    def _is_valid_http_url(self, url: str | None) -> bool:
+        if not url or not isinstance(url, str):
+            return False
+        url_lower = url.strip().lower()
+        return url_lower.startswith("http://") or url_lower.startswith("https://")
+
+    def get_application_url(self, obj: ExternalJob) -> str | None:
+        """
+        Returns the direct application URL: prefers original_job_url if valid HTTP/HTTPS,
+        falling back to source_job_url.
+        """
+        if self._is_valid_http_url(obj.original_job_url):
+            return obj.original_job_url.strip()
+        if self._is_valid_http_url(obj.source_job_url):
+            return obj.source_job_url.strip()
+        return None
+
+    def get_source_attribution(self, obj: ExternalJob) -> dict | None:
+        if not obj.source:
+            return None
+        return {
+            "name": obj.source.name,
+            "provider_code": obj.source.provider_code,
+            "attribution_name": obj.source.attribution_name,
+            "attribution_url": obj.source.attribution_url,
+        }
+
+
+class CandidateExternalJobRecommendationSerializer(serializers.ModelSerializer):
+    """
+    Candidate-safe recommendation serializer.
+    Combines hybrid recommendation scores and external job metadata.
+    Excludes internal embeddings, prompt texts, and private candidate details.
+    """
+    recommendation_id = serializers.UUIDField(source="id", read_only=True)
+    external_job = CandidateExternalJobSummarySerializer(read_only=True)
+
+    class Meta:
+        from .models import ExternalJobRecommendation
+
+        model = ExternalJobRecommendation
+        fields = (
+            "recommendation_id",
+            "final_score",
+            "semantic_score",
+            "skill_score",
+            "experience_score",
+            "matched_skills",
+            "match_reason",
+            "calculated_at",
+            "external_job",
+        )
+
+
+class ExternalJobRecommendationFeedbackCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for candidate feedback submission on external job recommendations.
+    Phase 6Z.12B.
+    """
+    recommendation_id = serializers.UUIDField(write_only=True)
+    reason = serializers.ChoiceField(choices=ExternalJobRecommendationFeedback.Reason.choices)
+    comments = serializers.CharField(
+        max_length=1000,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+
+    class Meta:
+        model = ExternalJobRecommendationFeedback
+        fields = (
+            "id",
+            "recommendation_id",
+            "reason",
+            "comments",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+    def validate_comments(self, value):
+        if value and len(value) > 1000:
+            raise serializers.ValidationError("Comments cannot exceed 1,000 characters.")
+        return value

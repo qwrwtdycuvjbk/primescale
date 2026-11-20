@@ -133,15 +133,19 @@ def sync_people_prime_jobs():
                 employment_type = item.get("job_type")
 
                 # Parse skills and technology
-                skills = item.get("required_skills") or []
-                if isinstance(skills, str):
-                    skills = [s.strip() for s in skills.split(",") if s.strip()]
+                from common.skill_extraction import extract_technical_skills
+
+                raw_skills = item.get("required_skills") or []
+                if isinstance(raw_skills, str):
+                    raw_skills = [s.strip() for s in raw_skills.split(",") if s.strip()]
                 tech_raw = item.get("technology")
                 if tech_raw and isinstance(tech_raw, str):
                     for t in tech_raw.split(","):
                         t_clean = t.strip()
-                        if t_clean and t_clean not in skills:
-                            skills.append(t_clean)
+                        if t_clean and t_clean not in raw_skills:
+                            raw_skills.append(t_clean)
+
+                skills = extract_technical_skills(raw_skills) or extract_technical_skills(f"{title}\n{description}")
 
                 original_job_url = f"https://people-prime.com/job-details?id={ext_id}"
                 posted_at = item.get("published_at") or item.get("created_at")

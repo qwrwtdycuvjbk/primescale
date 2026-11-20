@@ -31,6 +31,12 @@ class Command(BaseCommand):
             type=int,
             help="Results per page. Defaults to ADZUNA_RESULTS_PER_PAGE or 20.",
         )
+        parser.add_argument(
+            "--query-group",
+            type=str,
+            choices=["frontend", "backend", "fullstack", "general", "all"],
+            help="Pre-configured occupational query group for targeted engineering coverage.",
+        )
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE("Starting Adzuna job synchronization..."))
@@ -40,6 +46,21 @@ class Command(BaseCommand):
         location = options.get("location")
         max_pages = options.get("max_pages")
         results_per_page = options.get("results_per_page")
+        query_group = options.get("query_group")
+
+        if not what and query_group:
+            query_groups = {
+                "frontend": "remote frontend developer|remote react developer|remote javascript developer",
+                "backend": "remote backend developer|remote python developer|remote django developer|remote java developer|remote node developer",
+                "fullstack": "remote full stack developer|remote full stack engineer",
+                "general": "remote software engineer|remote software developer",
+                "all": (
+                    "remote frontend developer|remote react developer|"
+                    "remote backend developer|remote python developer|remote django developer|"
+                    "remote full stack developer|remote software engineer"
+                ),
+            }
+            what = query_groups.get(query_group)
 
         result = sync_adzuna_jobs(
             country=country,

@@ -23,6 +23,7 @@ import re
 import xml.etree.ElementTree as ET
 import zipfile
 import zlib
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, BinaryIO, Final
@@ -127,11 +128,96 @@ class ResumeExtractionResult:
         )
 
 
+def despace_character_spaced_text(text: str) -> str:
+    """
+    Detects and collapses character-spaced text (e.g. 'J a v a   P y t h o n   D j a n g o'
+    or 'R A G H U   N A G A   R O H I T') caused by PDF font encoding artifacts or
+    letter-spacing rendering in PDF layout engines.
+
+    Safety:
+    - Preserves normal multi-word sentences and legitimate single-character words (e.g. 'I am a developer').
+    - Preserves email addresses, URLs, and hyphenated/dotted terms.
+    - Requires confidence threshold before collapsing spaces.
+    """
+    if not text:
+        return ""
+
+    lines = text.split("\n")
+    cleaned_lines: list[str] = []
+
+    for line in lines:
+        if not line:
+            cleaned_lines.append("")
+            continue
+
+        # Step 1: If 2 or more horizontal spaces separate word segments, inspect each segment
+        if re.search(r"[ \t]{2,}", line):
+            segs = re.split(r"[ \t]{2,}", line)
+            despaced_segs: list[str] = []
+            for seg in segs:
+                s = seg.strip()
+                if not s:
+                    continue
+                tokens = s.split(" ")
+                # If segment has multiple tokens and >= 60% are single characters
+                if len(tokens) >= 2 and (sum(len(t) == 1 for t in tokens) / len(tokens)) >= 0.6:
+                    despaced_segs.append("".join(tokens))
+                else:
+                    despaced_segs.append(s)
+            line = " ".join(despaced_segs)
+
+        # Step 2: Inspect remaining line tokens for runs of single-character tokens
+        tokens = line.split()
+        if not tokens:
+            cleaned_lines.append("")
+            continue
+
+        # If high ratio of single characters across the entire line (>= 70% and >= 3 tokens)
+        if len(tokens) >= 3 and (sum(len(t) == 1 for t in tokens) / len(tokens)) >= 0.7:
+            out_tokens: list[str] = []
+            i = 0
+            while i < len(tokens):
+                if len(tokens[i]) == 1:
+                    j = i
+                    while j < len(tokens) and len(tokens[j]) == 1:
+                        j += 1
+                    out_tokens.append("".join(tokens[i:j]))
+                    i = j
+                else:
+                    out_tokens.append(tokens[i])
+                    i += 1
+            line = " ".join(out_tokens)
+        else:
+            # Partial runs of 3 or more single characters within a line (e.g. 'A B C D E F')
+            out_tokens = []
+            i = 0
+            while i < len(tokens):
+                if len(tokens[i]) == 1:
+                    j = i
+                    while j < len(tokens) and len(tokens[j]) == 1:
+                        j += 1
+                    run_len = j - i
+                    if run_len >= 3:
+                        out_tokens.append("".join(tokens[i:j]))
+                    else:
+                        out_tokens.extend(tokens[i:j])
+                    i = j
+                else:
+                    out_tokens.append(tokens[i])
+                    i += 1
+            line = " ".join(out_tokens)
+
+        cleaned_lines.append(line)
+
+    return "\n".join(cleaned_lines)
+
+
 def normalize_extracted_text(raw_text: str) -> str:
     """
     Normalizes extracted text while preserving meaningful word boundaries and paragraph separation:
     - Normalizes Windows (CRLF) and legacy Mac (CR) line endings to Unix (LF).
     - Converts non-breaking / exotic Unicode spaces to standard ASCII spaces.
+    - Repairs character-spaced text anomalies from PDF layout rendering engines.
     - Collapses multiple horizontal spaces or tabs into a single space.
     - Trims line ends while preserving paragraph breaks.
     - Collapses 3+ consecutive newlines into 2 (clean paragraph breaks).
@@ -149,14 +235,17 @@ def normalize_extracted_text(raw_text: str) -> str:
         text,
     )
 
-    # 3. Collapse multiple horizontal whitespace (spaces, tabs) into a single space
+    # 3. Detect and fix character-spaced text before collapsing double spaces
+    text = despace_character_spaced_text(text)
+
+    # 4. Collapse multiple horizontal whitespace (spaces, tabs) into a single space
     text = re.sub(r"[ \t]+", " ", text)
 
-    # 4. Strip whitespace from individual lines
+    # 5. Strip whitespace from individual lines
     lines = [line.strip() for line in text.split("\n")]
     text = "\n".join(lines)
 
-    # 5. Collapse 3 or more consecutive newlines into double newlines for paragraph breaks
+    # 6. Collapse 3 or more consecutive newlines into double newlines for paragraph breaks
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
@@ -387,7 +476,10 @@ def extract_text_from_pdf_stream(
 
     raw_has_encrypt = b"/Encrypt" in data
 
-    with pypdf.apply_configuration(**PDF_SECURITY_CONFIGURATION):
+    config_ctx = getattr(pypdf, "apply_configuration", None)
+    ctx_mgr = config_ctx(**PDF_SECURITY_CONFIGURATION) if callable(config_ctx) else nullcontext()
+
+    with ctx_mgr:
         # Initialize pypdf.PdfReader with strict=False and bounded root_object_recovery_limit
         try:
             reader = pypdf.PdfReader(
@@ -715,6 +807,11 @@ class ResumeTextExtractionService:
             )
 
         clean_path = storage_path.strip().lstrip("/")
+        # If path starts with 'media/resumes/' or 'resumes/', strip it so it resolves relative to private storage root
+        if clean_path.startswith("media/resumes/"):
+            clean_path = clean_path[len("media/resumes/"):]
+        elif clean_path.startswith("resumes/"):
+            clean_path = clean_path[len("resumes/"):]
 
         # Verify existence in private storage
         try:
@@ -811,6 +908,11 @@ class ResumeTextExtractionService:
             source_fingerprint = calculate_source_fingerprint(resume_path)
 
             if result.is_success:
+                from common.skill_extraction import extract_technical_skills
+
+                # Extract technical skills deterministically from normalized resume text
+                extracted_skills = extract_technical_skills(result.text)
+
                 # If content and source are unchanged and embedding is already completed, preserve existing vector
                 is_unchanged = (
                     resume_embedding.content_hash == result.content_hash
@@ -822,6 +924,7 @@ class ResumeTextExtractionService:
                     resume_embedding.extracted_text = result.text
                     resume_embedding.content_hash = result.content_hash
                     resume_embedding.text_length = result.character_count
+                    resume_embedding.extracted_skills = extracted_skills
                     resume_embedding.status = EmbeddingStatus.PENDING
                     resume_embedding.error_message = None
                     resume_embedding.version = source_fingerprint
@@ -832,6 +935,7 @@ class ResumeTextExtractionService:
                             "extracted_text",
                             "content_hash",
                             "text_length",
+                            "extracted_skills",
                             "status",
                             "error_message",
                             "version",
@@ -840,6 +944,11 @@ class ResumeTextExtractionService:
                             "updated_at",
                         ]
                     )
+                else:
+                    # Keep extracted skills fresh even if embedding was unchanged
+                    if resume_embedding.extracted_skills != extracted_skills:
+                        resume_embedding.extracted_skills = extracted_skills
+                        resume_embedding.save(update_fields=["extracted_skills", "updated_at"])
                 logger.info(
                     "Extracted and persisted resume text for candidate %s (chars=%d, hash=%s, version=%s)",
                     candidate_profile.id,

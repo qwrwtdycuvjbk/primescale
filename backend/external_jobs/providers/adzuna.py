@@ -26,6 +26,7 @@ DEFAULT_SEARCH_WHAT = (
 )
 DEFAULT_MAX_PAGES = 3
 DEFAULT_RESULTS_PER_PAGE = 20
+DEFAULT_INGESTION_MAX_DAYS = 7
 
 
 def clean_html(raw_text: str | None) -> str:
@@ -300,34 +301,60 @@ def sync_adzuna_jobs(
                     salary_max = parse_salary(item.get("salary_max"))
                     salary_currency = "USD" if parsed_country == "US" else "GBP" if parsed_country == "GB" else "EUR" if parsed_country in ("FR", "DE", "IT", "NL") else "USD"
 
-                    # Tech stack & category tags
-                    skills = []
-                    category_obj = item.get("category")
-                    if isinstance(category_obj, dict):
-                        cat_label = category_obj.get("label")
-                        if cat_label and cat_label not in skills:
-                            skills.append(cat_label)
+                    # Tech stack & technical skill extraction
+                    # Adzuna category.label contains broad groupings like "IT Jobs" rather than technical skills.
+                    # We extract genuine technical skills from the title and job description, explicitly excluding generic labels.
+                    from common.skill_extraction import extract_technical_skills
+
+                    skills = extract_technical_skills(f"{title}\n{description}")
+
+                    # If no specific skills found in text, preserve non-generic category labels if present
+                    if not skills:
+                        category_obj = item.get("category")
+                        if isinstance(category_obj, dict):
+                            cat_label = category_obj.get("label")
+                            if cat_label:
+                                non_generic = extract_technical_skills([cat_label])
+                                if non_generic:
+                                    skills.extend(non_generic)
 
                     # Original redirect URL
                     original_job_url = item.get("redirect_url") or ""
 
-                    # Posted date
+                    # Posted date & 7-day retention validation
                     created_raw = item.get("created")
-                    posted_at = None
-                    if created_raw:
-                        posted_at = parse_datetime(created_raw)
-                        if posted_at and timezone.is_naive(posted_at):
-                            posted_at = timezone.make_aware(posted_at)
+                    if not created_raw:
+                        logger.info(
+                            f"Skipping Adzuna listing {ext_id}: missing publication date (created=None)."
+                        )
+                        validation_errors += 1
+                        jobs_skipped += 1
+                        continue
 
-                    # Ingestion retention filter: skip listings strictly older than 21 days
-                    if posted_at:
-                        max_age_cutoff = timezone.now() - timedelta(days=21)
-                        if posted_at < max_age_cutoff:
-                            logger.info(
-                                f"Skipping stale Adzuna listing {ext_id}: posted_at ({posted_at}) is older than 21 days."
-                            )
-                            jobs_skipped += 1
-                            continue
+                    posted_at = parse_datetime(created_raw)
+                    if not posted_at:
+                        logger.info(
+                            f"Skipping Adzuna listing {ext_id}: invalid publication date ({created_raw})."
+                        )
+                        validation_errors += 1
+                        jobs_skipped += 1
+                        continue
+
+                    if timezone.is_naive(posted_at):
+                        posted_at = timezone.make_aware(posted_at)
+
+                    # Ingestion retention filter: reject listings older than configurable window (default: 14 days)
+                    ingestion_max_days = int(
+                        getattr(settings, "ADZUNA_INGESTION_MAX_DAYS", None)
+                        or os.getenv("ADZUNA_INGESTION_MAX_DAYS", DEFAULT_INGESTION_MAX_DAYS)
+                    )
+                    max_age_cutoff = timezone.now() - timedelta(days=ingestion_max_days)
+                    if posted_at < max_age_cutoff:
+                        logger.info(
+                            f"Skipping stale Adzuna listing {ext_id}: posted_at ({posted_at}) is older than {ingestion_max_days} days."
+                        )
+                        jobs_skipped += 1
+                        continue
 
                     dedup_hash = generate_dedup_hash(
                         company_name=company_name,

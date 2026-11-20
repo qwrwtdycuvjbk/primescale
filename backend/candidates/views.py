@@ -1,4 +1,5 @@
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,6 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 import csv
 import io
+import uuid
 
 from accounts.models import User
 from accounts.permissions import IsAdmin, IsCandidate, IsCandidateOrAdmin
@@ -649,4 +651,300 @@ class AdminCandidateDeleteView(APIView):
                 "userId": user_id,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class CandidateExternalRecommendationsPagination(PageNumberPagination):
+    """
+    Standard pagination for candidate AI recommended external jobs.
+    Defaults to 20 recommendations per page, capped at 100.
+    """
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+    def get_paginated_response(self, data, extra=None):
+        payload = {
+            "count": self.page.paginator.count,
+            "total_pages": self.page.paginator.num_pages,
+            "current_page": self.page.number,
+            "page_size": self.get_page_size(self.request),
+            "results": data,
+        }
+        if extra:
+            payload.update(extra)
+        return Response(payload)
+
+
+class CandidateExternalRecommendationsView(APIView):
+    """
+    GET /api/v1/candidates/external-recommendations/
+
+    Secure endpoint allowing authenticated candidates to retrieve their AI-recommended
+    external jobs (score >= 70.0).
+
+    Security & Eligibility Gates:
+    1. JWT authentication required (HTTP 401).
+    2. Only candidate role permitted (HTTP 403 for employers/others).
+    3. Candidate user account must be active.
+    4. Candidate profile resolved strictly from request.user (cannot spoof via candidate_profile_id param).
+    5. Global feature flag ENABLE_EXTERNAL_JOB_RECOMMENDATIONS enabled (HTTP 403, code: feature_disabled).
+    6. Candidate profile completeness must be 100%.
+    7. Candidate profile_complete flag must be True.
+    8. Candidate open_to_matching must be True.
+    9. Candidate must have a non-empty resume_url.
+    10. Under-the-hood external jobs must be active, non-expired, US remote or hybrid.
+    """
+    permission_classes = [IsAuthenticated, IsCandidate]
+    pagination_class = CandidateExternalRecommendationsPagination
+
+    def get(self, request):
+        user = request.user
+        if not user.is_active:
+            return Response(
+                {"detail": "User account is inactive.", "code": "account_inactive"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            profile = CandidateProfile.objects.select_related("user").get(user=user)
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Candidate profile not found.", "code": "profile_not_found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Enforce global feature flag (Phase 6Z.13L)
+        # Acts as global kill switch (HTTP 403, code: feature_disabled)
+        if not getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False):
+            return Response(
+                {
+                    "detail": "AI recommended external jobs are currently disabled.",
+                    "code": "feature_disabled",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Enforce candidate qualification gates
+        if getattr(profile, "profile_completeness", 0) != 100:
+            return Response(
+                {
+                    "detail": "Profile must be 100% complete to view AI recommended external jobs.",
+                    "code": "profile_incomplete",
+                    "profile_completeness": profile.profile_completeness,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not profile.profile_complete:
+            return Response(
+                {
+                    "detail": "Profile completion confirmation is required.",
+                    "code": "profile_not_complete_flag",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not profile.open_to_matching:
+            return Response(
+                {
+                    "detail": "Candidate has disabled matching.",
+                    "code": "matching_disabled",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not profile.resume_url:
+            return Response(
+                {
+                    "detail": "A resume is required to view AI recommendations.",
+                    "code": "resume_required",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Database-side query for external recommendations
+        from matching.models import ExternalJobRecommendation
+        from matching.serializers import CandidateExternalJobRecommendationSerializer
+        from external_jobs.models import ExternalJob
+        from django.db.models import Max
+
+        now = timezone.now()
+
+        queryset = (
+            ExternalJobRecommendation.objects.select_related(
+                "external_job",
+                "external_job__source",
+            )
+            .filter(
+                candidate_profile=profile,
+                final_score__gte=70.0,
+                external_job__is_active=True,
+                external_job__status=ExternalJob.Status.ACTIVE,
+                external_job__country__iexact="US",
+                external_job__remote_type__in=[
+                    ExternalJob.RemoteType.REMOTE,
+                    ExternalJob.RemoteType.HYBRID,
+                ],
+            )
+            .filter(
+                Q(external_job__expires_at__isnull=True)
+                | Q(external_job__expires_at__gt=now)
+            )
+        )
+
+        # Filtering: Provider / Source
+        provider = request.query_params.get("provider") or request.query_params.get("source")
+        if provider:
+            queryset = queryset.filter(
+                Q(external_job__source_name__iexact=provider)
+                | Q(external_job__source__provider_code__iexact=provider)
+            )
+
+        # Filtering: Remote Type
+        remote_type = request.query_params.get("remote_type")
+        if remote_type:
+            remote_types = [t.strip().upper() for t in remote_type.split(",") if t.strip()]
+            if remote_types:
+                queryset = queryset.filter(external_job__remote_type__in=remote_types)
+
+        # Search: Job title or Company name
+        search = request.query_params.get("search") or request.query_params.get("q")
+        if search:
+            search = search.strip()
+            queryset = queryset.filter(
+                Q(external_job__title__icontains=search)
+                | Q(external_job__company_name__icontains=search)
+            )
+
+        # Ordering: Default highest final_score first
+        ordering = request.query_params.get("ordering", "-final_score")
+        allowed_ordering = {
+            "final_score": "final_score",
+            "-final_score": "-final_score",
+            "calculated_at": "calculated_at",
+            "-calculated_at": "-calculated_at",
+            "posted_at": "external_job__posted_at",
+            "-posted_at": "-external_job__posted_at",
+        }
+        order_by_field = allowed_ordering.get(ordering, "-final_score")
+        queryset = queryset.order_by(order_by_field, "-created_at")
+
+        # Summary Aggregation (efficient single DB query)
+        summary = queryset.aggregate(
+            highest_score=Max("final_score")
+        )
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = CandidateExternalJobRecommendationSerializer(page, many=True)
+
+        extra_summary = {
+            "summary": {
+                "total_qualified": paginator.page.paginator.count,
+                "current_page_count": len(page),
+                "highest_match_score": summary["highest_score"] if summary["highest_score"] is not None else 0.0,
+            }
+        }
+        return paginator.get_paginated_response(serializer.data, extra=extra_summary)
+
+
+class CandidateExternalRecommendationFeedbackView(APIView):
+    """
+    POST /api/v1/candidates/external-recommendations/feedback/
+
+    Secure endpoint allowing authenticated pilot candidates to submit issue reports
+    and quality feedback on AI-recommended external jobs.
+    Phase 6Z.12B.
+
+    Security & Validation Gates:
+    1. JWT authentication required (HTTP 401).
+    2. Only candidate role permitted (HTTP 403 for employers/recruiters).
+    3. User account must be active (HTTP 403).
+    4. Global feature flag ENABLE_EXTERNAL_JOB_RECOMMENDATIONS enabled (HTTP 403, code: feature_disabled).
+    5. Candidate profile resolved strictly from request.user (no spoofing).
+    6. Recommendation ownership strictly validated (cannot report another candidate's rec).
+    7. Reason validation and comment length validation (max 1000 chars).
+    8. Safe duplicate submission handling.
+    """
+    permission_classes = [IsAuthenticated, IsCandidate]
+
+    def post(self, request):
+        user = request.user
+        if not user.is_active:
+            return Response(
+                {"detail": "User account is inactive.", "code": "account_inactive"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            profile = CandidateProfile.objects.select_related("user").get(user=user)
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Candidate profile not found.", "code": "profile_not_found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Enforce global feature flag (Phase 6Z.13L)
+        # Acts as global kill switch (HTTP 403, code: feature_disabled)
+        if not getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False):
+            return Response(
+                {
+                    "detail": "AI recommended external jobs are currently disabled.",
+                    "code": "feature_disabled",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        from matching.models import ExternalJobRecommendation, ExternalJobRecommendationFeedback
+        from matching.serializers import ExternalJobRecommendationFeedbackCreateSerializer
+
+        serializer = ExternalJobRecommendationFeedbackCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        rec_id = serializer.validated_data["recommendation_id"]
+        reason = serializer.validated_data["reason"]
+        comments = serializer.validated_data.get("comments", "").strip()
+
+        # Strict Ownership Enforcement: Must belong to THIS candidate
+        try:
+            recommendation = ExternalJobRecommendation.objects.select_related("external_job").get(
+                id=rec_id
+            )
+        except ExternalJobRecommendation.DoesNotExist:
+            return Response(
+                {"detail": "Recommendation not found.", "code": "recommendation_not_found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if recommendation.candidate_profile_id != profile.id:
+            return Response(
+                {
+                    "detail": "You are not authorized to submit feedback for this recommendation.",
+                    "code": "permission_denied",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Create or update feedback record safely
+        feedback, created = ExternalJobRecommendationFeedback.objects.update_or_create(
+            candidate_profile=profile,
+            recommendation=recommendation,
+            external_job=recommendation.external_job,
+            defaults={
+                "reason": reason,
+                "comments": comments,
+            },
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Thank you for your feedback. Our team will review this job listing.",
+                "feedback_id": str(feedback.id),
+                "reason": feedback.reason,
+                "created": created,
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )

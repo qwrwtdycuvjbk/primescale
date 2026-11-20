@@ -288,10 +288,12 @@ def handle_candidate_profile_post_save(sender, instance: CandidateProfile, creat
             if emb:
                 def enqueue_matching(p_id=profile_id_str):
                     run_matching_for_candidate_task.delay(p_id)
+                    from matching.tasks import evaluate_candidate_external_recommendations_task
+                    evaluate_candidate_external_recommendations_task.delay(p_id)
 
                 transaction.on_commit(enqueue_matching)
                 logger.info(
-                    "Candidate %s became eligible with existing valid embedding; enqueued matching",
+                    "Candidate %s became eligible with existing valid embedding; enqueued matching and external recommendations",
                     profile_id_str,
                 )
 

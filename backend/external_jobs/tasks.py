@@ -66,11 +66,42 @@ def sync_external_jobs_task(self, provider_code: str | None = None):
                 "fetched": 0,
             }
 
-    return {
+    sync_result = {
         "status": "COMPLETED",
         "processed_sources": len(results),
         "details": results,
     }
+
+    # Asynchronously dispatch incremental embedding generation for eligible missing external jobs
+    try:
+        from django.db import models
+        from matching.tasks import generate_external_job_embeddings_batch_task
+        from matching.models import EmbeddingStatus
+
+        # Find eligible US remote jobs without completed embeddings (batch up to 500 per ingestion cycle)
+        eligible_missing_ids = list(
+            ExternalJob.objects.filter(
+                is_active=True,
+                status=ExternalJob.Status.ACTIVE,
+                country="US",
+                remote_type__in=[ExternalJob.RemoteType.REMOTE, ExternalJob.RemoteType.HYBRID],
+            ).filter(
+                models.Q(embedding_record__isnull=True)
+                | models.Q(embedding_record__status=EmbeddingStatus.PENDING)
+                | models.Q(embedding_record__embedding__isnull=True)
+            ).values_list("id", flat=True)[:500]
+        )
+
+        if eligible_missing_ids:
+            logger.info("Enqueuing embedding generation for %d newly ingested/unembedded external jobs.", len(eligible_missing_ids))
+            for i in range(0, len(eligible_missing_ids), 50):
+                chunk = [str(x) for x in eligible_missing_ids[i:i + 50]]
+                generate_external_job_embeddings_batch_task.delay(chunk)
+    except Exception as emb_dispatch_err:
+        # Non-blocking: external job ingestion must NEVER fail because of embedding dispatch errors
+        logger.error("Error scheduling incremental external job embedding tasks: %s", emb_dispatch_err)
+
+    return sync_result
 
 
 @shared_task(name="external_jobs.tasks.expire_stale_external_jobs_task")
