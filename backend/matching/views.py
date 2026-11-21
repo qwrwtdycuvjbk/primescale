@@ -229,3 +229,137 @@ class AdminMatchActionView(APIView):
 
         match.save(update_fields=["visible_to_employer", "status", "updated_at"])
         return Response({"ok": True}, status=status.HTTP_200_OK)
+
+
+class AdminFeatureToggleListView(APIView):
+    """
+    GET /api/v1/admin/features/
+    List all system feature toggles with effective state and metadata.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        from django.conf import settings
+        from .models import SystemFeatureToggle
+        from .services import is_external_job_recommendations_enabled
+
+        env_master = getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False)
+        toggles = SystemFeatureToggle.objects.select_related("updated_by").all()
+
+        results = []
+        for toggle in toggles:
+            effective = (
+                is_external_job_recommendations_enabled()
+                if toggle.feature_key == "external_job_recommendations"
+                else (env_master and toggle.is_enabled)
+            )
+            results.append({
+                "feature_key": toggle.feature_key,
+                "name": toggle.name,
+                "description": toggle.description,
+                "is_enabled": toggle.is_enabled,
+                "effective_status": effective,
+                "environment_master_switch": env_master,
+                "updated_at": toggle.updated_at.isoformat() if toggle.updated_at else None,
+                "updated_by": {
+                    "id": str(toggle.updated_by.id),
+                    "email": toggle.updated_by.email,
+                } if toggle.updated_by else None,
+            })
+
+        return Response({"features": results}, status=status.HTTP_200_OK)
+
+
+class AdminFeatureToggleDetailView(APIView):
+    """
+    GET /api/v1/admin/features/<str:feature_key>/
+    PATCH /api/v1/admin/features/<str:feature_key>/
+    Retrieve or toggle a specific system feature flag.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request, feature_key):
+        from django.conf import settings
+        from .models import SystemFeatureToggle
+        from .services import is_external_job_recommendations_enabled
+
+        toggle = get_object_or_404(SystemFeatureToggle.objects.select_related("updated_by"), feature_key=feature_key)
+        env_master = getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False)
+        effective = (
+            is_external_job_recommendations_enabled()
+            if toggle.feature_key == "external_job_recommendations"
+            else (env_master and toggle.is_enabled)
+        )
+
+        return Response({
+            "feature_key": toggle.feature_key,
+            "name": toggle.name,
+            "description": toggle.description,
+            "is_enabled": toggle.is_enabled,
+            "effective_status": effective,
+            "environment_master_switch": env_master,
+            "updated_at": toggle.updated_at.isoformat() if toggle.updated_at else None,
+            "updated_by": {
+                "id": str(toggle.updated_by.id),
+                "email": toggle.updated_by.email,
+            } if toggle.updated_by else None,
+        }, status=status.HTTP_200_OK)
+
+    def patch(self, request, feature_key):
+        from django.conf import settings
+        from .services import is_external_job_recommendations_enabled, set_system_feature_toggle
+
+        if "is_enabled" not in request.data:
+            return Response(
+                {"detail": "Field 'is_enabled' (boolean) is required.", "code": "invalid_payload"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        raw_val = request.data.get("is_enabled")
+        if not isinstance(raw_val, bool):
+            if str(raw_val).lower() in ("true", "1"):
+                is_enabled = True
+            elif str(raw_val).lower() in ("false", "0"):
+                is_enabled = False
+            else:
+                return Response(
+                    {"detail": "Value for 'is_enabled' must be a valid boolean.", "code": "invalid_boolean"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            is_enabled = raw_val
+
+        success, toggle = set_system_feature_toggle(
+            feature_key=feature_key,
+            is_enabled=is_enabled,
+            user=request.user,
+        )
+
+        if not success or not toggle:
+            return Response(
+                {"detail": "Failed to update feature toggle.", "code": "update_failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        env_master = getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False)
+        effective = (
+            is_external_job_recommendations_enabled()
+            if toggle.feature_key == "external_job_recommendations"
+            else (env_master and toggle.is_enabled)
+        )
+
+        return Response({
+            "success": True,
+            "feature_key": toggle.feature_key,
+            "name": toggle.name,
+            "description": toggle.description,
+            "is_enabled": toggle.is_enabled,
+            "effective_status": effective,
+            "environment_master_switch": env_master,
+            "updated_at": toggle.updated_at.isoformat() if toggle.updated_at else None,
+            "updated_by": {
+                "id": str(toggle.updated_by.id),
+                "email": toggle.updated_by.email,
+            } if toggle.updated_by else None,
+        }, status=status.HTTP_200_OK)
+

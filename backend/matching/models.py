@@ -481,3 +481,50 @@ class ExternalJobRecommendationFeedback(models.Model):
 
     def __str__(self):
         return f"Feedback ({self.reason}) by {self.candidate_profile_id} on Rec {self.recommendation_id}"
+
+
+class SystemFeatureToggle(models.Model):
+    """
+    Centralized administrative feature toggle model (Phase 6Z.20).
+    Allows authorized administrators to control platform feature availability
+    dynamically without code deployments or server restarts.
+    """
+    feature_key = models.CharField(
+        max_length=100,
+        unique=True,
+        db_index=True,
+        help_text="Unique programmatic key identifying the feature (e.g. external_job_recommendations).",
+    )
+    name = models.CharField(
+        max_length=200,
+        help_text="Human-readable feature name displayed in admin UI.",
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        help_text="Explanation of the feature and what toggling it controls.",
+    )
+    is_enabled = models.BooleanField(
+        default=False,
+        help_text="Administrative toggle state. Initialized to False (disabled).",
+    )
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+    updated_by = models.ForeignKey(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="feature_toggle_updates",
+        help_text="Administrator who last changed this feature toggle.",
+    )
+
+    class Meta:
+        db_table = "system_feature_toggles"
+        ordering = ["feature_key"]
+        verbose_name = "System Feature Toggle"
+        verbose_name_plural = "System Feature Toggles"
+
+    def __str__(self):
+        status = "ENABLED" if self.is_enabled else "DISABLED"
+        return f"{self.name} ({self.feature_key}): {status}"
+

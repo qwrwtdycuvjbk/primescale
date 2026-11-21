@@ -714,9 +714,10 @@ class CandidateExternalRecommendationsView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Enforce global feature flag (Phase 6Z.13L)
-        # Acts as global kill switch (HTTP 403, code: feature_disabled)
-        if not getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False):
+        # Enforce centralized feature flag & admin toggle (Phase 6Z.20)
+        # Evaluates ENVIRONMENT_MASTER_SWITCH and DATABASE_ADMIN_TOGGLE (HTTP 403, code: feature_disabled)
+        from matching.services import is_external_job_recommendations_enabled
+        if not is_external_job_recommendations_enabled():
             return Response(
                 {
                     "detail": "AI recommended external jobs are currently disabled.",
@@ -885,9 +886,10 @@ class CandidateExternalRecommendationFeedbackView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Enforce global feature flag (Phase 6Z.13L)
-        # Acts as global kill switch (HTTP 403, code: feature_disabled)
-        if not getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False):
+        # Enforce centralized feature flag & admin toggle (Phase 6Z.20)
+        # Evaluates ENVIRONMENT_MASTER_SWITCH and DATABASE_ADMIN_TOGGLE (HTTP 403, code: feature_disabled)
+        from matching.services import is_external_job_recommendations_enabled
+        if not is_external_job_recommendations_enabled():
             return Response(
                 {
                     "detail": "AI recommended external jobs are currently disabled.",

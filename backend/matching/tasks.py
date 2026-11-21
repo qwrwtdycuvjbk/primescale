@@ -592,6 +592,19 @@ def evaluate_candidate_external_recommendations_task(
     from django.core.cache import cache
     from backend.matching.external_recommendations import CandidateExternalRecommendationService
 
+    # 0. Check feature-toggle state (Phase 6Z.20)
+    from matching.services import is_external_job_recommendations_enabled
+    if not is_external_job_recommendations_enabled():
+        logger.info(
+            "External job recommendations are disabled. Skipping evaluation for candidate %s.",
+            candidate_profile_id,
+        )
+        return {
+            "candidate_profile_id": candidate_profile_id,
+            "status": "skipped",
+            "reason": "feature_disabled",
+        }
+
     lock_key = f"lock:evaluate_candidate_external_recommendations:{candidate_profile_id}"
     # Acquire non-blocking lock with 5-minute timeout
     lock_acquired = cache.add(lock_key, "locked", timeout=300)
@@ -680,6 +693,16 @@ def dispatch_external_job_candidate_reevaluation_task(
     from django.core.cache import cache
     from candidates.models import CandidateProfile
     from matching.models import CandidateResumeEmbedding, EmbeddingStatus, TARGET_EMBEDDING_DIMENSIONS
+
+    # 0. Check feature-toggle state (Phase 6Z.20)
+    from matching.services import is_external_job_recommendations_enabled
+    if not is_external_job_recommendations_enabled():
+        logger.info("External job recommendations are disabled. Skipping candidate re-evaluation dispatch.")
+        return {
+            "status": "skipped",
+            "dispatched_count": 0,
+            "reason": "feature_disabled",
+        }
 
     lock_key = "lock:dispatch_external_job_reevaluation"
     # Acquire non-blocking cooldown lock (10 minutes)
