@@ -10,6 +10,7 @@ from django.urls import path, include
 from common.dashboard_views import AdminDashboardStatsView
 from common.views import health_check
 from job_leads.views import RoleSubmissionCreateView
+from matching.views import AdminFeatureToggleListView, AdminFeatureToggleDetailView
 
 api_v1_patterns = [
     path("health/", health_check, name="health-check"),
@@ -23,6 +24,10 @@ api_v1_patterns = [
     ])),
     path("admin/candidates/", include([
         path("", include("candidates.admin_urls")),
+    ])),
+    path("admin/features/", include([
+        path("", AdminFeatureToggleListView.as_view(), name="admin_feature_toggle_list"),
+        path("<str:feature_key>/", AdminFeatureToggleDetailView.as_view(), name="admin_feature_toggle_detail"),
     ])),
     path("auth/", include("accounts.urls", namespace="auth")),
     path("companies/", include("companies.urls", namespace="companies")),

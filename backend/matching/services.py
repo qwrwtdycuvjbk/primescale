@@ -322,3 +322,103 @@ def notify_recruiters_candidate_interested(match_id: str):
     """
     # In future phases this dispatches Resend email via Celery task.
     pass
+
+
+# ==============================================================================
+# Centralized Feature-State & Toggle Services (Phase 6Z.20)
+# ==============================================================================
+
+EXTERNAL_RECOMMENDATIONS_FEATURE_KEY = "external_job_recommendations"
+FEATURE_TOGGLE_CACHE_KEY_PREFIX = "cache:feature_toggle:"
+FEATURE_TOGGLE_CACHE_TIMEOUT = 300  # 5 minutes fallback TTL
+
+
+def get_feature_toggle_cache_key(feature_key: str) -> str:
+    return f"{FEATURE_TOGGLE_CACHE_KEY_PREFIX}{feature_key}"
+
+
+def is_external_job_recommendations_enabled() -> bool:
+    """
+    Centralized feature-state evaluation for External Job Recommendations (Phase 6Z.20).
+    
+    Effective Status Formula:
+        FEATURE_ENABLED = ENVIRONMENT_MASTER_SWITCH and DATABASE_ADMIN_TOGGLE
+        
+    Evaluation Rules:
+    1. If settings.ENABLE_EXTERNAL_JOB_RECOMMENDATIONS is False:
+       Always return False (emergency deployment-level kill switch; 0 DB/Redis lookups).
+    2. Check Redis/LocMem cache for cached database toggle status.
+    3. On cache miss, query SystemFeatureToggle table.
+    4. Cache the resulting boolean with a 5-minute fallback TTL.
+    5. If database record is missing, corrupted, or query fails: Fail-closed (return False).
+    """
+    from django.conf import settings
+    # 1. Deployment-level master switch check (Fail-closed)
+    master_switch = getattr(settings, "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", False)
+    if not master_switch:
+        return False
+
+    # 2. Check cache for database toggle status
+    cache_key = get_feature_toggle_cache_key(EXTERNAL_RECOMMENDATIONS_FEATURE_KEY)
+    cached_val = None
+    try:
+        cached_val = cache.get(cache_key)
+    except Exception as exc:
+        logger.warning("Failed to read feature toggle cache for %s: %s", cache_key, exc)
+
+    if cached_val is not None:
+        return bool(cached_val)
+
+    # 3. Read from database
+    try:
+        from .models import SystemFeatureToggle
+        toggle = SystemFeatureToggle.objects.filter(
+            feature_key=EXTERNAL_RECOMMENDATIONS_FEATURE_KEY
+        ).first()
+
+        db_enabled = bool(toggle.is_enabled) if toggle is not None else False
+
+        # 4. Populate cache
+        try:
+            cache.set(cache_key, db_enabled, timeout=FEATURE_TOGGLE_CACHE_TIMEOUT)
+        except Exception as exc:
+            logger.warning("Failed to populate feature toggle cache for %s: %s", cache_key, exc)
+
+        return db_enabled
+    except Exception as exc:
+        # 5. Fail closed on database failure
+        logger.error("Failed to query SystemFeatureToggle for %s: %s", EXTERNAL_RECOMMENDATIONS_FEATURE_KEY, exc)
+        return False
+
+
+def set_system_feature_toggle(feature_key: str, is_enabled: bool, user=None) -> tuple[bool, Optional[object]]:
+    """
+    Updates the database feature toggle and immediately invalidates the cache.
+    Returns (success: bool, toggle_instance).
+    """
+    from .models import SystemFeatureToggle
+    try:
+        toggle, _ = SystemFeatureToggle.objects.get_or_create(
+            feature_key=feature_key,
+            defaults={
+                "name": feature_key.replace("_", " ").title(),
+                "is_enabled": is_enabled,
+            }
+        )
+        toggle.is_enabled = is_enabled
+        if user and user.is_authenticated:
+            toggle.updated_by = user
+        toggle.save(update_fields=["is_enabled", "updated_by", "updated_at"])
+
+        # Immediate cache update / invalidation
+        cache_key = get_feature_toggle_cache_key(feature_key)
+        try:
+            cache.set(cache_key, is_enabled, timeout=FEATURE_TOGGLE_CACHE_TIMEOUT)
+        except Exception as exc:
+            logger.warning("Failed to update cache on feature toggle change for %s: %s", cache_key, exc)
+
+        return True, toggle
+    except Exception as exc:
+        logger.error("Error setting feature toggle %s to %s: %s", feature_key, is_enabled, exc)
+        return False, None
+

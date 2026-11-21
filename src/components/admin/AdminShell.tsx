@@ -82,6 +82,7 @@ export async function AdminShell({
                 badge={counts.pendingMatches}
               />
               <NavLink href="/admin/job-leads" label="Job leads" activePath={activePath} />
+              <NavLink href="/admin/settings/features" label="Settings" activePath={activePath} />
             </nav>
           </div>
           <div className="flex items-center gap-4">

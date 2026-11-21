@@ -18,20 +18,58 @@ class Command(BaseCommand):
             default=20,
             help="Jobs per page (max 20 per Himalayas API specification).",
         )
+        parser.add_argument(
+            "--query-group",
+            type=str,
+            choices=["frontend", "backend", "fullstack", "java", "devops"],
+            help="Targeted occupational query group (frontend, backend, fullstack, java, devops).",
+        )
+        parser.add_argument(
+            "--query",
+            type=str,
+            help="Specific custom search query string or pipe-separated queries (e.g. 'react|frontend').",
+        )
+        parser.add_argument(
+            "--country",
+            type=str,
+            default=None,
+            help="Target country filter (e.g. 'US' or 'United States').",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Fetch and validate jobs from API without modifying database records.",
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.NOTICE("Starting Himalayas remote job synchronization..."))
+        dry_run = options.get("dry_run", False)
+        prefix = "[DRY-RUN] " if dry_run else ""
+        self.stdout.write(self.style.NOTICE(f"{prefix}Starting Himalayas remote job synchronization..."))
 
         max_pages = options.get("max_pages")
         page_size = options.get("page_size", 20)
+        query_group = options.get("query_group")
+        query = options.get("query")
+        country = options.get("country")
 
         result = sync_himalayas_jobs(
             max_pages=max_pages,
             page_size=page_size,
+            query_group=query_group,
+            queries=query,
+            country=country,
+            dry_run=dry_run,
         )
 
         if result.get("success"):
-            self.stdout.write(self.style.SUCCESS("Himalayas sync completed successfully!"))
+            self.stdout.write(self.style.SUCCESS(f"{prefix}Himalayas sync completed successfully!"))
+            self.stdout.write(f"Mode: {result.get('mode')}")
+            if result.get("query_group"):
+                self.stdout.write(f"Query group: {result.get('query_group')}")
+            if result.get("queries"):
+                self.stdout.write(f"Queries: {', '.join(result.get('queries', []))}")
+            if result.get("country"):
+                self.stdout.write(f"Country filter: {result.get('country')}")
             self.stdout.write(f"Pages fetched: {result.get('pages_fetched', 0)}")
             self.stdout.write(f"Jobs received: {result.get('jobs_received', 0)}")
             self.stdout.write(f"Jobs created: {result.get('jobs_created', 0)}")
@@ -40,7 +78,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Active jobs in database: {result.get('active_jobs_count', 0)}")
             self.stdout.write(f"Duration: {result.get('duration_seconds', 0.0):.2f}s")
         else:
-            self.stdout.write(self.style.ERROR("Himalayas sync failed!"))
+            self.stdout.write(self.style.ERROR(f"{prefix}Himalayas sync failed!"))
             self.stdout.write(f"Error: {result.get('error')}")
             self.stdout.write(f"Pages fetched before failure: {result.get('pages_fetched', 0)}")
             self.stdout.write(f"API errors: {result.get('api_errors', 0)}")

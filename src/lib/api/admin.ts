@@ -81,6 +81,24 @@ export interface DjangoAdminDashboardStats {
   incompleteProfilePreviews: AdminIncompleteProfilePreview[];
 }
 
+export interface SystemFeatureToggleItem {
+  feature_key: string;
+  name: string;
+  description: string;
+  is_enabled: boolean;
+  effective_status: boolean;
+  environment_master_switch: boolean;
+  updated_at: string | null;
+  updated_by: {
+    id: string;
+    email: string;
+  } | null;
+}
+
+export interface SystemFeatureToggleListResponse {
+  features: SystemFeatureToggleItem[];
+}
+
 export const adminApi = {
   /**
    * Retrieves aggregated dashboard analytics and previews.
@@ -89,4 +107,27 @@ export const adminApi = {
   async getDashboardStats(options?: RequestOptions): Promise<DjangoAdminDashboardStats> {
     return djangoApi.get<DjangoAdminDashboardStats>("/api/v1/admin/dashboard/stats/", options);
   },
+
+  /**
+   * Lists all system feature toggles with effective state and metadata.
+   */
+  async getFeatureToggles(options?: RequestOptions): Promise<SystemFeatureToggleListResponse> {
+    return djangoApi.get<SystemFeatureToggleListResponse>("/api/v1/admin/features/", options);
+  },
+
+  /**
+   * Updates an administrative feature toggle.
+   */
+  async updateFeatureToggle(
+    featureKey: string,
+    isEnabled: boolean,
+    options?: RequestOptions,
+  ): Promise<SystemFeatureToggleItem> {
+    return djangoApi.patch<SystemFeatureToggleItem>(
+      `/api/v1/admin/features/${featureKey}/`,
+      { is_enabled: isEnabled },
+      options,
+    );
+  },
 };
+

@@ -110,19 +110,28 @@ if DB_NAME:
             "PASSWORD": DB_PASSWORD or "",
             "HOST": DB_HOST,
             "PORT": int(DB_PORT) if DB_PORT else 5432,
+            "TEST": {
+                "NAME": f"test_{DB_NAME}",
+                "TEMPLATE": DB_NAME,
+            },
         }
     }
 elif DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://"):
     import urllib.parse
     url = urllib.parse.urlparse(DATABASE_URL)
+    db_name = url.path[1:]
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": url.path[1:],
+            "NAME": db_name,
             "USER": url.username,
             "PASSWORD": url.password,
             "HOST": url.hostname,
             "PORT": url.port or 5432,
+            "TEST": {
+                "NAME": f"test_{db_name}",
+                "TEMPLATE": db_name,
+            },
         }
     }
 else:
@@ -264,6 +273,28 @@ NVIDIA_EMBEDDING_DIMENSIONS = int(os.getenv("NVIDIA_EMBEDDING_DIMENSIONS", "2048
 NVIDIA_EMBEDDING_CONNECT_TIMEOUT = float(os.getenv("NVIDIA_EMBEDDING_CONNECT_TIMEOUT", "5.0"))
 NVIDIA_EMBEDDING_READ_TIMEOUT = float(os.getenv("NVIDIA_EMBEDDING_READ_TIMEOUT", "30.0"))
 NVIDIA_EMBEDDING_MAX_RETRIES = int(os.getenv("NVIDIA_EMBEDDING_MAX_RETRIES", "3"))
+
+# AI Recommended External Jobs Global Feature Flag (Phase 6Z.13L)
+# Controls global availability of AI-recommended external jobs and candidate feedback.
+# Acts as an immediate application-level kill switch.
+# Accepted truthy values: "true", "1", "yes", "on" (case-insensitive).
+# Accepted falsy values: "false", "0", "no", "off" (case-insensitive).
+# If empty, invalid, or unrecognized, fails safely to False (disabled).
+def _parse_bool_env(var_name: str, default: bool = False) -> bool:
+    val = os.getenv(var_name)
+    if val is None:
+        return default
+    clean_val = val.strip().lower()
+    if clean_val in ("true", "1", "yes", "on"):
+        return True
+    if clean_val in ("false", "0", "no", "off"):
+        return False
+    # Fail safe on invalid/unrecognized configuration
+    return False
+
+ENABLE_EXTERNAL_JOB_RECOMMENDATIONS = _parse_bool_env(
+    "ENABLE_EXTERNAL_JOB_RECOMMENDATIONS", default=True
+)
 
 # Internationalization
 LANGUAGE_CODE = "en-us"

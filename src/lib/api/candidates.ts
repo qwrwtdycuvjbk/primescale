@@ -48,12 +48,80 @@ export interface DjangoCandidateProfile {
   linkedin_url?: string | null;
   resume_url?: string | null;
   bio?: string | null;
-  profile_completeness: number;
-  open_to_matching: boolean;
-  profile_complete: boolean;
+  profile_completeness?: number;
+  open_to_matching?: boolean;
+  profile_complete?: boolean;
   source?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface RecommendedExternalJobSourceAttribution {
+  name?: string;
+  provider_code?: string;
+  attribution_name?: string;
+  attribution_url?: string;
+}
+
+export interface RecommendedExternalJob {
+  id: string;
+  external_job_id: string;
+  job_title: string;
+  company_name: string;
+  company_website?: string | null;
+  location?: string | null;
+  country?: string;
+  state?: string | null;
+  city?: string | null;
+  remote_type?: string;
+  employment_type?: string | null;
+  salary_min?: string | number | null;
+  salary_max?: string | number | null;
+  salary_currency?: string;
+  tech_stack?: string[];
+  source_name?: string;
+  source_attribution?: RecommendedExternalJobSourceAttribution | null;
+  posted_at?: string | null;
+  expires_at?: string | null;
+  original_job_url?: string;
+  source_job_url?: string | null;
+  application_url?: string | null;
+}
+
+export interface CandidateExternalRecommendation {
+  recommendation_id: string;
+  final_score: number;
+  semantic_score: number;
+  skill_score: number;
+  experience_score: number;
+  matched_skills: string[];
+  match_reason?: string | null;
+  calculated_at?: string;
+  external_job: RecommendedExternalJob;
+}
+
+export interface CandidateExternalRecommendationsSummary {
+  total_qualified: number;
+  current_page_count: number;
+  highest_match_score: number;
+}
+
+export interface CandidateExternalRecommendationsResponse {
+  count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  summary: CandidateExternalRecommendationsSummary;
+  results: CandidateExternalRecommendation[];
+}
+
+export interface CandidateExternalRecommendationsParams {
+  page?: number;
+  page_size?: number;
+  provider?: string;
+  remote_type?: string;
+  search?: string;
+  ordering?: string;
 }
 
 export interface CandidateProfileInput {
@@ -296,5 +364,39 @@ export const candidatesApi = {
     options?: RequestOptions,
   ): Promise<{ ok: boolean; message: string; candidateId: string; userId: string }> {
     return djangoApi.delete(`/api/v1/admin/candidates/${candidateId}/delete/`, options);
+  },
+
+  /**
+   * Candidate: Get AI recommended external jobs (score >= 70%)
+   */
+  async getExternalRecommendations(
+    params?: CandidateExternalRecommendationsParams,
+    options?: RequestOptions,
+  ): Promise<CandidateExternalRecommendationsResponse> {
+    return djangoApi.get<CandidateExternalRecommendationsResponse>(
+      "/api/v1/candidates/external-recommendations/",
+      {
+        ...options,
+        params: params as Record<string, string | number | boolean | undefined>,
+      },
+    );
+  },
+
+  /**
+   * Candidate: Submit quality feedback or report an issue on an external job recommendation (Phase 6Z.12B)
+   */
+  async submitExternalRecommendationFeedback(
+    data: {
+      recommendation_id: string;
+      reason: string;
+      comments?: string;
+    },
+    options?: RequestOptions,
+  ): Promise<{ success: boolean; message: string; feedback_id: string; reason: string; created: boolean }> {
+    return djangoApi.post(
+      "/api/v1/candidates/external-recommendations/feedback/",
+      data,
+      options,
+    );
   },
 };

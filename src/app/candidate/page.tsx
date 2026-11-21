@@ -11,6 +11,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { CandidateShell } from "@/components/candidate/CandidateShell";
+import { AiRecommendedExternalJobsSection } from "@/components/candidate/AiRecommendedExternalJobsSection";
 import { appMainClass } from "@/components/site/layout";
 import { requireRole, getAccessToken } from "@/lib/auth";
 import { isCandidateProfileComplete } from "@/lib/candidate-profile";
@@ -512,6 +513,15 @@ export default async function CandidateDashboardPage() {
             )}
           </div>
         </section>
+
+        {/* Section: AI Recommended External Jobs */}
+        <AiRecommendedExternalJobsSection
+          token={token}
+          initialCompleteness={completenessPercentage}
+          initialProfileComplete={candidateProfile?.profile_complete}
+          initialOpenToMatching={candidateProfile?.open_to_matching}
+          initialHasResume={Boolean(candidateProfile?.resume_url)}
+        />
       </main>
     </CandidateShell>
   );

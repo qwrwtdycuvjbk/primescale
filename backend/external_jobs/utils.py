@@ -152,6 +152,9 @@ def classify_remote_type(
         r"\b100%\s+remote\b",
         r"\b100\s*%\s*remote\b",
         r"\bremote\s*[-–—,]\s*(?:us|usa|united\s+states)\b",
+        r"\bus\s+remote\b",
+        r"\bremote\s+in\s+the\s+(?:us|usa|united\s+states)\b",
+        r"\banywhere\s+in\s+the\s+(?:us|usa|united\s+states)\b",
         r"\bwork\s+from\s+anywhere\b",
         r"\bwork-from-anywhere\b",
         r"\bwork\s+from\s+home\b",
@@ -160,7 +163,8 @@ def classify_remote_type(
         r"\bworking\s+remotely\b",
         r"\btelecommut(?:er|ing|e|ers)\b",
         r"\btelework(?:ing|er|ers)?\b",
-        r"\bremote\s+(?:role|opportunity|position|job|work|working)\b",
+        r"\bremote\s+(?:role|opportunity|position|job|work|working|eligible)\b",
+        r"\bvirtual\s*(?:,\s*(?:us|usa)|[-–—]\s*(?:us|usa)|\s+role|\s+position|\s+opportunity)\b",
         r"\bwfh\b",
     ]
 
